@@ -17,7 +17,11 @@ struct rational {                             //Simple data structure representi
 
 
 /******** Parameters of the system ********/
-extern typ masses[how_many_planet + 1];      //Masses of the planets
+extern typ masses[how_many_planet + 1];      //Masses                           of the planets
+extern typ sma   [how_many_planet + 1];      //Semi-major axes                  of the planets
+extern typ ecc   [how_many_planet + 1];      //Eccentricities                   of the planets
+extern typ lbd   [how_many_planet + 1];      //Mean longitudes                  of the planets
+extern typ vrp   [how_many_planet + 1];      //Longitudes of the ascending node of the planets
 extern typ m0;
 
 

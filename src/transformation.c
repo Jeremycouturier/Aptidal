@@ -279,7 +279,7 @@ void verification(){
 
 void transformation_display(){
 
-      /******** Displays in the command line the change of variables performed by Aptidal ********/
+      /******** Displays in the terminal the change of variables performed by Aptidal ********/
       
       int i, j, how_many_secular;
       struct rational coef;
@@ -538,6 +538,7 @@ void transformation_display(){
       
       /******** Printing the degrees of freedom and storing their indexes in array dof ********/
       how_many_dof = 0;
+      printf(" ");
       for (i = 1; i < how_many_planet + 1; i++){
             if (how_many_resonant >= 2){
                   if (i != subchain[how_many_resonant - 1] && i != subchain[how_many_resonant] && p_i[i] != 0){
@@ -562,6 +563,152 @@ void transformation_display(){
                   printf("(sig_%d; D_%d)\n\n", i, i);
             }
       }
+}
+
+
+void Hamiltonian_display(){
+
+      /******** Displays the Hamiltonian in the terminal ********/
+      
+      int i, j, k, pi, pj, the_gcd, how_many_backward;
+      int p, q, n, m, l, r, s;
+      
+      printf("The Hamiltonian treated by Aptidal reads, in the old variables\n\n H = ");
+      
+      /******** Displaying the Keplerian part ********/
+      printf("- sum_{1 <= j <= %d} beta_j**3 * mu_j**2 / (2*Lbd_j**2)\n\n", how_many_planet);
+      
+      /******** Displaying the perturbation ********/
+      for (i = 1; i <= how_many_planet; i++){
+            for (j = i + 1; j <= how_many_planet; j++){
+                  printf(" + G*m_%d*m_%d/a_%d * (\n", i, j, j);
+                  
+                  /******** Retrieving the value of p ********/
+                  pi = p_i[i];
+                  pj = p_i[j];
+                  the_gcd = gcd(pi, pj);
+                  p       = pi / the_gcd;
+                  
+                  /******** Printing the secular contribution and the non-co-orbital MMR contribution ********/
+                  for (k = 1; k < 32; k++){
+                        if (Cppq[i][j][k] != 0.0){
+                              q = qnmlr[k][0];  n = qnmlr[k][1];  m = qnmlr[k][2];  l = qnmlr[k][3];  r = qnmlr[k][4];
+                              
+                              if (Cppq[i][j][k] > 0.0){
+                                    if (k > 1){
+                                          printf(" + %.12lf", Cppq[i][j][k]);
+                                    }
+                                    else{
+                                          printf(" %.12lf", Cppq[i][j][k]);
+                                    }
+                              }
+                              else{
+                                    printf(" - %.12lf", -Cppq[i][j][k]);
+                              }
+                              how_many_backward = (int) log10(absolute(Cppq[i][j][k]));
+                              for (s = 0; s < how_many_backward; s++){
+                                    printf("\b");
+                              }
+                              for (s = 0; s < how_many_backward; s++){
+                                    printf(" ");
+                              }
+                              for (s = 0; s < how_many_backward; s++){
+                                    printf("\b");
+                              }
+                              printf(" ");
+                              if (m != 0){
+                                    if (m == 1){
+                                          printf("* sqrt(2*D_%d/Lbd_%d)    ", i, i);
+                                    }
+                                    else{
+                                          printf("* sqrt(2*D_%d/Lbd_%d)**%d ", i, i, m);
+                                    }
+                              }
+                              if (n - m != 0){
+                                    if (n - m == 1){
+                                          printf("* sqrt(2*D_%d/Lbd_%d)    ", j, j);
+                                    }
+                                    else{
+                                          printf("* sqrt(2*D_%d/Lbd_%d)**%d ", j, j, n - m);
+                                    }
+                              }
+                              if (m == 0){
+                                    printf("                       ");
+                              }
+                              if (n - m == 0){
+                                    printf("                       ");
+                              }
+                              if (l*p != 0 || l*(p + q) != 0 || r != 0 || l*q - r != 0){ //If there is a cosine factor
+                                    printf("* cos(");
+                                    if (l*p != 0){
+                                          if (l*p == 1){
+                                                printf("lbd_%d", i);
+                                          }
+                                          else{
+                                                printf("%d*lbd_%d", l*p, i);
+                                          }
+                                    }
+                                    if (l*(p + q) != 0){
+                                          if (l*(p + q) == 1){
+                                                printf(" - lbd_%d", j);
+                                          }
+                                          else{
+                                                printf(" - %d*lbd_%d", l*(p + q), j);
+                                          }
+                                    }
+                                    if (r != 0){
+                                          if (r < -1){
+                                                printf(" - %d*vrp_%d", -r, i);
+                                          }
+                                          else if (r == -1){
+                                                printf(" - vrp_%d", i);
+                                          }
+                                          else if (r == 1){
+                                                if (l*p != 0 || l*(p + q) != 0){
+                                                      printf(" + vrp_%d", i);
+                                                }
+                                                else{
+                                                      printf("vrp_%d", i);
+                                                }
+                                          }
+                                          else{
+                                                if (l*p != 0 || l*(p + q) != 0){
+                                                      printf(" + %d*vrp_%d", r, i);
+                                                }
+                                                else{
+                                                      printf("%d*vrp_%d", r, i);
+                                                }
+                                          }
+                                    }
+                                    if (l*q - r != 0){
+                                          if (l*q - r < -1){
+                                                printf(" - %d*vrp_%d", r - l*q, j);
+                                          }
+                                          else if (l*q - r == -1){
+                                                printf(" - vrp_%d", j);
+                                          }
+                                          else if (l*q - r == 1){
+                                                printf(" + vrp_%d", j);
+                                          }
+                                          else{
+                                                printf(" + %d*vrp_%d", l*q - r, j);
+                                          }
+                                    }
+                                    printf(")");
+                              }
+                              printf("\n");
+                        }
+                  }
+                  
+                  /******** Printing the co-orbital contribution ********/
+                  if (pi != 0 && pj != 0 && pi == pj){ //The pair (i,j) is in a MMR
+
+                  }
+                  
+                  printf(" )\n\n");
+            }
+      }
+
 }
 
 

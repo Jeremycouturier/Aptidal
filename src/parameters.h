@@ -18,18 +18,17 @@
 /******** By default, the units of mass, length and time are the star's mass, the initial semi-major axis of the innermost ********/
 /******** orbiting body and the initial orbital period of the innermost orbiting body (hence G=4*pi^2). The canonical      ********/
 /******** heliocentric coordinates are used (heliocentric positions and barycentric velocities). See Laskar & Robutel 1995 ********/
-#define how_many_planet 7                                                           //Number of orbiting bodies in the system
+#define how_many_planet 4                                                           //Number of orbiting bodies in the system
 #define G 39.47841760435743                                                         //Gravitational constant is set to 4*pi^2, so the orbital period of the closest orbiting body is 1
-#define body_masses {1.0 , 0.00238,  0.000488, 0.000793, 0.00056, 0.00032, 0.00034} //Masses of the bodies of the system, beginning with the star.
-#define body_sma          {1.0,      1.3,      1.5874,   2.8922,  4.78,    7.98}    //Initial semi-major axes             of the orbiting bodies.
-#define body_ecc          {0.0,      0.0,      0.0,      0.0,     0.0,     0.0}     //Initial eccentricities              of the orbiting bodies.
-#define body_lambda       {0.0,      0.0,      0.0,      0.0,     0.0,     0.0}     //Initial mean longitudes             of the orbiting bodies.
-#define body_varpi        {0.0,      0.0,      0.0,      0.0,     0.0,     0.0}     //Initial longitude of the pericenter of the orbiting bodies.
-#define body_radii  {0.12, 0.006744, 0.010036, 0.008982, 0.00733, 0.00456, 0.00568} //Radii               of the bodies of the system, beginning with the star. Unimportant if no tides
-#define body_k2     {0.0,  0.8,      1.32,     0.87,     2.77,    0.78,    1.86}    //Second Love numbers of the bodies of the system, beginning with the star. Unimportant if no tides
-#define body_Q  {10000.0,  234.8,    78.9,     1633.0,   687.9,   123.1,   578.0}   //Quality factors     of the bodies of the system, beginning with the star. Unimportant if no tides
-//#define resonance_chain   {0,        0,        7,        7,       8,       8}     //The resonance chain p_1:p_2:p_3: ... :p_n of the system.
-#define resonance_chain   {1,3,4,4,4,4,6}
+#define body_masses {1.0 , 0.00238,  0.000488, 0.000793, 0.00056}                   //Masses of the bodies of the system, beginning with the star.
+#define body_sma          {1.0,      1.308,    1.847,    2.08}                      //Initial semi-major axes             of the orbiting bodies.
+#define body_ecc          {0.0,      0.0,      0.0,      0.0}                       //Initial eccentricities              of the orbiting bodies.
+#define body_lambda       {0.0,      0.0,      0.0,      0.0}                       //Initial mean longitudes             of the orbiting bodies.
+#define body_varpi        {0.0,      0.0,      0.0,      0.0}                       //Initial longitude of the pericenter of the orbiting bodies.
+#define body_radii  {0.12, 0.006744, 0.010036, 0.008982, 0.00733}                   //Radii               of the bodies of the system, beginning with the star. Unimportant if no tides
+#define body_k2     {0.0,  0.8,      1.32,     0.87,     2.77}                      //Second Love numbers of the bodies of the system, beginning with the star. Unimportant if no tides
+#define body_Q  {10000.0,  234.8,    78.9,     1633.0,   687.9}                     //Quality factors     of the bodies of the system, beginning with the star. Unimportant if no tides
+#define resonance_chain   {2,        3,        5,        6}                         //The resonance chain p_1:p_2:p_3: ... :p_n of the system.
 
 
 

@@ -18,7 +18,7 @@ typ C_00_1, C_00_2, C_00_3, C_00_4, C_00_5, C_00_6, C_00_7, C_00_8, C_00_9, C_00
 
 /******** Defining the array of pointers towards functions of resonance ********/
 void (*resonances[10][10])(typ alp, typ mi);
-
+typ  Cppq[how_many_planet + 1][how_many_planet + 1][32];
 
 void resonance_init(){
 
@@ -42,6 +42,97 @@ void resonance_init(){
       resonances[4][7] = &resonance_47;
       resonances[5][8] = &resonance_58;
 
+}
+
+
+void Cppq_init(){
+
+      /******** Initializes the array Cppq with the 32 coefficients C_ppq ********/
+      /******** Cppq[i][j] contains the coefficients of pair (i,j)        ********/
+      
+      int i, j, k, pi, pj, the_gcd;
+      typ alp, ai, aj;
+      
+      /******** Initializing the array to 0.0 ********/
+      for (i = 0; i <= how_many_planet; i++){
+            for (j = 0; j <= how_many_planet; j++){
+                  for (k = 0; k < 32; k++){
+                        Cppq[i][j][k] = 0.0;
+                  }
+            }
+      }
+      
+      /******** Initializing it with the relevant coefficients ********/
+      for (i = 1; i <= how_many_planet; i++){
+            for (j = i + 1; j <= how_many_planet; j++){
+                  ai  = sma   [i];
+                  aj  = sma   [j];
+                  alp = ai/aj;
+                  
+                  resonances[0][0](alp,masses[i]); //Retrieving the 10 coefficients of the resonance 0:0
+                  /******** Storing the 10 coefficients of the resonance 0:0 ********/
+                  Cppq[i][j][0] = C_00_1;
+                  if (max_deg >= 1){
+                        Cppq[i][j][1] = C_00_2;
+                        Cppq[i][j][2] = C_00_3;
+                        Cppq[i][j][3] = C_00_4;
+                  }
+                  if (max_deg >= 3){
+                        Cppq[i][j][4] = C_00_5;
+                        Cppq[i][j][5] = C_00_6;
+                        Cppq[i][j][6] = C_00_7;
+                        Cppq[i][j][7] = C_00_8;
+                        Cppq[i][j][8] = C_00_9;
+                        Cppq[i][j][9] = C_00_10;
+                  }
+                  
+                  pi = p_i[i];
+                  pj = p_i[j];
+                  if (pi != 0 && pj != 0){ //The pair (i,j) is in a MMR
+                        if (pi != pj){     //The planets are not co-orbital
+                              the_gcd = gcd(pi, pj);
+                              pi      = pi / the_gcd;
+                              pj      = pj / the_gcd;
+                              /******** Storing the coefficients of the resonance pi:pj ********/
+                              if (pj - pi == 1 && pj <= max_res && max_deg >= 1){ //First-order resonance
+                                    resonances[pi][pj](alp,masses[i]); //Retrieving the coefficients of the resonance pi:pj
+                                    Cppq[i][j][10] = C_ppp1_1;
+                                    Cppq[i][j][11] = C_ppp1_2;
+                                    if (max_deg >= 2){
+                                          Cppq[i][j][12] = C_ppp1_3;
+                                          Cppq[i][j][13] = C_ppp1_4;
+                                          Cppq[i][j][14] = C_ppp1_5;
+                                    }
+                                    if (max_deg >= 3){
+                                          Cppq[i][j][15] = C_ppp1_6;
+                                          Cppq[i][j][16] = C_ppp1_7;
+                                          Cppq[i][j][17] = C_ppp1_8;
+                                          Cppq[i][j][18] = C_ppp1_9;
+                                          Cppq[i][j][19] = C_ppp1_10;
+                                          Cppq[i][j][20] = C_ppp1_11;
+                                          Cppq[i][j][21] = C_ppp1_12;
+                                          Cppq[i][j][22] = C_ppp1_13;
+                                          Cppq[i][j][23] = C_ppp1_14;
+                                          Cppq[i][j][24] = C_ppp1_15;
+                                    }
+                              }
+                              else if (pj - pi == 2 && pj <= max_res && max_deg >= 2){ //Second-order resonance
+                                    resonances[pi][pj](alp,masses[i]); //Retrieving the coefficients of the resonance pi:pj
+                                    Cppq[i][j][25] = C_ppp2_1;
+                                    Cppq[i][j][26] = C_ppp2_2;
+                                    Cppq[i][j][27] = C_ppp2_3;
+                              }
+                              else if (pj - pi == 3 && pj <= max_res && max_deg >= 3){ //Third-order resonance
+                                    resonances[pi][pj](alp,masses[i]); //Retrieving the coefficients of the resonance pi:pj
+                                    Cppq[i][j][28] = C_ppp3_1;
+                                    Cppq[i][j][29] = C_ppp3_2;
+                                    Cppq[i][j][30] = C_ppp3_3;
+                                    Cppq[i][j][31] = C_ppp3_4;
+                              }
+                        }
+                  }
+            }
+      }
 }
 
 

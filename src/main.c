@@ -45,6 +45,8 @@ int main(){
       transpose_inv_init();
       verification();
       transformation_display();
+      Cppq_init();
+      Hamiltonian_display();
       typ alpha = 0.894;
       resonances[1][2](alpha,masses[1]);
       /*resonance_00(alpha);

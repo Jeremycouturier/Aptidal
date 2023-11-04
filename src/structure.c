@@ -11,6 +11,10 @@
 
 /******** Defining some global variables ********/
 typ masses  [how_many_planet + 1];
+typ sma     [how_many_planet + 1];
+typ ecc     [how_many_planet + 1];
+typ lbd     [how_many_planet + 1];
+typ vrp     [how_many_planet + 1];
 int p_i     [how_many_planet + 1];
 int k_ij    [how_many_planet + 1][how_many_planet + 1];
 int q_ij    [how_many_planet]    [how_many_planet + 1];
@@ -79,10 +83,18 @@ void initialization(){
       
       /******** Initializing the planetary masses and the resonance chain ********/
       how_many_resonant = 0;
-      typ buffer_mass [how_many_planet + 1] = body_masses;
-      typ buffer_chain[how_many_planet]     = resonance_chain;
+      typ buffer_mass  [how_many_planet + 1] = body_masses;
+      typ buffer_sma   [how_many_planet]     = body_sma;
+      typ buffer_ecc   [how_many_planet]     = body_ecc;
+      typ buffer_lbd   [how_many_planet]     = body_lambda;
+      typ buffer_vrp   [how_many_planet]     = body_varpi;
+      typ buffer_chain [how_many_planet]     = resonance_chain;
       for (i = 1; i < how_many_planet + 1; i++){
             p_i[i] = buffer_chain[i-1];
+            sma[i] = buffer_sma  [i-1];
+            ecc[i] = buffer_ecc  [i-1];
+            lbd[i] = buffer_lbd  [i-1];
+            vrp[i] = buffer_vrp  [i-1];
       }
       for (i = 0; i < how_many_planet + 1; i++){
             masses[i] = buffer_mass[i];

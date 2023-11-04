@@ -37,6 +37,9 @@ void verification();
 void transformation_display();
 
 
+void Hamiltonian_display();
+
+
 int GCD(int * As, int k);
 
 
