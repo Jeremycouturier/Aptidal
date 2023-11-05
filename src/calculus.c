@@ -22,9 +22,26 @@ typ * X_new;
 typ * X_uv;
 
 
-void dH_old(int k){
+typ dH_old(int k){
 
-
+      /******** Returns the partial derivative dH/dX_old[k] where 4 <= k <= 4 * how_many_planet + 3 ********/
+      
+      int i, j;
+      typ to_be_returned = 0.0;
+      
+      if (k % 4 == 1){ //Derivation with respect to lbd_i
+            i = k/4;
+            for (j = 1; j <= how_many_planet; j++){
+                  if (i != j){
+                        if (j < i){
+                        
+                        }
+                        else{
+                        
+                        }
+                  }
+            }
+      }
 }
 
 

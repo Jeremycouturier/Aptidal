@@ -175,6 +175,8 @@ int main(){
  
       gsl_permutation_free (p);
 
+
+
       deallocation();
       return 0;
 
