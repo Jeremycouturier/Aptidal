@@ -68,26 +68,28 @@ void Cppq_init(){
                   ai  = sma   [i];
                   aj  = sma   [j];
                   alp = ai/aj;
-                  
-                  resonances[0][0](alp,masses[i]); //Retrieving the 10 coefficients of the resonance 0:0
-                  /******** Storing the 10 coefficients of the resonance 0:0 ********/
-                  Cppq[i][j][0] = C_00_1;
-                  if (max_deg >= 1){
-                        Cppq[i][j][1] = C_00_2;
-                        Cppq[i][j][2] = C_00_3;
-                        Cppq[i][j][3] = C_00_4;
-                  }
-                  if (max_deg >= 3){
-                        Cppq[i][j][4] = C_00_5;
-                        Cppq[i][j][5] = C_00_6;
-                        Cppq[i][j][6] = C_00_7;
-                        Cppq[i][j][7] = C_00_8;
-                        Cppq[i][j][8] = C_00_9;
-                        Cppq[i][j][9] = C_00_10;
-                  }
-                  
                   pi = p_i[i];
                   pj = p_i[j];
+                  
+                  if (pi == 0 || pj == 0 || pi != pj){ //If the pair is not co-orbital
+                        resonances[0][0](alp,masses[i]); //Retrieving the 10 coefficients of the resonance 0:0
+                        /******** Storing the 10 coefficients of the resonance 0:0 ********/
+                        Cppq[i][j][0] = C_00_1;
+                        if (max_deg >= 1){
+                              Cppq[i][j][1] = C_00_2;
+                              Cppq[i][j][2] = C_00_3;
+                              Cppq[i][j][3] = C_00_4;
+                        }
+                        if (max_deg >= 3){
+                              Cppq[i][j][4] = C_00_5;
+                              Cppq[i][j][5] = C_00_6;
+                              Cppq[i][j][6] = C_00_7;
+                              Cppq[i][j][7] = C_00_8;
+                              Cppq[i][j][8] = C_00_9;
+                              Cppq[i][j][9] = C_00_10;
+                        }
+                  }
+                  
                   if (pi != 0 && pj != 0){ //The pair (i,j) is in a MMR
                         if (pi != pj){     //The planets are not co-orbital
                               the_gcd = gcd(pi, pj);

@@ -10,6 +10,7 @@
 #include "structure.h"
 #include "coefficients.h"
 #include "transformation.h"
+#include "calculus.h"
 
 
 int main(){
@@ -31,22 +32,7 @@ int main(){
       printf("C1 = %.15lf\nC2 = %.15lf\nC3 = %.15lf\nC13 = %.15lf\nCbeaucoup = %.15lf\n", C1, C2, C3, C13, Cbeaucoup);*/
       
       
-      initialization();
-      chain_validity();
-      array_init();
-      array2rational();
-      resonance_init();
-      if (how_many_resonant > 2){
-            l_ij_init();
-            NoverD_init();
-            rat_c_i_init();
-      }
-      transformation_init();
-      transpose_inv_init();
-      verification();
-      transformation_display();
-      Cppq_init();
-      Hamiltonian_display();
+      init();
       typ alpha = 0.894;
       resonances[1][2](alpha,masses[1]);
       /*resonance_00(alpha);

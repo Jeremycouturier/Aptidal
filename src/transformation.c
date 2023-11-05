@@ -294,7 +294,7 @@ void transformation_display(){
       }
       
       printf("\n-------------------------------------------------------------------------------------------\n\n");
-      printf("The resonance chain is ");
+      printf("The resonance chain to be studied is ");
       for (i = 1; i < how_many_planet; i++){
             printf("%d", p_i[i]);
             printf(":");
@@ -302,8 +302,9 @@ void transformation_display(){
       printf("%d\n", p_i[how_many_planet]);
       printf("The system currently has %d degrees of freedom.\n\n", 2*how_many_planet);
       printf("Aptidal will perform a canonical transformation (lbd, -vrp; Lbd, D) -> (phi, sig; Phi, D)\n");
-      printf("where lbd(lambda) is the mean longitude and vrp(varpi) is the longitude of the ascending node.\n");
-      printf("Lambda (resp. Phi) is the action conjugated to lambda (resp. phi) and D (the AMD) is conjugated to both sigma and -varpi.\n\n");
+      printf("where (lbd, -vrp; Lbd, D) are the traditional Poincaré variables.\n");
+      printf("lbd (lambda) is the mean longitude, vrp (varpi) is the longitude of the ascending node, Lambda (resp. Phi)\n");
+      printf("is the action conjugated to lambda (resp. phi) and D (the AMD) is conjugated to both sigma and -varpi.\n\n");
       printf("The transformation reads\n\n");
       
       /******** Displaying (phi_j, sig_j) as a function of (lbd_j,-vrp_j) ********/
@@ -573,7 +574,8 @@ void Hamiltonian_display(){
       int i, j, k, pi, pj, the_gcd, how_many_backward;
       int p, q, n, m, l, r, s;
       
-      printf("The Hamiltonian treated by Aptidal reads, in the old variables\n\n H = ");
+      printf("-------------------------------------------------------------------------------------------\n\n");
+      printf("The Hamiltonian of the system reads, in the old variables\n\n H = ");
       
       /******** Displaying the Keplerian part ********/
       printf("- sum_{1 <= j <= %d} beta_j**3 * mu_j**2 / (2*Lbd_j**2)\n\n", how_many_planet);
@@ -591,19 +593,19 @@ void Hamiltonian_display(){
                   
                   /******** Printing the secular contribution and the non-co-orbital MMR contribution ********/
                   for (k = 1; k < 32; k++){
-                        if (Cppq[i][j][k] != 0.0){
-                              q = qnmlr[k][0];  n = qnmlr[k][1];  m = qnmlr[k][2];  l = qnmlr[k][3];  r = qnmlr[k][4];
+                        if (Cppq[i][j][k] != 0.0){ //If the corresponding term exists in the Hamiltonian
+                              q = (int) qnmlr[k][0];  n = (int) qnmlr[k][1];  m = (int) qnmlr[k][2];  l = (int) qnmlr[k][3];  r = (int) qnmlr[k][4];
                               
                               if (Cppq[i][j][k] > 0.0){
                                     if (k > 1){
-                                          printf(" + %.12lf", Cppq[i][j][k]);
+                                          printf("    + %.10lf", Cppq[i][j][k]);
                                     }
                                     else{
-                                          printf(" %.12lf", Cppq[i][j][k]);
+                                          printf("    %.10lf", Cppq[i][j][k]);
                                     }
                               }
                               else{
-                                    printf(" - %.12lf", -Cppq[i][j][k]);
+                                    printf("    - %.10lf", -Cppq[i][j][k]);
                               }
                               how_many_backward = (int) log10(absolute(Cppq[i][j][k]));
                               for (s = 0; s < how_many_backward; s++){
@@ -645,7 +647,7 @@ void Hamiltonian_display(){
                                                 printf("lbd_%d", i);
                                           }
                                           else{
-                                                printf("%d*lbd_%d", l*p, i);
+                                                printf("%d lbd_%d", l*p, i);
                                           }
                                     }
                                     if (l*(p + q) != 0){
@@ -653,12 +655,12 @@ void Hamiltonian_display(){
                                                 printf(" - lbd_%d", j);
                                           }
                                           else{
-                                                printf(" - %d*lbd_%d", l*(p + q), j);
+                                                printf(" - %d lbd_%d", l*(p + q), j);
                                           }
                                     }
                                     if (r != 0){
                                           if (r < -1){
-                                                printf(" - %d*vrp_%d", -r, i);
+                                                printf(" - %d vrp_%d", -r, i);
                                           }
                                           else if (r == -1){
                                                 printf(" - vrp_%d", i);
@@ -673,16 +675,16 @@ void Hamiltonian_display(){
                                           }
                                           else{
                                                 if (l*p != 0 || l*(p + q) != 0){
-                                                      printf(" + %d*vrp_%d", r, i);
+                                                      printf(" + %d vrp_%d", r, i);
                                                 }
                                                 else{
-                                                      printf("%d*vrp_%d", r, i);
+                                                      printf("%d vrp_%d", r, i);
                                                 }
                                           }
                                     }
                                     if (l*q - r != 0){
                                           if (l*q - r < -1){
-                                                printf(" - %d*vrp_%d", r - l*q, j);
+                                                printf(" - %d vrp_%d", r - l*q, j);
                                           }
                                           else if (l*q - r == -1){
                                                 printf(" - vrp_%d", j);
@@ -691,7 +693,7 @@ void Hamiltonian_display(){
                                                 printf(" + vrp_%d", j);
                                           }
                                           else{
-                                                printf(" + %d*vrp_%d", l*q - r, j);
+                                                printf(" + %d vrp_%d", l*q - r, j);
                                           }
                                     }
                                     printf(")");
@@ -702,7 +704,17 @@ void Hamiltonian_display(){
                   
                   /******** Printing the co-orbital contribution ********/
                   if (pi != 0 && pj != 0 && pi == pj){ //The pair (i,j) is in a MMR
-
+                        printf("      cos(lbd_%d - lbd_%d) - 1/sqrt(2 - 2 cos(lbd_%d - lbd_%d))\n", i, j, i, j);
+                        if (max_deg >= 2){
+                              printf("    - (D_%d/Lbd_%d + D_%d/Lbd_%d) * cos(lbd_%d - lbd_%d)\n", i, i, j, j, i, j);
+                              printf("    + (D_%d/Lbd_%d + D_%d/Lbd_%d) * (5 cos(2 lbd_%d - 2 lbd_%d) + 8 cos(lbd_%d - lbd_%d) - 13) / (4 sqrt(2 - 2 cos(lbd_%d - lbd_%d))**5)\n",
+                              i, i, j, j, i, j, i, j, i, j);
+                              printf("    + sqrt(2*D_%d/Lbd_%d) * sqrt(2*D_%d/Lbd_%d) * cos(vrp_%d - vrp_%d + 2 lbd_%d - 2 lbd_%d)\n", i, i, j, j, j, i, i, j);
+                              printf("    - sqrt(2*D_%d/Lbd_%d) * sqrt(2*D_%d/Lbd_%d) / (8 sqrt(2 - 2 cos(lbd_%d - lbd_%d))**5) * (\n", i, i, j, j, i, j);
+                              printf("            cos(vrp_%d - vrp_%d + 3 lbd_%d - 3 lbd_%d) + 16 cos(vrp_%d - vrp_%d + 2 lbd_%d - 2 lbd_%d)\n", j, i, i, j, j, i, i, j);
+                              printf("            - 26 cos(vrp_%d - vrp_%d + lbd_%d - lbd_%d) + 9 cos(vrp_%d - vrp_%d + lbd_%d - lbd_%d)\n", j, i, i, j, j, i, j, i);
+                              printf("            )\n");
+                        }
                   }
                   
                   printf(" )\n\n");

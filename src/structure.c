@@ -6,6 +6,8 @@
 #include <stdint.h>
 #include <unistd.h>
 #include "parameters.h"
+#include "transformation.h"
+#include "coefficients.h"
 #include "structure.h"
 
 
@@ -74,6 +76,29 @@ typ qnmlr[32][5] = {
       {3.,3.,0.,1.,0.}
 };
 
+
+void init(){
+
+      /******** Calls all the initialization-related functions ********/
+      
+      initialization();
+      chain_validity();
+      array_init();
+      array2rational();
+      resonance_init();
+      if (how_many_resonant > 2){
+            l_ij_init();
+            NoverD_init();
+            rat_c_i_init();
+      }
+      transformation_init();
+      transpose_inv_init();
+      verification();
+      transformation_display();
+      Cppq_init();
+      Hamiltonian_display();
+
+}
 
 
 void initialization(){

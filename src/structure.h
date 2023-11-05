@@ -44,6 +44,10 @@ extern int * chain_missed;
 extern typ qnmlr[32][5];                        
 
 
+
+void init();
+
+
 void initialization();
 
 
