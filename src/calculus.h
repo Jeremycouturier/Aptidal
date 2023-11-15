@@ -16,6 +16,9 @@ extern typ * X_uv;                            //The rectangular variables (phi, 
 
 
 
+typ fast_pow(typ x, int power);
+
+
 typ dH_old(int k);
 
 

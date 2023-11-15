@@ -541,6 +541,31 @@ void ratprint(struct rational r){
 }
 
 
+int min(int a, int b){
+
+      /******** Returns min(a,b) ********/
+      
+      if (a <= b){
+            return a;
+      }
+      else{
+            return b;
+      }
+}
+
+
+int max(int a, int b){
+
+      /******** Returns max(a,b) ********/
+      
+      if (a >= b){
+            return a;
+      }
+      else{
+            return b;
+      }
+}
+
 
 
 

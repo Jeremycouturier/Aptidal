@@ -585,11 +585,16 @@ void Hamiltonian_display(){
             for (j = i + 1; j <= how_many_planet; j++){
                   printf(" + G*m_%d*m_%d/a_%d * (\n", i, j, j);
                   
-                  /******** Retrieving the value of p ********/
-                  pi = p_i[i];
-                  pj = p_i[j];
-                  the_gcd = gcd(pi, pj);
-                  p       = pi / the_gcd;
+                  /******** Retrieving the value of p for a resonance p:p+q ********/
+                  pi      = p_i[i];
+                  pj      = p_i[j];
+                  if (pi == 0 && pj == 0){
+                        p = 0;
+                  }
+                  else{
+                        the_gcd = gcd(pi, pj);
+                        p       = pi / the_gcd;
+                  }
                   
                   /******** Printing the secular contribution and the non-co-orbital MMR contribution ********/
                   for (k = 1; k < 32; k++){

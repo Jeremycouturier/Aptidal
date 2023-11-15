@@ -105,4 +105,10 @@ struct rational ratabs(struct rational r1);
 void ratprint(struct rational r);
 
 
+int min(int a, int b);
+
+
+int max(int a, int b);
+
+
 #endif
