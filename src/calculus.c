@@ -174,3 +174,32 @@ void gradH_old(){
       /******** contain dH/dlbd_i, dH/d(-vrp_i), dH/dLbd_i and dH/dD_i, respectively.             ********/
 
 }
+
+
+typ average_test(typ A, typ dt, typ T){
+
+      /******** Test function to numerically compute the average A of the quasi-periodic function ********/
+      /******** f(x) = cos(x) + 3*sin(sqrt(2)*x) + A. To be removed later                         ********/
+
+      int j;
+      int N   = (int) (T/dt);
+      typ * f = (typ *)malloc(N*sizeof(typ));
+      typ t, ft, to_be_returned;
+      
+      for (j = 0; j < N; j++){
+            t  = dt * (typ) j;
+            ft = cos(t) + 3.0*sin(sqrt(2.0)*t) + A;
+            *(f + j) = ft;
+      }
+      
+      
+      
+      free(f);
+      f = NULL;
+      return to_be_returned;
+}
+
+
+
+
+

@@ -25,6 +25,9 @@ typ dH_old(int k);
 void gradH_old();
 
 
+typ average_test(typ A, typ dt, typ T);
+
+
 
 
 
