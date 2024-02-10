@@ -69,7 +69,7 @@ print("A_naff2  = ", A_naff2)
 
 
 ######## Precision of the average as a function of T ########
-TT = np.linspace(20.0,1000.0,15000)
+TT = np.linspace(20.0,1000.0,5000)
 error_naive = []
 error_naff  = []
 error_naff2 = []
@@ -96,7 +96,7 @@ for T in TT:
       error_naive.append(abs(A_naive-a_0))
       error_naff.append(abs(A_naff-a_0))
       error_naff2.append(abs(A_naff2-a_0))
-      print("progress = ", i/15000*100, "%")
+      print("progress = ", i/5000*100, "%")
       i = i+1
       
 error_naive = np.log10(np.array(error_naive))
