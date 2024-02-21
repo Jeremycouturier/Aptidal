@@ -38,8 +38,8 @@ int how_many_missed;
 
 /******** A generic term of the Hamiltonian for any resonance (except 1:1) takes the form                              ********/
 /******** C_p,p+q^(k) * (2*D_i/Lbd_i)^m/2 * (2*D_j/Lbd_j)^(n-m)/2 * cos(l*p*lbd_i-l*(p+q)*lbd_j+r*vrp_i+(l*q-r)*vrp_j) ********/
-/******** The array qnmlr is filled consequently. The first 10 terms corresponds to q=0 (resonance 0:0), the 15 next   ********/
-/******** to q=1 (resonance p:p+1), the 3 next to q=2 (resonance p:p+2) and the 4 last to q=3 (resonance p:p+3)        ********/
+/******** The array qnmlr is filled consequently. The first 10 terms correspond to q = 0 (resonance 0:0), the 15 next  ********/
+/******** to q = 1 (resonance p:p+1), the 3 next to q = 2 (resonance p:p+2) and the 4 last to q = 3 (resonance p:p+3)  ********/
 /******** For example, the coefficients q,n,m,l,r corresponding to C_p,p+2^(3) are given by qnmlr[10+15+3-1]           ********/
 typ qnmlr[32][5] = {
       {0.,0.,0.,0.,0.},
@@ -94,6 +94,7 @@ void init(){
       transformation_init();
       transpose_inv_init();
       verification();
+      matrix_fill();
       transformation_display();
       Cppq_init();
       Hamiltonian_display();

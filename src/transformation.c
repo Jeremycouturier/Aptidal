@@ -14,6 +14,8 @@
 /******** Defining some global variables ********/
 struct rational transformation[2*how_many_planet + 1][2*how_many_planet + 1];
 struct rational transpose_inv [2*how_many_planet + 1][2*how_many_planet + 1];
+typ             Transformation[2*how_many_planet + 1][2*how_many_planet + 1];
+typ             Transpose_inv [2*how_many_planet + 1][2*how_many_planet + 1];
 struct rational rat_l_ij      [  how_many_planet - 1]  [how_many_planet + 1];
 struct rational NoverD        [  how_many_planet - 1]  [how_many_planet - 1][how_many_planet + 1];
 struct rational rat_c_i       [  how_many_planet - 1];
@@ -272,6 +274,20 @@ void verification(){
                         fprintf(stderr, "\nAptidal error : The transformation failed verification. This is a bug. Please contact Aptidal's developer.\n");
                         abort();
                   }
+            }
+      }
+}
+
+
+void matrix_fill(){
+
+      /******** Fills the arrays Transformation and Transpose_inv ********/
+
+      int i,j;
+      for (i = 1; i < 2*how_many_planet + 1; i++){
+            for (j = 1; j < 2*how_many_planet + 1; j++){
+                  Transformation[i][j] = rat2real(transformation[i][j]);
+                  Transpose_inv [i][j] = rat2real(transpose_inv [i][j]);
             }
       }
 }

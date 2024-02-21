@@ -29,7 +29,7 @@
 #define body_k2     {0.0,  0.8,      1.32,     0.87,     2.77,     2.33}            //Second Love numbers of the bodies of the system, beginning with the star. Unimportant if no tides
 #define body_Q  {10000.0,  234.8,    78.9,     1633.0,   687.9,    1239.8}          //Quality factors     of the bodies of the system, beginning with the star. Unimportant if no tides
 //#define resonance_chain   {2,        5,        5,        6,        0}               //The resonance chain p_1:p_2:p_3: ... :p_n of the system.
-#define resonance_chain   {1, 2, 3, 3, 3}
+#define resonance_chain   {1, 2, 3, 3, 5}
 
 
 

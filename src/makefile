@@ -1,5 +1,5 @@
 FF = gcc
-OPTF = -O2 
+OPTF = -O0
 
 all: aptidal
 

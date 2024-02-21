@@ -49,12 +49,14 @@ typ fast_pow(typ x, int power){
       }
 }
 
-typ dH_old(int K){
+void dH_old(int K, typ * dHk){
 
-      /******** Returns the partial derivative dH/dX_old[K] where 1 <= K <= 4 * how_many_planet ********/
+      /******** Returns into dHk the four partial derivatives dH/dX_old[j] for 4*K - 3 <= j <= 4*K ********/
+      /******** If j = 4*K, then returns sqrt(2*D_j*Lbd_j)*dH/dD_j instead of dH/dD_j              ********/
+      /******** The array dHk is assumed to be given initialized to 0                              ********/
       
-      if (K < 1 || K > 4 * how_many_planet){
-            fprintf(stderr, "\nAptidal error : K must be between 1 and 4 * how_many_planet in function dH_old.\n");
+      if (K < 1 || K > how_many_planet){
+            fprintf(stderr, "\nAptidal error : K must be between 1 and how_many_planet in function dH_old.\n");
             abort();
       }
       
@@ -68,29 +70,16 @@ typ dH_old(int K){
       typ mi, beta_i, mu_i, Lbd_i, aI, aJ, mI, mJ, Di;
       
       /******** Getting the value of i ********/
-      if (K % 4 == 0){
-            i = K/4;
-      }
-      else{
-            i = K/4 + 1;
-      }
+      i = K;
       
       /******** Retrieving mi, beta_i and mu_i ********/
       mi     = masses[i];
       mu_i   = G*(m0 + mi);
       beta_i = m0*mi/(m0 + mi);
       
-      /******** If differenciating with respect to Lbd_i, then no need to loop over j ********/
-      if (K % 4 == 3){
-            Lbd_i = X_old[4*i - 1];
-            return beta_i*beta_i*beta_i*mu_i*mu_i/(Lbd_i*Lbd_i*Lbd_i);
-      }
-      
-      /******** If differenciating with respect to D_i and D_i is zero, we return 0.0 ********/
-      Di = X_old[4*i];
-      if (K % 4 == 0 && absolute(Di) < 1.0e-14){
-            return 0.0;   
-      }
+      /******** When differenciating with respect to Lbd, then no need to loop over j (H_p does not depend on Lbd) ********/
+      Lbd_I = X_old[4*K - 1];
+      dHk[2] = beta_i*beta_i*beta_i*mu_i*mu_i/(Lbd_i*Lbd_i*Lbd_i);
       
       /******** Looping over j ********/
       for (j = 1; j <= how_many_planet; j++){
@@ -108,8 +97,8 @@ typ dH_old(int K){
                   lbd_J = X_old[4*J - 3];
                   g_I   = X_old[4*I - 2];   // -vrp_I
                   g_J   = X_old[4*J - 2];   // -vrp_J
-                  Lbd_I = mI*sqrt(G*m0*aI); // Using value at t=0 since the perturbation is expanded at order 0 in semi-major axes
-                  Lbd_J = mJ*sqrt(G*m0*aJ); // Using value at t=0 since the perturbation is expanded at order 0 in semi-major axes
+                  Lbd_I = mI*sqrt(G*m0*aI); // Using value at t = 0 since the perturbation is expanded at order 0 in semi-major axes
+                  Lbd_J = mJ*sqrt(G*m0*aJ); // Using value at t = 0 since the perturbation is expanded at order 0 in semi-major axes
                   D_I   = X_old[4*I];
                   D_J   = X_old[4*J];
                   
@@ -134,36 +123,36 @@ typ dH_old(int K){
                         if (C != 0.0){ //If the term actually exists
                               q         = qnmlr[k][0];  n = (int) qnmlr[k][1];  m = (int) qnmlr[k][2];  l = qnmlr[k][3];  r = qnmlr[k][4];
                               angle     = l*p*lbd_I - l*(p + q)*lbd_J - r*g_I - (l*q - r)*g_J; //The angle inside the cosine of that term.
-                              
-                              if (K % 4 == 1){      //Derivation with respect to lbd_i
-                                    if (i == I){
-                                          to_be_returned -= C*l*p*fast_pow(sq2DIsLI,m)*fast_pow(sq2DJsLJ,n - m)*sin(angle);
-                                    }
-                                    else if(i == J){
-                                          to_be_returned += C*l*(p + q)*fast_pow(sq2DIsLI,m)*fast_pow(sq2DJsLJ,n - m)*sin(angle);
-                                    }
+
+                              /******** Derivation with respect to lbd_i ********/
+                              if (i == I){
+                                    *dHk -= C*l*p*fast_pow(sq2DIsLI, m)*fast_pow(sq2DJsLJ, n - m)*sin(angle);
                               }
-                              else if (K % 4 == 2){ //Derivation with respect to -vrp_i
-                                    if (i == I){
-                                          to_be_returned += C*r*fast_pow(sq2DIsLI,m)*fast_pow(sq2DJsLJ,n - m)*sin(angle);
-                                    }
-                                    else if(i == J){
-                                          to_be_returned += C*(l*q - r)*fast_pow(sq2DIsLI,m)*fast_pow(sq2DJsLJ,n - m)*sin(angle);
-                                    }
+                              else if(i == J){
+                                    *dHk += C*l*(p + q)*fast_pow(sq2DIsLI, m)*fast_pow(sq2DJsLJ, n - m)*sin(angle);
                               }
-                              else if (K % 4 == 0){ //Derivation with respect to D_i
-                                    if (i == I){
-                                          to_be_returned += ((typ) m)*C*fast_pow(sq2DIsLI,m)*fast_pow(sq2DJsLJ,n - m)*cos(angle)/(2.0*D_I);
-                                    }
-                                    else if(i == J){
-                                          to_be_returned += ((typ) (n - m))*C*fast_pow(sq2DIsLI,m)*fast_pow(sq2DJsLJ,n - m)*cos(angle)/(2.0*D_J);
-                                    }
+
+                              /******** Derivation with respect to -vrp_i ********/
+                              if (i == I){
+                                    dHk[1] += C*r*fast_pow(sq2DIsLI, m)*fast_pow(sq2DJsLJ, n - m)*sin(angle);
+                              }
+                              else if(i == J){
+                                    dHk[1] += C*(l*q - r)*fast_pow(sq2DIsLI, m)*fast_pow(sq2DJsLJ, n - m)*sin(angle);
+                              }
+
+                              /******** Derivation with respect to D_i ********/
+                              if (i == I && m != 0){
+                                    dHk[3] += ((typ) m)*C*fast_pow(sq2DIsLI, m - 1)*fast_pow(sq2DJsLJ, n - m)*cos(angle);
+                              }
+                              else if(i == J && n - m != 0){
+                                    dHk[3] += ((typ) (n - m))*C*fast_pow(sq2DIsLI, m)*fast_pow(sq2DJsLJ, n - m - 1)*cos(angle);
                               }    
                         }
-                  } 
+                  }
+
+                  /******** Looping over co-orbital MMR resonances ********/
             }
       }
-      return to_be_returned;
 }
 
 

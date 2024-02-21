@@ -22,7 +22,7 @@ extern typ sma   [how_many_planet + 1];      //Semi-major axes                  
 extern typ ecc   [how_many_planet + 1];      //Eccentricities                   of the planets
 extern typ lbd   [how_many_planet + 1];      //Mean longitudes                  of the planets
 extern typ vrp   [how_many_planet + 1];      //Longitudes of the ascending node of the planets
-extern typ m0;
+extern typ m0;                               //Mass of the star
 
 
 /******** Some global arrays ********/
