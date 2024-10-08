@@ -3,6 +3,8 @@
 
 #include "parameters.h"
 
+#define min(a, b) ((a) < (b) ? (a) : (b))
+#define max(a, b) ((a) < (b) ? (b) : (a))
 
 struct pairOfReal {                           //Simple data structure defining a pair of real numbers
       typ fst;
@@ -22,6 +24,7 @@ extern typ sma   [how_many_planet + 1];      //Semi-major axes                  
 extern typ ecc   [how_many_planet + 1];      //Eccentricities                   of the planets
 extern typ lbd   [how_many_planet + 1];      //Mean longitudes                  of the planets
 extern typ vrp   [how_many_planet + 1];      //Longitudes of the ascending node of the planets
+extern typ Lbd_0 [how_many_planet + 1];      //Nominal circular angular momenta of the planets
 extern typ m0;                               //Mass of the star
 
 
@@ -103,12 +106,6 @@ struct rational ratabs(struct rational r1);
 
 
 void ratprint(struct rational r);
-
-
-int min(int a, int b);
-
-
-int max(int a, int b);
 
 
 #endif

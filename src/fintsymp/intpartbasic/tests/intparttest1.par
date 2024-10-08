@@ -1,0 +1,20 @@
+
+&lect
+ chemin   = './DATA_test1/'
+ nf_rad    = 'testpart'
+ nf_initext= 'tests_fileci1.dat'
+ nf_initpart= 'tests_filecipart1.dat'
+ int_type ='ABAH4'
+ 
+ tinit    = 0d0
+ dt       = 1.d-3
+ n_iter   = 10000
+ n_out    = 100
+ out_ell  = 4 
+ if_invar = 1
+ if_int   = 1 
+ if_ell   = 1 
+ if_car   = 1 
+ part_blocksize = 1
+//
+

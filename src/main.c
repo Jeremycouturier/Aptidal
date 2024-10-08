@@ -11,12 +11,184 @@
 #include "coefficients.h"
 #include "transformation.h"
 #include "calculus.h"
+#include "intpla.h"
 
 
 int main(){
 
+      init();
+      
+      typ X_old   [4*how_many_planet + 1];
+      typ X_new   [4*how_many_planet + 1];
+      typ X_uv    [4*how_many_planet + 1];
+      typ dH_old  [4*how_many_planet + 1];
+      typ dH_polar[4*how_many_planet + 1];
+      typ dH_rect [4*how_many_planet + 1];
+      
+      X_old_init(X_old);
+      //SABA1(0.25, 10000., 1, X_old);
+      //RK2(0.25, 10000., 1);
+      //EquilibriumFind(X_old, 1);
+      UnaveragedSABA1(0.25, 100., 1, X_old);
+      
+      /*int i;
+      typ a, e, sig, vp, M, mu, nu, beta, H;
+      typ X_cart[4*how_many_planet + 1];
+      typ alkhqp[6];
 
-      /*typ alpha = 0.43;
+      for (i = 1; i <= how_many_planet; i ++){
+            mu = G*(m0 + masses[i]);
+            a  = X_old[4*i - 1]*X_old[4*i - 1]*(m0 + masses[i])/(G*m0*m0*masses[i]*masses[i]);
+            e  = sqrt(1. - (1. - X_old[4*i]/X_old[4*i - 1])*(1. - X_old[4*i]/X_old[4*i - 1]));
+            vp = -X_old[4*i - 2];
+            M  =  X_old[4*i - 3] - vp;
+            nu = mean2true(M, mu, a, e);
+            printf("M = %.12lf, nu = %.12lf\n", M, nu);
+            ell2cart(a, e, 0., nu, vp, 0., mu, X_cart + 4*i - 4);
+      }
+      
+      for (i = 1; i <= how_many_planet; i ++){
+            mu = G*(m0 + masses[i]);
+            kepsaut(X_cart + 4*i - 4, mu, 0.00035672);
+      }
+      
+      for (i = 1; i <= how_many_planet; i ++){ // (x, y; vx, vy) -> (lbd_j, -vrp_j; Lbd_j, D_j)
+            beta = m0*masses[i]/(m0 + masses[i]);
+            mu   = G*(m0 + masses[i]);
+            cart2ell(X_cart + 4*i - 4, alkhqp, mu);
+            e    = sqrt(alkhqp[2]*alkhqp[2] + alkhqp[3]*alkhqp[3]);
+            X_old[4*i - 3] = alkhqp[1];
+            printf("lbd_%d = %.12lf\n", i, alkhqp[1]);
+            X_old[4*i - 2] = -atan2(alkhqp[3], alkhqp[2]);
+            X_old[4*i - 1] = beta*sqrt(mu*alkhqp[0]);
+            X_old[4*i]     = X_old[4*i - 1]*(1. - sqrt(1. - e*e));
+      }
+      old2new(X_old, X_new, X_uv);             // (lbd_j, -vrp_j; Lbd_j, D_j) -> (phi_j, v_j; Phi_j, u_j)
+      H = 0.;
+      printf("%.12lf %.12lf", 0., H);
+      for (i = 1; i <= how_many_planet; i ++){
+            sig = atan2(X_uv[4*i - 2], X_uv[4*i]);
+            e   = sqrt(1. - (1. - X_old[4*i]/X_old[4*i - 1])*(1. - X_old[4*i]/X_old[4*i - 1]));
+            a   = X_old[4*i - 1]*X_old[4*i - 1]*(m0 + masses[i])/(G*m0*m0*masses[i]*masses[i]);
+            printf(" %.12lf %.12lf %.12lf %.12lf %.12lf %.12lf %.12lf", X_uv[4*i - 3], X_uv[4*i - 2], X_uv[4*i - 1], X_uv[4*i], a, e, sig);
+      }
+      printf("\n");*/
+      
+      
+      /*X_old_init(X_old);
+      dHdold(dH_old, X_old, 0);
+      printf("dHkdLbd1 = %.14lf\n", dH_old[4*1 - 1]);
+      printf("dHkdLbd2 = %.14lf\n", dH_old[4*2 - 1]);
+      printf("dHkdLbd3 = %.14lf\n", dH_old[4*3 - 1]);
+      dHdold(dH_old, X_old, 1);
+      printf("dHpdlbd1 = %.23lf\n", dH_old[4*1 - 3]);
+      printf("dHpdlbd2 = %.23lf\n", dH_old[4*2 - 3]);
+      printf("dHpdlbd3 = %.23lf\n", dH_old[4*3 - 3]);
+      printf("dHpdvrp1 = %.23lf\n", dH_old[4*1 - 2]);
+      printf("dHpdvrp2 = %.23lf\n", dH_old[4*2 - 2]);
+      printf("dHpdvrp3 = %.23lf\n", dH_old[4*3 - 2]);
+      printf("dHpdsq2D1= %.23lf\n", dH_old[4*1]);
+      printf("dHpdsq2D2= %.23lf\n", dH_old[4*2]);
+      printf("dHpdsq2D3= %.23lf\n\n", dH_old[4*3]);
+      
+      dHdold(dH_old, X_old, 0);
+      old2new(X_old, X_new, X_uv);
+      dHdnew(dH_polar, dH_rect, dH_old, X_new, X_uv);
+      printf("dHkdPhi1 = %.18lf\n", dH_rect[4*1 - 1]);
+      printf("dHkdPhi2 = %.18lf\n", dH_rect[4*2 - 1]);
+      printf("dHkdPhi3 = %.18lf\n", dH_rect[4*3 - 1]);
+      printf("dHkdu1   = %.23lf\n", dH_rect[4*1]);
+      printf("dHkdu2   = %.23lf\n", dH_rect[4*2]);
+      printf("dHkdu3   = %.23lf\n", dH_rect[4*3]);
+      printf("dHkdv1   = %.23lf\n", dH_rect[4*1 - 2]);
+      printf("dHkdv2   = %.23lf\n", dH_rect[4*2 - 2]);
+      printf("dHkdv3   = %.23lf\n", dH_rect[4*3 - 2]);
+      printf("dHkdphi1 = %.18lf\n", dH_rect[4*1 - 3]);
+      printf("dHkdphi2 = %.18lf\n", dH_rect[4*2 - 3]);
+      printf("dHkdphi3 = %.18lf\n", dH_rect[4*3 - 3]);
+      dHdold(dH_old, X_old, 1);
+      dHdnew(dH_polar, dH_rect, dH_old, X_new, X_uv);
+      printf("dHpdphi1 = %.18lf\n", dH_rect[4*1 - 3]);
+      printf("dHpdu1   = %.23lf\n", dH_rect[4*1]);
+      printf("dHpdu2   = %.23lf\n", dH_rect[4*2]);
+      printf("dHpdu3   = %.23lf\n", dH_rect[4*3]);
+      printf("dHpdv1   = %.23lf\n", dH_rect[4*1 - 2]);
+      printf("dHpdv2   = %.23lf\n", dH_rect[4*2 - 2]);
+      printf("dHpdv3   = %.23lf\n", dH_rect[4*3 - 2]);
+      printf("dHpdphi2 = %.18lf\n", dH_rect[4*2 - 3]);
+      printf("dHpdphi3 = %.18lf\n", dH_rect[4*3 - 3]);
+      printf("dHpdPhi1 = %.18lf\n", dH_rect[4*1 - 1]);
+      printf("dHpdPhi2 = %.18lf\n", dH_rect[4*2 - 1]);
+      printf("dHpdPhi3 = %.18lf\n", dH_rect[4*3 - 1]);*/
+      
+      /*X_old_init(X_old);
+      dHdold(dH_old, X_old, 0);
+      printf("dHkdLbd1 = %.14lf\n", dH_old[4*1 - 1]);
+      printf("dHkdLbd2 = %.14lf\n", dH_old[4*2 - 1]);
+      dHdold(dH_old, X_old, 1);
+      printf("dHpdlbd1 = %.14lf\n", dH_old[4*1 - 3]);
+      printf("dHpdlbd2 = %.14lf\n", dH_old[4*2 - 3]);
+      printf("dHpdvrp1 = %.14lf\n", dH_old[4*1 - 2]);
+      printf("dHpdvrp2 = %.14lf\n", dH_old[4*2 - 2]);
+      printf("dHpdsq2D1= %.14lf\n", dH_old[4*1]);
+      printf("dHpdsq2D2= %.14lf\n", dH_old[4*2]);
+      
+      dHdold(dH_old, X_old, 0);
+      old2new(X_old, X_new, X_uv);
+      dHdnew(dH_polar, dH_rect, dH_old, X_new, X_uv);
+      printf("dHkdPhi1 = %.18lf\n", dH_rect[4*1 - 1]);
+      printf("dHkdPhi2 = %.18lf\n", dH_rect[4*2 - 1]);
+      printf("dHkdu1   = %.26lf\n", dH_rect[4*1]);
+      printf("dHkdu2   = %.26lf\n", dH_rect[4*2]);
+      printf("dHkdv1   = %.26lf\n", dH_rect[4*1 - 2]);
+      printf("dHkdv2   = %.26lf\n", dH_rect[4*2 - 2]);
+      printf("dHkdphi1 = %.26lf\n", dH_rect[4*1 - 3]);
+      printf("dHkdphi2 = %.26lf\n", dH_rect[4*2 - 3]);
+      dHdold(dH_old, X_old, 1);
+      dHdnew(dH_polar, dH_rect, dH_old, X_new, X_uv);
+      printf("dHpdphi1 = %.18lf\n", dH_rect[4*1 - 3]);
+      printf("dHpdu1   = %.26lf\n", dH_rect[4*1]);
+      printf("dHpdu2   = %.26lf\n", dH_rect[4*2]);
+      printf("dHpdv1   = %.26lf\n", dH_rect[4*1 - 2]);
+      printf("dHpdv2   = %.26lf\n", dH_rect[4*2 - 2]);
+      printf("dHpdphi2 = %.18lf\n", dH_rect[4*2 - 3]);
+      printf("dHpdPhi1 = %.18lf\n", dH_rect[4*1 - 1]);
+      printf("dHpdPhi2 = %.18lf\n", dH_rect[4*2 - 1]);*/
+      
+      /*
+      typ X_old[4*how_many_planet + 1];
+      typ X_new[4*how_many_planet + 1];
+      typ X_uv [4*how_many_planet + 1];
+      X_old_init(X_old);
+      typ dH_K_old  [4*how_many_planet + 1];
+      typ dH_P_old  [4*how_many_planet + 1];
+      typ dH_K_polar[4*how_many_planet + 1];
+      typ dH_P_polar[4*how_many_planet + 1];
+      typ dH_K_rect [4*how_many_planet + 1];
+      typ dH_P_rect [4*how_many_planet + 1];
+      dHdold(dH_K_old, X_old, 0);
+      dHdold(dH_P_old, X_old, 1);
+      old2new(X_old, X_new, X_uv);
+      dHdnew(dH_K_polar, dH_K_rect, dH_K_old, X_new, X_uv);
+      dHdnew(dH_P_polar, dH_P_rect, dH_P_old, X_new, X_uv);
+
+      int j;
+      printf("************* Keplerian part *************\n\n");
+      for (j = 1; j <= how_many_planet; j ++){
+            printf("dHK/dphi_%d = %.12lf\n",   j, dH_K_rect[4*j - 3]);
+            printf("dHK/dv_%d   = %.12lf\n",   j, dH_K_rect[4*j - 2]);
+            printf("dHK/dPhi_%d = %.12lf\n",   j, dH_K_rect[4*j - 1]);
+            printf("dHK/du_%d   = %.12lf\n\n", j, dH_K_rect[4*j]);
+      }
+      printf("************* Perturbative part *************\n\n");
+      for (j = 1; j <= how_many_planet; j ++){
+            printf("dHP/dphi_%d = %.12lf\n",   j, dH_P_rect[4*j - 3]);
+            printf("dHP/dv_%d   = %.12lf\n",   j, dH_P_rect[4*j - 2]);
+            printf("dHP/dPhi_%d = %.12lf\n",   j, dH_P_rect[4*j - 1]);
+            printf("dHP/du_%d   = %.12lf\n\n", j, dH_P_rect[4*j]);
+      }
+      
+      typ alpha = 0.43;
       struct pairOfReal b_12_01 = b_12(alpha, 1.0e-15);
       struct pairOfReal b_32_01 = b_k2(alpha, b_12_01, 3);
       struct pairOfReal b_52_01 = b_k2(alpha, b_32_01, 5);
@@ -31,11 +203,9 @@ int main(){
       
       printf("C1 = %.15lf\nC2 = %.15lf\nC3 = %.15lf\nC13 = %.15lf\nCbeaucoup = %.15lf\n", C1, C2, C3, C13, Cbeaucoup);*/
       
-      
-      init();
-      typ alpha = 0.894;
+      /*typ alpha = 0.894;
       resonances[1][2](alpha,masses[1]);
-      /*resonance_00(alpha);
+      resonance_00(alpha);
       printf("C_00_1 = %.14lf\nC_00_2 = %.14lf\nC_00_3 = %.14lf\nC_00_4 = %.14lf\nC_00_5 = %.14lf\nC_00_6 = %.14lf\nC_00_7 = %.14lf\nC_00_8 = %.14lf\nC_00_9 = %.14lf\nC_00_10 = %.14lf\n"
       ,C_00_1, C_00_2, C_00_3, C_00_4, C_00_5, C_00_6, C_00_7, C_00_8, C_00_9, C_00_10);*/
       /*resonance_57(alpha,masses[1]);
@@ -43,7 +213,7 @@ int main(){
       /*resonance_58(alpha,masses[1]);
       printf("C_ppp3_1 = %.14lf\nC_ppp3_2 = %.14lf\nC_ppp3_3 = %.14lf\nC_ppp3_4 = %.14lf\n" ,C_ppp3_1, C_ppp3_2, C_ppp3_3, C_ppp3_4);*/
       
-      int i,j;
+      /*int i,j;
       for (i = 1; i < how_many_resonant + 1; i++){
             for (j = 1; j < how_many_resonant + 1; j++){
                   if (i != j){
@@ -121,7 +291,7 @@ int main(){
                   printf("    ");
             }
             printf("\n");
-      }
+      }*/
       
       
       /*printf("\nPert = \n");
@@ -143,15 +313,10 @@ int main(){
       
       
       /******** GSL test ********/
-      double a_data[] = { 1.0, 0.6, 0.0,
+      /*double a_data[] = { 1.0, 0.6, 0.0,
                          0.0, 1.5, 1.0,
                          0.0, 1.0, 1.0 };
-     /*
-      * Inverse is
-      *    1  -1.2   1.2
-      *    0   2.0  -2.0
-      *    0  -2.0   3.0
-      */
+
       double inva[9];
      
       gsl_matrix_view m
@@ -173,8 +338,7 @@ int main(){
             for (j = 0; j < 3; ++j)
                   printf(j==2?"%6.3f\n":"%6.3f ",gsl_matrix_get(&inv.matrix,i,j));
  
-      gsl_permutation_free (p);
-
+      gsl_permutation_free (p);*/
 
 
       deallocation();

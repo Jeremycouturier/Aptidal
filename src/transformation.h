@@ -15,6 +15,8 @@ extern struct rational NoverD        [  how_many_planet - 1][  how_many_planet -
 extern struct rational rat_c_i       [  how_many_planet - 1];                        //Coefficients c_i
 extern int dof                       [  how_many_planet + 1];                        //The indexes j of the degrees of freedom (phi_j; Phi_j)
 extern int how_many_dof;                                                             //The number of degrees of freedom of the form (phi_j; Phi_j)
+extern int nondof                    [  how_many_planet + 1];                        //The indexes j of the non-degrees of freedom (phi_j; Phi_j)
+extern int how_many_nondof;                                                          //The number of non-degrees of freedom of the form (phi_j; Phi_j)
 
 
 
@@ -49,14 +51,6 @@ int GCD(int * As, int k);
 
 
 int LCM(int * As, int k);
-
-
-
-
-
-
-
-
 
 
 

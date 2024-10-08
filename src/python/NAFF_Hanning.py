@@ -107,7 +107,7 @@ print("difference        =", abs(A_naive_analytical-A_naive_numerical))
 print("T                 =", T)
 print("dT                =", dT)
 
-'''
+
 #########################################################################################
 ######## Precision of the numerical computation of integrals as a function of dT ########
 #########################################################################################
@@ -232,13 +232,14 @@ py.ylabel(r"Relative error in the computation of $\frac{1}{2T}\int_0^{2T}f(t)dt$
 py.grid(linewidth=0.4)
 py.legend(fontsize = 25)
 py.show()
-'''
-'''
+
+
 #######################################################################
 ######## Plot of Re(<f(t),1>) as a function of p for a given T ########
 #######################################################################
 N_points = 100001
 om = np.linspace(omega_min,omega_max,N_points)
+
 
 p1_numerical = []
 n  = int(2*T/dT)
@@ -261,9 +262,9 @@ for omeg in om:
             A = A + 0.5*dT*w1*ft1 + 0.5*dT*w2*ft2 + 0.5*dT*w3*ft3
       A = A/(2*T)
       p1_numerical.append(A)
-p1_numerical = np.array(p1_numerical)
+p1_numerical = np.array(p1_numerical)'''
 
-p0 = 0.5*a_0*(np.cos(om*T)*hp(om*T,0)+np.cos(-om*T)*hp(-om*T,0)) + a_1*(np.cos((nu_1+om)*T)*hp((nu_1+om)*T,0)+np.cos((nu_1-om)*T)*hp((nu_1-om)*T,0))-a_2*(np.sin((nu_2+om)*T)*hp((nu_2+om)*T,0)+np.sin((nu_2-om)*T)*hp((nu_2-om)*T,0)) + a_3*(np.cos((nu_3+om)*T)*hp((nu_3+om)*T,0)+np.cos((nu_3-om)*T)*hp((nu_3-om)*T,0))
+'''p0 = 0.5*a_0*(np.cos(om*T)*hp(om*T,0)+np.cos(-om*T)*hp(-om*T,0)) + a_1*(np.cos((nu_1+om)*T)*hp((nu_1+om)*T,0)+np.cos((nu_1-om)*T)*hp((nu_1-om)*T,0))-a_2*(np.sin((nu_2+om)*T)*hp((nu_2+om)*T,0)+np.sin((nu_2-om)*T)*hp((nu_2-om)*T,0)) + a_3*(np.cos((nu_3+om)*T)*hp((nu_3+om)*T,0)+np.cos((nu_3-om)*T)*hp((nu_3-om)*T,0))
 p1 = 0.5*a_0*(np.cos(om*T)*hp(om*T,1)+np.cos(-om*T)*hp(-om*T,1)) + a_1*(np.cos((nu_1+om)*T)*hp((nu_1+om)*T,1)+np.cos((nu_1-om)*T)*hp((nu_1-om)*T,1))-a_2*(np.sin((nu_2+om)*T)*hp((nu_2+om)*T,1)+np.sin((nu_2-om)*T)*hp((nu_2-om)*T,1)) + a_3*(np.cos((nu_3+om)*T)*hp((nu_3+om)*T,1)+np.cos((nu_3-om)*T)*hp((nu_3-om)*T,1))
 p2 = 0.5*a_0*(np.cos(om*T)*hp(om*T,2)+np.cos(-om*T)*hp(-om*T,2)) + a_1*(np.cos((nu_1+om)*T)*hp((nu_1+om)*T,2)+np.cos((nu_1-om)*T)*hp((nu_1-om)*T,2))-a_2*(np.sin((nu_2+om)*T)*hp((nu_2+om)*T,2)+np.sin((nu_2-om)*T)*hp((nu_2-om)*T,2)) + a_3*(np.cos((nu_3+om)*T)*hp((nu_3+om)*T,2)+np.cos((nu_3-om)*T)*hp((nu_3-om)*T,2))
 p3 = 0.5*a_0*(np.cos(om*T)*hp(om*T,3)+np.cos(-om*T)*hp(-om*T,3)) + a_1*(np.cos((nu_1+om)*T)*hp((nu_1+om)*T,3)+np.cos((nu_1-om)*T)*hp((nu_1-om)*T,3))-a_2*(np.sin((nu_2+om)*T)*hp((nu_2+om)*T,3)+np.sin((nu_2-om)*T)*hp((nu_2-om)*T,3)) + a_3*(np.cos((nu_3+om)*T)*hp((nu_3+om)*T,3)+np.cos((nu_3-om)*T)*hp((nu_3-om)*T,3))
@@ -286,7 +287,7 @@ py.ylabel(r"$\mathfrak{R}_e\left<f(t),e^{i\omega t}\right>$", fontsize=30)
 py.grid(linewidth=0.4)
 py.legend(fontsize = 25)
 py.show()
-'''
+
 
 ######################################################################################
 ######## Precision of the computation of the average as a function of T and p ########
@@ -345,7 +346,7 @@ py.grid(linewidth=0.4)
 py.legend(fontsize = 25)
 py.show()
 
-'''
+
 ######## Frequencies omega ########
 X = np.linspace(omega_min,omega_max,N)
 
@@ -439,9 +440,9 @@ py.ylabel("Relative error in the determination of the average", fontsize=25)
 py.grid(linewidth=0.4)
 py.legend(fontsize = 25)
 py.show()
-'''
+
       
-'''
+
 py.plot(X, Y, "-", color = "blue", linewidth = 5)
 py.xticks(fontsize=25)
 py.yticks(fontsize=25)
@@ -450,7 +451,7 @@ py.ylabel(r"$\left<f(t),e^{i\omega t}\right>$", fontsize=25)
 py.grid(linewidth=0.4)
 py.legend(fontsize = 25)
 py.show()
-'''
+
 
 
 

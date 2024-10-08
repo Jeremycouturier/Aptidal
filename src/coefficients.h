@@ -72,4 +72,3 @@ void resonance_58(typ alp, typ mi);
 
 
 #endif
-

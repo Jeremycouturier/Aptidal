@@ -21,6 +21,8 @@ struct rational NoverD        [  how_many_planet - 1]  [how_many_planet - 1][how
 struct rational rat_c_i       [  how_many_planet - 1];
 int dof                       [  how_many_planet + 1];
 int how_many_dof;
+int nondof             [  how_many_planet + 1];
+int how_many_nondof;
 
 
 void l_ij_init(){
@@ -29,8 +31,8 @@ void l_ij_init(){
 
       int i,j;
       
-      for (i = 1; i < how_many_resonant - 1; i++){
-            for (j = how_many_resonant; j > 0; j--){
+      for (i = 1; i < how_many_resonant - 1; i ++){
+            for (j = how_many_resonant; j > 0; j --){
                   if (j > i){
                         rat_l_ij[i][j] = int2rat(0);
                   }
@@ -51,8 +53,8 @@ void NoverD_init(){
       
       int i,r,s;
       
-      for (i = 1; i < how_many_resonant - 1; i++){
-            for (r = 1; r <= i; r++){
+      for (i = 1; i < how_many_resonant - 1; i ++){
+            for (r = 1; r <= i; r ++){
                   for (s = r + 1; s < how_many_resonant + 1; s++){
                         NoverD[i][r][s] = ratabs(ratdiff(ratmul(rat_k_ij[s][r],rat_l_ij[i][s]),ratmul(rat_k_ij[r][s],rat_l_ij[i][r])));
                   }
@@ -284,8 +286,8 @@ void matrix_fill(){
       /******** Fills the arrays Transformation and Transpose_inv ********/
 
       int i,j;
-      for (i = 1; i < 2*how_many_planet + 1; i++){
-            for (j = 1; j < 2*how_many_planet + 1; j++){
+      for (i = 1; i < 2*how_many_planet + 1; i ++){
+            for (j = 1; j < 2*how_many_planet + 1; j ++){
                   Transformation[i][j] = rat2real(transformation[i][j]);
                   Transpose_inv [i][j] = rat2real(transpose_inv [i][j]);
             }
@@ -303,7 +305,7 @@ void transformation_display(){
       int first_print;
       
       how_many_secular = 0;
-      for (i = 1; i < how_many_planet + 1; i++){
+      for (i = 1; i < how_many_planet + 1; i ++){
             if (p_i[i] == 0){
                   how_many_secular ++;
             }
@@ -324,10 +326,10 @@ void transformation_display(){
       printf("The transformation reads\n\n");
       
       /******** Displaying (phi_j, sig_j) as a function of (lbd_j,-vrp_j) ********/
-      for (i = 1; i < how_many_planet + 1; i++){
+      for (i = 1; i < how_many_planet + 1; i ++){
             printf(" phi_%d =", i);
             first_print = 1;
-            for (j = 1; j < how_many_planet + 1; j++){
+            for (j = 1; j < how_many_planet + 1; j ++){
                   coef  = transformation[i][j];
                   num   = coef.numerator;
                   denom = coef.denominator;
@@ -355,7 +357,7 @@ void transformation_display(){
       }
       printf(" sig_j =");
       first_print = 1;
-      for (j = 1; j < how_many_planet + 1; j++){
+      for (j = 1; j < how_many_planet + 1; j ++){
             coef  = transformation[i][j];
             num   = coef.numerator;
             denom = coef.denominator;
@@ -383,10 +385,10 @@ void transformation_display(){
       
       /******** Displaying (Phi_j, D_j) as a function of (Lbd_j, D_j) ********/
       printf("It is canonical if the actions are transformed according to (the D_j are unchanged)\n\n");
-      for (i = 1; i < how_many_planet + 1; i++){
+      for (i = 1; i < how_many_planet + 1; i ++){
             printf(" Phi_%d =", i);
             first_print = 1;
-            for (j = 1; j < how_many_planet + 1; j++){
+            for (j = 1; j < how_many_planet + 1; j ++){
                   coef  = transpose_inv[i][j];
                   num   = coef.numerator;
                   denom = coef.denominator;
@@ -410,7 +412,7 @@ void transformation_display(){
                         first_print = 0;
                   }
             }
-            for (j = how_many_planet + 1; j < 2*how_many_planet + 1; j++){
+            for (j = how_many_planet + 1; j < 2*how_many_planet + 1; j ++){
                   coef  = transpose_inv[i][j];
                   num   = coef.numerator;
                   denom = coef.denominator;
@@ -438,12 +440,12 @@ void transformation_display(){
       }
       printf("\n");
       
-      /******** Displaying (lbd_j,-vrp_j) as a function of (phi_j, sig_j) ********/
+      /******** Displaying (lbd_j, -vrp_j) as a function of (phi_j, sig_j) ********/
       printf("The inverse transformation is\n\n");
-      for (i = 1; i < how_many_planet + 1; i++){
+      for (i = 1; i < how_many_planet + 1; i ++){
             printf(" lbd_%d =", i);
             first_print = 1;
-            for (j = 1; j < how_many_planet + 1; j++){
+            for (j = 1; j < how_many_planet + 1; j ++){
                   coef  = transpose_inv[j][i];
                   num   = coef.numerator;
                   denom = coef.denominator;
@@ -477,10 +479,10 @@ void transformation_display(){
       }
       
       /******** Displaying (Lbd_j, D_j) as a function of (Phi_j, D_j) ********/
-      for (i = 1; i < how_many_planet + 1; i++){
+      for (i = 1; i < how_many_planet + 1; i ++){
             printf(" Lbd_%d =", i);
             first_print = 1;
-            for (j = 1; j < how_many_planet + 1; j++){
+            for (j = 1; j < how_many_planet + 1; j ++){
                   coef  = transformation[j][i];
                   num   = coef.numerator;
                   denom = coef.denominator;
@@ -504,7 +506,7 @@ void transformation_display(){
                         first_print = 0;
                   }
             }
-            for (j = how_many_planet + 1; j < 2*how_many_planet + 1; j++){
+            for (j = how_many_planet + 1; j < 2*how_many_planet + 1; j ++){
                   coef  = transformation[j][i];
                   num   = coef.numerator;
                   denom = coef.denominator;
@@ -554,14 +556,19 @@ void transformation_display(){
       }
       
       /******** Printing the degrees of freedom and storing their indexes in array dof ********/
-      how_many_dof = 0;
+      how_many_dof    = 0;
+      how_many_nondof = 0;
       printf(" ");
-      for (i = 1; i < how_many_planet + 1; i++){
+      for (i = 1; i < how_many_planet + 1; i ++){
             if (how_many_resonant >= 2){
                   if (i != subchain[how_many_resonant - 1] && i != subchain[how_many_resonant] && p_i[i] != 0){
                         printf("(phi_%d; Phi_%d), ", i, i);
                         how_many_dof ++;
                         dof[how_many_dof] = i;
+                  }
+                  else{
+                        how_many_nondof ++;
+                        nondof[how_many_nondof] = i;
                   }
             }
             else if (how_many_resonant == 1){
@@ -570,9 +577,17 @@ void transformation_display(){
                         how_many_dof ++;
                         dof[how_many_dof] = i;
                   }
+                  else{
+                        how_many_nondof ++;
+                        nondof[how_many_nondof] = i;
+                  }
+            }
+            else if (how_many_resonant == 0){
+                  how_many_nondof ++;
+                  nondof[how_many_nondof] = i;
             }
       }
-      for (i = 1; i < how_many_planet + 1; i++){
+      for (i = 1; i < how_many_planet + 1; i ++){
             if (i < how_many_planet){
                   printf("(sig_%d; D_%d), ", i, i);
             }
@@ -597,151 +612,154 @@ void Hamiltonian_display(){
       printf("- sum_{1 <= j <= %d} beta_j**3 * mu_j**2 / (2*Lbd_j**2)\n\n", how_many_planet);
       
       /******** Displaying the perturbation ********/
-      for (i = 1; i <= how_many_planet; i++){
-            for (j = i + 1; j <= how_many_planet; j++){
-                  printf(" + G*m_%d*m_%d/a_%d * (\n", i, j, j);
+      for (i = 1; i <= how_many_planet; i ++){
+            for (j = i + 1; j <= how_many_planet; j ++){
                   
                   /******** Retrieving the value of p for a resonance p:p+q ********/
                   pi      = p_i[i];
                   pj      = p_i[j];
-                  if (pi == 0 && pj == 0){
+                  if (pi == 0 || pj == 0){
                         p = 0;
                   }
                   else{
                         the_gcd = gcd(pi, pj);
-                        p       = pi / the_gcd;
+                        p = pi/the_gcd;
+                        pi = pi/the_gcd;
+                        pj = pj/the_gcd;
                   }
                   
-                  /******** Printing the secular contribution and the non-co-orbital MMR contribution ********/
-                  for (k = 1; k < 32; k++){
-                        if (Cppq[i][j][k] != 0.0){ //If the corresponding term exists in the Hamiltonian
-                              q = (int) qnmlr[k][0];  n = (int) qnmlr[k][1];  m = (int) qnmlr[k][2];  l = (int) qnmlr[k][3];  r = (int) qnmlr[k][4];
+                  if ((non_resonant_bool && (max_deg + one_more_deg_bool) >= 2) || ((pj - pi) <= max_deg && pj <= max_res)){
+                        printf(" + G*m_%d*m_%d/a_%d * (\n", i, j, j);
+                        /******** Printing the secular contribution and the non-co-orbital MMR contribution ********/
+                        for (k = 1; k < 32; k ++){
+                              if (Cppq[i][j][k] != 0.){ //If the corresponding term exists in the Hamiltonian
+                                    q = (int) qnmlr[k][0];  n = (int) qnmlr[k][1];  m = (int) qnmlr[k][2];  l = (int) qnmlr[k][3];  r = (int) qnmlr[k][4];
                               
-                              if (Cppq[i][j][k] > 0.0){
-                                    if (k > 1){
-                                          printf("    + %.10lf", Cppq[i][j][k]);
+                                    if (Cppq[i][j][k] > 0.){
+                                          if (k > 1){
+                                                printf("    + %.10lf", Cppq[i][j][k]);
+                                          }
+                                          else{
+                                                printf("    %.10lf", Cppq[i][j][k]);
+                                          }
                                     }
                                     else{
-                                          printf("    %.10lf", Cppq[i][j][k]);
+                                          printf("    - %.10lf", -Cppq[i][j][k]);
                                     }
-                              }
-                              else{
-                                    printf("    - %.10lf", -Cppq[i][j][k]);
-                              }
-                              how_many_backward = (int) log10(absolute(Cppq[i][j][k]));
-                              for (s = 0; s < how_many_backward; s++){
-                                    printf("\b");
-                              }
-                              for (s = 0; s < how_many_backward; s++){
+                                    how_many_backward = (int) log10(fabs(Cppq[i][j][k]));
+                                    for (s = 0; s < how_many_backward; s ++){
+                                          printf("\b");
+                                    }
+                                    for (s = 0; s < how_many_backward; s ++){
+                                          printf(" ");
+                                    }
+                                    for (s = 0; s < how_many_backward; s ++){
+                                          printf("\b");
+                                    }
                                     printf(" ");
-                              }
-                              for (s = 0; s < how_many_backward; s++){
-                                    printf("\b");
-                              }
-                              printf(" ");
-                              if (m != 0){
-                                    if (m == 1){
-                                          printf("* sqrt(2*D_%d/Lbd_%d)    ", i, i);
-                                    }
-                                    else{
-                                          printf("* sqrt(2*D_%d/Lbd_%d)**%d ", i, i, m);
-                                    }
-                              }
-                              if (n - m != 0){
-                                    if (n - m == 1){
-                                          printf("* sqrt(2*D_%d/Lbd_%d)    ", j, j);
-                                    }
-                                    else{
-                                          printf("* sqrt(2*D_%d/Lbd_%d)**%d ", j, j, n - m);
-                                    }
-                              }
-                              if (m == 0){
-                                    printf("                       ");
-                              }
-                              if (n - m == 0){
-                                    printf("                       ");
-                              }
-                              if (l*p != 0 || l*(p + q) != 0 || r != 0 || l*q - r != 0){ //If there is a cosine factor
-                                    printf("* cos(");
-                                    if (l*p != 0){
-                                          if (l*p == 1){
-                                                printf("lbd_%d", i);
+                                    if (m != 0){
+                                          if (m == 1){
+                                                printf("* sqrt(2*D_%d/Lbd_%d)    ", i, i);
                                           }
                                           else{
-                                                printf("%d lbd_%d", l*p, i);
+                                                printf("* sqrt(2*D_%d/Lbd_%d)**%d ", i, i, m);
                                           }
                                     }
-                                    if (l*(p + q) != 0){
-                                          if (l*(p + q) == 1){
-                                                printf(" - lbd_%d", j);
+                                    if (n - m != 0){
+                                          if (n - m == 1){
+                                                printf("* sqrt(2*D_%d/Lbd_%d)    ", j, j);
                                           }
                                           else{
-                                                printf(" - %d lbd_%d", l*(p + q), j);
+                                                printf("* sqrt(2*D_%d/Lbd_%d)**%d ", j, j, n - m);
                                           }
                                     }
-                                    if (r != 0){
-                                          if (r < -1){
-                                                printf(" - %d vrp_%d", -r, i);
-                                          }
-                                          else if (r == -1){
-                                                printf(" - vrp_%d", i);
-                                          }
-                                          else if (r == 1){
-                                                if (l*p != 0 || l*(p + q) != 0){
-                                                      printf(" + vrp_%d", i);
+                                    if (m == 0 && max_deg >= 2){
+                                          printf("                       ");
+                                    }
+                                    if (n - m == 0 && max_deg >= 2){
+                                          printf("                       ");
+                                    }
+                                    if (l*p != 0 || l*(p + q) != 0 || r != 0 || l*q - r != 0){ //If there is a cosine factor
+                                          printf("* cos(");
+                                          if (l*p != 0){
+                                                if (l*p == 1){
+                                                      printf("lbd_%d", i);
                                                 }
                                                 else{
-                                                      printf("vrp_%d", i);
+                                                      printf("%d lbd_%d", l*p, i);
                                                 }
                                           }
-                                          else{
-                                                if (l*p != 0 || l*(p + q) != 0){
-                                                      printf(" + %d vrp_%d", r, i);
+                                          if (l*(p + q) != 0){
+                                                if (l*(p + q) == 1){
+                                                      printf(" - lbd_%d", j);
                                                 }
                                                 else{
-                                                      printf("%d vrp_%d", r, i);
+                                                      printf(" - %d lbd_%d", l*(p + q), j);
                                                 }
                                           }
+                                          if (r != 0){
+                                                if (r < -1){
+                                                      printf(" - %d vrp_%d", -r, i);
+                                                }
+                                                else if (r == -1){
+                                                      printf(" - vrp_%d", i);
+                                                }
+                                                else if (r == 1){
+                                                      if (l*p != 0 || l*(p + q) != 0){
+                                                            printf(" + vrp_%d", i);
+                                                      }
+                                                      else{
+                                                            printf("vrp_%d", i);
+                                                      }
+                                                }
+                                                else{
+                                                      if (l*p != 0 || l*(p + q) != 0){
+                                                            printf(" + %d vrp_%d", r, i);
+                                                      }
+                                                      else{
+                                                            printf("%d vrp_%d", r, i);
+                                                      }
+                                                }
+                                          }
+                                          if (l*q - r != 0){
+                                                if (l*q - r < -1){
+                                                      printf(" - %d vrp_%d", r - l*q, j);
+                                                }
+                                                else if (l*q - r == -1){
+                                                      printf(" - vrp_%d", j);
+                                                }
+                                                else if (l*q - r == 1){
+                                                      printf(" + vrp_%d", j);
+                                                }
+                                                else{
+                                                      printf(" + %d vrp_%d", l*q - r, j);
+                                                }
+                                          }
+                                          printf(")");
                                     }
-                                    if (l*q - r != 0){
-                                          if (l*q - r < -1){
-                                                printf(" - %d vrp_%d", r - l*q, j);
-                                          }
-                                          else if (l*q - r == -1){
-                                                printf(" - vrp_%d", j);
-                                          }
-                                          else if (l*q - r == 1){
-                                                printf(" + vrp_%d", j);
-                                          }
-                                          else{
-                                                printf(" + %d vrp_%d", l*q - r, j);
-                                          }
-                                    }
-                                    printf(")");
+                                    printf("\n");
                               }
-                              printf("\n");
                         }
-                  }
                   
-                  /******** Printing the co-orbital contribution ********/
-                  if (pi != 0 && pj != 0 && pi == pj){ //The pair (i,j) is in a MMR
-                        printf("      cos(lbd_%d - lbd_%d) - 1/sqrt(2 - 2 cos(lbd_%d - lbd_%d))\n", i, j, i, j);
-                        if (max_deg >= 2){
-                              printf("    - (D_%d/Lbd_%d + D_%d/Lbd_%d) * cos(lbd_%d - lbd_%d)\n", i, i, j, j, i, j);
-                              printf("    + (D_%d/Lbd_%d + D_%d/Lbd_%d) * (5 cos(2 lbd_%d - 2 lbd_%d) + 8 cos(lbd_%d - lbd_%d) - 13) / (4 sqrt(2 - 2 cos(lbd_%d - lbd_%d))**5)\n",
-                              i, i, j, j, i, j, i, j, i, j);
-                              printf("    + sqrt(2*D_%d/Lbd_%d) * sqrt(2*D_%d/Lbd_%d) * cos(vrp_%d - vrp_%d + 2 lbd_%d - 2 lbd_%d)\n", i, i, j, j, j, i, i, j);
-                              printf("    - sqrt(2*D_%d/Lbd_%d) * sqrt(2*D_%d/Lbd_%d) / (8 sqrt(2 - 2 cos(lbd_%d - lbd_%d))**5) * (\n", i, i, j, j, i, j);
-                              printf("            cos(vrp_%d - vrp_%d + 3 lbd_%d - 3 lbd_%d) + 16 cos(vrp_%d - vrp_%d + 2 lbd_%d - 2 lbd_%d)\n", j, i, i, j, j, i, i, j);
-                              printf("            - 26 cos(vrp_%d - vrp_%d + lbd_%d - lbd_%d) + 9 cos(vrp_%d - vrp_%d + lbd_%d - lbd_%d)\n", j, i, i, j, j, i, j, i);
-                              printf("            )\n");
+                        /******** Printing the co-orbital contribution ********/
+                        if (pi != 0 && pj != 0 && pi == pj){ //The pair (i,j) is in a MMR
+                              printf("      cos(lbd_%d - lbd_%d) - 1/sqrt(2 - 2 cos(lbd_%d - lbd_%d))\n", i, j, i, j);
+                              if (max_deg >= 2){
+                                    printf("    - (D_%d/Lbd_%d + D_%d/Lbd_%d) * cos(lbd_%d - lbd_%d)\n", i, i, j, j, i, j);
+                                    printf("    + (D_%d/Lbd_%d + D_%d/Lbd_%d) * [5 cos(2 lbd_%d - 2 lbd_%d) + 8 cos(lbd_%d - lbd_%d) - 13] / [4 sqrt(2 - 2 cos(lbd_%d - lbd_%d))**5]\n",
+                                    i, i, j, j, i, j, i, j, i, j);
+                                    printf("    + sqrt(2*D_%d/Lbd_%d) * sqrt(2*D_%d/Lbd_%d) * cos(vrp_%d - vrp_%d + 2 lbd_%d - 2 lbd_%d)\n", i, i, j, j, j, i, i, j);
+                                    printf("    - sqrt(2*D_%d/Lbd_%d) * sqrt(2*D_%d/Lbd_%d) / [8 sqrt(2 - 2 cos(lbd_%d - lbd_%d))**5] * [\n", i, i, j, j, i, j);
+                                    printf("            cos(vrp_%d - vrp_%d + 3 lbd_%d - 3 lbd_%d) + 16 cos(vrp_%d - vrp_%d + 2 lbd_%d - 2 lbd_%d)\n", j, i, i, j, j, i, i, j);
+                                    printf("            - 26 cos(vrp_%d - vrp_%d + lbd_%d - lbd_%d) + 9 cos(vrp_%d - vrp_%d + lbd_%d - lbd_%d)\n", j, i, i, j, j, i, j, i);
+                                    printf("            ]\n");
+                              }
                         }
+
+                        printf(" )\n\n");
                   }
-                  
-                  printf(" )\n\n");
             }
       }
-
 }
 
 
@@ -773,10 +791,3 @@ int LCM(int * As, int k){
       
       return toBeReturned;
 }
-
-
-
-
-
-
-

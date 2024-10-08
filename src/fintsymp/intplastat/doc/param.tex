@@ -1,0 +1,903 @@
+\documentclass[11pt]{article}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{geometry}                % See geometry.pdf to learn the layout options. There are lots.
+\geometry{a4paper}                   % ... or a4paper or a5paper or ... 
+%\geometry{landscape}                % Activate for for rotated page geometry
+%\usepackage[parfill]{parskip}    % Activate to begin paragraphs with an empty line rather than an indent
+\usepackage{graphicx}
+\usepackage{amssymb}
+\usepackage{epstopdf}
+\DeclareGraphicsRule{.tif}{png}{.png}{`convert #1 `dirname #1`/`basename #1 .tif`.png}
+\usepackage{tabularx}
+\usepackage{hyperref}  
+
+\title{INTPLASTAT}
+\author{Micka\"el Gastineau}
+
+\begin{document}
+\maketitle
+
+\section{Version s\'equentielle}
+
+\begin{itemize}
+ \item Compilation:  
+ 
+make clean
+make
+ 
+\item Execution en interactif: 
+
+intplastat.x  ???.par
+\item Soumission sur bessel
+
+qsubserial -fastsse4 intplastat.x  ???.par
+\end{itemize}
+
+\section{Version MPI}
+
+\begin{itemize}
+ \item Compilation:  
+ 
+ make mpi
+ 
+\item Soumission sur bessel (ici 48 coeurs) : 
+
+qsubmpi 48 -fastsse4 -outdir STDIN/ intplastat\_mpi.x  ???.par
+
+
+\item Fusion des fichiers mpi des diff\'rents processeurs (ici, chemin="DATA" et nf\_rad="sim2014XX" )
+
+mergempi.sh DATA sim2014XX
+
+\end{itemize}
+
+Les conditions initiales sont envoy\'ees une par une par le maitre aux esclaves au fil de l'eau et le maitre ne fait rien d'autre.
+
+
+\section{Fichiers d'entree}
+
+\subsection{Fichier de param\`etres  intplastat.par}
+
+\subsubsection*{Contr\^oles de l'int\'egration}
+
+\begin{tabularx}{\textwidth}{|l|X|}
+\hline
+Nom du champ& Descriptif \\ \hline 
+chemin   & dossier o\`u seront stock\'es les fichiers \\ \hline
+ nf\_rad    & radical de tous les fichiers g\'en\'er\'es\\ \hline
+ nf\_initext& fichier de conditions initiales des plan\`etes\\
+ &si if\_dump=1, fichier de red\'emarrage xxx.dump \\ \hline
+
+ ref\_gmsun& Valeur du GM du soleil de r\'ef\'erence \\ 
+& 0: valeur issue de la Table 1 de "NOMINAL VALUES FOR SELECTED SOLAR AND PLANETARY QUANTITIES: IAU 2015 RESOLUTION B3"\\
+& 1: valeur calculée à partir de la constante de Gauss (k=0.01720209895e0) \\\hline
+
+ int\_type& sch\'ema de l'int\'egrateur (e.g., 'ABA4' ou 'ABAH4' (liste \ref{autresschemas}))) \\ \hline
+
+ type\_pas & =0 , int\'egrateur \`a pas fixe.\\
+&=1, int\'egrateur \`a pas variable (cf. A. petit , 2019).\\ \hline
+ 
+ tinit & temps initial (en g\'eneral 0)\\
+  &si if\_dump=1, temps auquel on prend les conditions initiales dans le fichier xxx.dump \\ \hline
+
+ dt& pas de temps de l'int\'egration en ann\'ee \\ \hline
+
+ n\_iter& nombre de pas d'int\'egrations \`a calculer. A la fin de l'int\'egration, le temps final sera  n\_iter*dt ans.\\ \hline
+
+ n\_out & fr\'equence d'\'ecriture des int\'egrales premi\`eres, coordonn\'ees cart\'esiennes et \'el\'ements elliptiques. Il est exprim\'e en nombre de pas d'int\'egrations. Les donn\'ees seront \'ecrites tous les n\_out*dt ann\'ees.
+ \\ \hline
+ out\_ell & format des \'el\'ements elliptiques \'ecrites dans les fichiers xxx.ell \\
+&1:  elliptiques h\'eliocentriques canoniques\\
+&	     CI(1:6) = (a,e,I,M,omega,Omega)\\
+&2:  elliptiques h\'eliocentriques non canoniques\\
+&	     CI(1:6) = (a,e,I,M,omega,Omega)\\
+&3:  elliptiques h\'eliocentriques canoniques\\
+&	     CI(1:6) = (a,la,k,h,q,p)\\
+&4:  elliptiques h\'eliocentriques non canoniques\\
+&	     CI(1:6) = (a,la,k,h,q,p)\\ \hline
+ n\_dump & fr\'equence d'\'ecriture des fichiers de red\'emarrage xxx.dump. Il est exprim\'e en nombre de pas d'int\'egrations. Les donn\'ees seront \'ecrites tous les n\_dump*dt ann\'ees.
+ \\ \hline
+ if\_invar & =0 , l'int\'egration se fait dans le rep\`ere actuel. \\
+& =1, l'int\'egration se fait dans le plan invariant et les donn\'ees g\'en\'er\'ees sont dans ce plan invariant 
+\\ \hline
+
+ if\_int & =0 , les int\'egrales premi\`eres ne sont pas \'ecrites.\\
+&=1, les int\'egrales premi\`eres sont \'ecrites dans les fichiers xxx.int. Un fichier par syst\`eme\\ \hline
+ 
+ if\_ell & =0 , les \'el\'ements elliptiques ne sont pas \'ecrits.\\
+&=1, les \'el\'ements elliptiques sont \'ecrits dans les fichiers xxx.ell. Un fichier par syst\`eme\\ \hline
+ 
+ if\_car &  =0 , les \'el\'ements cart\'esiens (positions/vitesses) ne sont pas \'ecrits.\\
+&=1, les \'el\'ements cart\'esiens positions/vitesses) sont \'ecrits dans les fichiers xxx.car. Un fichier par syst\`eme\\ \hline 
+ \end{tabularx}
+\begin{tabularx}{\textwidth}{|l|X|}
+	\hline
+	Nom du champ& Descriptif \\ \hline 
+ if\_dump &  =0 , les fichiers de red\'emarrage ne sont pas \'ecrits.\\
+&=1, les donn\'ees pour un red\'emarrage sont \'ecrits dans les fichiers xxx.dump. Un fichier par syst\`eme\\ \hline 
+ \end{tabularx}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\vspace{0.5cm}
+\subsubsection*{Calcul des minimum, moyenne et maximum en a,e,I}
+Cela g\'en\`ere les fichiers xxx.minmax\_aei.
+
+\begin{tabularx}{\textwidth}{|l|X|}
+\hline
+Nom du champ& Descriptif \\ \hline \hline
+minmax\_aei\_compute &  =0, les minimum, moyenne et maximum en a,e,I ne sont pas calcul\'ees. Tous les autres champs sont ignor\'es.\\
+&=1, les minimum, moyenne et maximum en a,e,I sont calcul\'es. Un fichier par processeur.\\ \hline
+
+minmax\_aei\_stepcalc  & fr\'equence de calcul des minimum, moyenne et maximum en a,e,I. Il est exprim\'e en nombre de pas d'int\'egrations. Les donn\'ees seront calcul\'ees tous les minmax\_aei\_stepcalc*dt ann\'ees. \\ \hline
+
+minmax\_aei\_stepout  & Longueur en nombre d'it\'erations sur laquelle on effectue les calculs de minimum, moyenne et maximum en a,e,I. Les minimum, moyenne et maximum en a,e,I sont \'ecrites tous les minmax\_aei\_stepout*dt ann\'ees dans les fichiers minmax\_aei.\\ \hline
+
+minmax\_aei\_elltype  & Type des \'el\'ements elliptiques utilis\'e pour le calcul des  minimum, moyenne et maximum en a,e,I\\ 
+&1:  elliptiques h\'eliocentriques canoniques\\
+&	     CI(1:6) = (a,e,I,M,omega,Omega)\\
+&2:  elliptiques h\'eliocentriques non canoniques\\
+&	     CI(1:6) = (a,e,I,M,omega,Omega)\\ \hline
+
+ \end{tabularx}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\vspace{0.5cm}
+\subsubsection*{Calcul des minimum, moyenne et maximum en diff\'erence d'\'el\'ements elliptiques : $a_{p(1)}-a_{p(2)}$, $\lambda_{p(1)}-\lambda_{p(2)}$ et $\varpi_{p(1)}-\varpi_{p(2)}$ avec uen double détermination des angles}
+Cela g\'en\`ere les fichiers xxx.minmax\_alp.
+Une double détermination est réalisée pour les angles entre $[-\pi,\pi]$ et $[0,2\pi]$.
+
+\begin{tabularx}{\textwidth}{|l|X|}
+\hline
+minmax\_diffalp\_compute  & =0, les minimum, moyenne et maximum en  $a_{p(1)}-a_{p(2)}$, $\lambda_{p(1)}-\lambda_{p(2)}$ et $\varpi_{p(1)}-\varpi_{p(2)}$ ne sont pas calcul\'ees. Tous les autres champs sont ignor\'es.\\
+&=1, les minimum, moyenne et maximum en  $a_{p(1)}-a_{p(2)}$, $\lambda_{p(1)}-\lambda_{p(2)}$ et $\varpi_{p(1)}-\varpi_{p(2)}$ sont calcul\'es. Un fichier par processeur.\\ \hline
+minmax\_diffalp\_stepcalc   & fr\'equence de calcul des minimum, moyenne et maximum en a, $\lambda$ et $\varpi$. Il est exprim\'e en nombre de pas d'int\'egrations. Les donn\'ees seront calcul\'ees tous les minmax\_diffalp\_stepcalc*dt ann\'ees.\\ \hline
+
+minmax\_diffalp\_stepout   &Longueur en nombre d'it\'erations sur laquelle on effectue les calculs de minimum, moyenne et maximum en a, $\lambda$ et $\varpi$. Les minimum, moyenne et maximum en a, $\lambda$ et $\varpi$ sont \'ecrites tous les minmax\_diffalp\_stepout*dt ann\'ees dans les fichiers minmax\_alp. \\ \hline
+minmax\_diffalp\_elltype  & Type des \'el\'ements elliptiques utilis\'e pour le calcul des  minimum, moyenne et maximum en $a_{p(1)}-a_{p(2)}$, $\lambda_{p(1)}-\lambda_{p(2)}$ et $\varpi_{p(1)}-\varpi_{p(2)}$ \\
+&6:  elliptiques h\'eliocentriques non canoniques\\
+&	     CI(1:6) = (a,e,I,$\lambda$,$\varpi$,Omega)\\ \hline
+minmax\_diffalp\_pla(1)   & indice de la premi\`ere plan\`ete $p(1)$. Les indices commencent \`a 1.\\ \hline
+minmax\_diffalp\_pla(2)   & indice de la deuxi\`eme plan\`ete $p(2)$. Les indices commencent \`a  1.\\ \hline
+ \end{tabularx}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\vspace{0.5cm}
+\subsubsection*{Calcul des minimum, moyenne et maximum en diff\'erence d'\'el\'ements elliptiques : $a_{p(1)}-a_{p(2)}$, $\lambda_{p(1)}-\lambda_{p(2)}$ et $\varpi_{p(1)}-\varpi_{p(2)}$ avec des angles redressés}
+Cela g\'en\`ere les fichiers xxx.minmax\_alc.
+Les angles sont redressés (pour être continu) avant d'effectuer les calculs. 
+
+\begin{tabularx}{\textwidth}{|l|X|}
+\hline
+minmax\_diffalc\_compute  & =0, les minimum, moyenne et maximum en  $a_{p(1)}-a_{p(2)}$, $\lambda_{p(1)}-\lambda_{p(2)}$ et $\varpi_{p(1)}-\varpi_{p(2)}$ ne sont pas calcul\'ees. Tous les autres champs sont ignor\'es.\\
+&=1, les minimum, moyenne et maximum en  $a_{p(1)}-a_{p(2)}$, $\lambda_{p(1)}-\lambda_{p(2)}$ et $\varpi_{p(1)}-\varpi_{p(2)}$ sont calcul\'es. Un fichier par processeur.\\ \hline
+minmax\_diffalc\_stepcalc   & fr\'equence de calcul des minimum, moyenne et maximum en a, $\lambda$ et $\varpi$. Il est exprim\'e en nombre de pas d'int\'egrations. Les donn\'ees seront calcul\'ees tous les minmax\_diffalc\_stepcalc*dt ann\'ees.\\ \hline
+
+minmax\_diffalc\_stepout   &Longueur en nombre d'it\'erations sur laquelle on effectue les calculs de minimum, moyenne et maximum en a, $\lambda$ et $\varpi$. Les minimum, moyenne et maximum en a, $\lambda$ et $\varpi$ sont \'ecrites tous les minmax\_diffalp\_stepout*dt ann\'ees dans les fichiers minmax\_alp. \\ \hline
+minmax\_diffalc\_elltype  & Type des \'el\'ements elliptiques utilis\'e pour le calcul des  minimum, moyenne et maximum en $a_{p(1)}-a_{p(2)}$, $\lambda_{p(1)}-\lambda_{p(2)}$ et $\varpi_{p(1)}-\varpi_{p(2)}$ \\
+&6:  elliptiques h\'eliocentriques non canoniques\\
+&	     CI(1:6) = (a,e,I,$\lambda$,$\varpi$,Omega)\\ \hline
+minmax\_diffalc\_pla(1)   & indice de la premi\`ere plan\`ete $p(1)$. Les indices commencent \`a 1.\\ \hline
+minmax\_diffalc\_pla(2)   & indice de la deuxi\`eme plan\`ete $p(2)$. Les indices commencent \`a  1.\\ \hline
+ \end{tabularx}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\vspace{0.5cm}
+\subsubsection*{Calcul des minimum, moyenne et maximum en diff\'erence d'\'el\'ements elliptiques : $(a_{p(1)}-a_{p(2)})^2$, $(e_{p(1)}-e_{p(2)})^2$ et $(a_{p(1)}-a_{p(2)})^2+(e_{p(1)}-e_{p(2)})^2$}
+Cela g\'en\`ere les fichiers xxx.minmax\_ae2.
+
+\begin{tabularx}{\textwidth}{|l|X|}
+\hline
+minmax\_diffae2\_compute  & =0, les minimum, moyenne et maximum en $(a_{p(1)}-a_{p(2)})^2$, $(e_{p(1)}-e_{p(2)})^2$ et $(a_{p(1)}-a_{p(2)})^2+(e_{p(1)}-e_{p(2)})^2$ ne sont pas calcul\'ees. Tous les autres champs sont ignor\'es.\\
+&=1, les minimum, moyenne et maximum en  $(a_{p(1)}-a_{p(2)})^2$, $(e_{p(1)}-e_{p(2)})^2$ et $(a_{p(1)}-a_{p(2)})^2+(e_{p(1)}-e_{p(2)})^2$ sont calcul\'es. Un fichier par processeur.\\ \hline
+minmax\_diffae2\_stepcalc   & fr\'equence de calcul des minimum, moyenne et maximum en a et e. Il est exprim\'e en nombre de pas d'int\'egrations. Les donn\'ees seront calcul\'ees tous les minmax\_diffae2\_stepcalc*dt ann\'ees.\\ \hline
+
+minmax\_diffae2\_stepout   &Longueur en nombre d'it\'erations sur laquelle on effectue les calculs de minimum, moyenne et maximum en a et e. Les minimum, moyenne et maximum en a et e sont \'ecrites tous les minmax\_diffae2\_stepout*dt ann\'ees dans les fichiers minmax\_ae2. \\ \hline
+minmax\_diffae2\_elltype  & Type des \'el\'ements elliptiques utilis\'e pour le calcul des  minimum, moyenne et maximum en $(a_{p(1)}-a_{p(2)})^2$, $(e_{p(1)}-e_{p(2)})^2$ et $(a_{p(1)}-a_{p(2)})^2+(e_{p(1)}-e_{p(2)})^2$ \\
+&6:  elliptiques h\'eliocentriques non canoniques\\
+&	     CI(1:6) = (a,e,I,$\lambda$,$\varpi$,Omega)\\ \hline
+minmax\_diffae2\_pla(1)   & indice de la premi\`ere plan\`ete $p(1)$. Les indices commencent \`a 1.\\ \hline
+minmax\_diffae2\_pla(2)   & indice de la deuxi\`eme plan\`ete $p(2)$. Les indices commencent \`a  1.\\ \hline
+ \end{tabularx}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\vspace{0.5cm}
+\subsubsection*{Analyse en fr\'equence en $a\exp^{\imath\lambda}, k+\imath h, q+\imath p$}
+Cela g\'en\`ere les fichiers xxx.naf\_alkhqp ou xxx.naf\_alkh selon la variable naf\_alkhqp\_compute.
+
+\begin{tabularx}{\textwidth}{|l|X|}
+\hline
+Nom du champ& Descriptif \\ \hline \hline
+naf\_alkhqp\_compute &  =0, l'analyse en fr\'equence en $a\exp^{\imath\lambda}, k+\imath h, q+\imath p$ n'est pas calcul\'ee. Tous les autres champs sont ignor\'es.\\
+&=1, l'analyse en fr\'equence en $a\exp^{\imath\lambda}, k+\imath h, q+\imath p$ est calcul\'e. Un fichier par processeur avec l'extension naf\_alkhqp.\\ 
+&=2, l'analyse en fr\'equence en $a\exp^{\imath\lambda}, k+\imath h$ est calcul\'e (utile pour le cas  plan (q=p=0)). Un fichier par processeur avec l'extension naf\_alkh.\\ \hline
+
+naf\_alkhqp\_stepcalc  & fr\'equence des points utilis\'es pour l'analyse en fr\'equence. Il est exprim\'e en nombre de pas d'int\'egrations. Les entr\'ees de l'analyse en fr\'equence seront calcul\'ees tous les naf\_alkhqp\_stepcalc*dt ann\'ees. \\ \hline
+
+naf\_alkhqp\_stepout  & Longueur en nombre d'it\'erations sur laquelle on effectue l'analyse en fr\'equence. Le r\'esultat de l'analyse en fr\'equence est \'ecrit tous les naf\_alkhqp\_stepout*dt ann\'ees dans les fichiers naf\_alkhqp ou naf\_alkh.\\ \hline
+
+naf\_alkhqp\_elltype  & Type des \'el\'ements elliptiques utilis\'e pour le calcul de l'analyse en fr\'equence\\ 
+&3:  elliptiques h\'eliocentriques canoniques\\
+&	     CI(1:6) = (a,la,k,h,q,p)\\
+&4:  elliptiques h\'eliocentriques non canoniques\\
+&	     CI(1:6) = (a,la,k,h,q,p)\\ \hline
+naf\_alkhqp\_nterm  & Nombre de termes recherch\'es pour l'analyse en fr\'equence.\\ \hline
+naf\_alkhqp\_isec  & =0, la m\'ethode des secantes n'est pas utilis\'ee.\\
+&=1, la m\'ethode des secantes est utilis\'ee.\\ \hline
+naf\_alkhqp\_iw  & pr\'esence de fen\^etre.\\
+&=-1, fenetre exponentielle PHI(T) = $1/CE*EXP(-1/(1-T^2))$ avec CE= 0.22199690808403971891E0\\
+&=0, pas de fen\^etre.\\
+&= $N>0$ : PHI(T) = CN*(1+COS(PI*T))**N avec CN = $2^N(N!)^2/(2N)!$\\ \hline
+naf\_alkhqp\_dtour  & Longueur d'un tour de cadran ( en g\'en\'eral $2\pi$).\\ \hline
+naf\_alkhqp\_tol  &  Tol\'erance pour d\'eterminer si deux fr\'equences sont identiques.\\ \hline
+
+ \end{tabularx}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\vspace{0.5cm}
+\subsubsection*{Analyse en fr\'equence en $\exp^{\imath(\lambda_{p(1)}-\lambda_{p(2)})}$ et $\exp^{\imath(\varpi_{p(1)}-\varpi_{p(2)})}$}
+Cela g\'en\`ere les fichiers xxx.naf\_diffalp.
+
+\begin{tabularx}{\textwidth}{|l|X|}
+\hline
+Nom du champ& Descriptif \\ \hline \hline
+naf\_diffalp\_compute &=0, l'analyse en fr\'equence en $\exp^{\imath(\lambda_{p(1)}-\lambda_{p(2)})}$ et $\exp^{\imath(\varpi_{p(1)}-\varpi_{p(2)})}$ n'est pas calcul\'ee. Tous les autres champs sont ignor\'es.\\
+&=1, l'analyse en fr\'equence en  $\exp^{\imath(\lambda_{p(1)}-\lambda_{p(2)})}$ et $\exp^{\imath(\varpi_{p(1)}-\varpi_{p(2)})}$ est calcul\'e. Un fichier par processeur avec l'extension naf\_diffalp.\\ \hline
+
+naf\_diffalp\_stepcalc  & fr\'equence des points utilis\'es pour l'analyse en fr\'equence. Il est exprim\'e en nombre de pas d'int\'egrations. Les entr\'ees de l'analyse en fr\'equence seront calcul\'ees tous les naf\_diffalp\_stepcalc*dt ann\'ees. \\ \hline
+
+naf\_diffalp\_stepout  & Longueur en nombre d'it\'erations sur laquelle on effectue l'analyse en fr\'equence. Le r\'esultat de l'analyse en fr\'equence est \'ecrit tous les naf\_diffalp\_stepout*dt ann\'ees dans les fichiers naf\_diffalp ou naf\_alkh.\\ \hline
+
+naf\_diffalp\_elltype  & Type des \'el\'ements elliptiques utilis\'es pour le calcul de l'analyse en fr\'equence\\ 
+&6:  elliptiques h\'eliocentriques non canoniques\\
+&	     CI(1:6) = (a,e,I,$\lambda$,$\varpi$,Omega)\\ \hline
+naf\_diffalp\_nterm  & Nombre de termes recherch\'es pour l'analyse en fr\'equence.\\ \hline
+naf\_diffalp\_isec  & =0, la m\'ethode des secantes n'est pas utilis\'ee.\\
+&=1, la m\'ethode des secantes est utilis\'ee.\\ \hline
+naf\_diffalp\_iw  & pr\'esence de fen\^etre.\\
+&=-1, fenetre exponentielle PHI(T) = $1/CE*EXP(-1/(1-T^2))$ avec CE= 0.22199690808403971891E0\\
+&=0, pas de fen\^etre.\\
+&= $N>0$ : PHI(T) = CN*(1+COS(PI*T))**N avec CN = $2^N(N!)^2/(2N)!$\\ \hline
+naf\_diffalp\_dtour  & Longueur d'un tour de cadran ( en g\'en\'eral $2\pi$).\\ \hline
+naf\_diffalp\_tol  &  Tol\'erance pour d\'eterminer si deux fr\'equences sont identiques.\\ \hline
+naf\_diffalp\_pla(1)   & indice de la premi\`ere plan\`ete $p(1)$. Les indices commencent \`a 1.\\ \hline
+naf\_diffalp\_pla(2)   & indice de la deuxi\`eme plan\`ete $p(2)$. Les indices commencent \`a  1.\\ \hline
+
+ \end{tabularx}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\vspace{0.5cm}
+\subsubsection*{Analyse en fr\'equence en $(\lambda_{p(1)}-\lambda_{p(2)})$ et $(\varpi_{p(1)}-\varpi_{p(2)})$}
+Cela g\'en\`ere les fichiers xxx.naf\_difflpm.
+
+Les analyses en fr\'equence sont effectu\'ees sur $[0,2\pi]$ et sur $[-\pi,\pi]$.
+
+\begin{tabularx}{\textwidth}{|l|X|}
+\hline
+Nom du champ& Descriptif \\ \hline \hline
+naf\_difflpm\_compute &=0, l'analyse en fr\'equence en $(\lambda_{p(1)}-\lambda_{p(2)})+0\imath$ et $(\varpi_{p(1)}-\varpi_{p(2)})+0\imath$ n'est pas calcul\'ee. Tous les autres champs sont ignor\'es.\\
+&=1, l'analyse en fr\'equence en  $(\lambda_{p(1)}-\lambda_{p(2)})+0\imath$ et $(\varpi_{p(1)}-\varpi_{p(2)})+0\imath$ est calcul\'e. Un fichier par processeur avec l'extension naf\_difflpm.\\ \hline
+
+naf\_difflpm\_stepcalc  & fr\'equence des points utilis\'es pour l'analyse en fr\'equence. Il est exprim\'e en nombre de pas d'int\'egrations. Les entr\'ees de l'analyse en fr\'equence seront calcul\'ees tous les naf\_difflpm\_stepcalc*dt ann\'ees. \\ \hline
+
+naf\_difflpm\_stepout  & Longueur en nombre d'it\'erations sur laquelle on effectue l'analyse en fr\'equence. Le r\'esultat de l'analyse en fr\'equence est \'ecrit tous les naf\_difflpm\_stepout*dt ann\'ees dans les fichiers naf\_difflpm ou naf\_alkh.\\ \hline
+
+naf\_difflpm\_elltype  & Type des \'el\'ements elliptiques utilis\'es pour le calcul de l'analyse en fr\'equence\\ 
+&6:  elliptiques h\'eliocentriques non canoniques\\
+&	     CI(1:6) = (a,e,I,$\lambda$,$\varpi$,Omega)\\ \hline
+naf\_difflpm\_nterm  & Nombre de termes recherch\'es pour l'analyse en fr\'equence.\\ \hline
+naf\_difflpm\_isec  & =0, la m\'ethode des secantes n'est pas utilis\'ee.\\
+&=1, la m\'ethode des secantes est utilis\'ee.\\ \hline
+naf\_difflpm\_iw  & pr\'esence de fen\^etre.\\
+&=-1, fenetre exponentielle PHI(T) = $1/CE*EXP(-1/(1-T^2))$ avec CE= 0.22199690808403971891E0\\
+&=0, pas de fen\^etre.\\
+&= $N>0$ : PHI(T) = CN*(1+COS(PI*T))**N avec CN = $2^N(N!)^2/(2N)!$\\ \hline
+naf\_difflpm\_dtour  & Longueur d'un tour de cadran ( en g\'en\'eral $2\pi$).\\ \hline
+naf\_difflpm\_tol  &  Tol\'erance pour d\'eterminer si deux fr\'equences sont identiques.\\ \hline
+naf\_difflpm\_pla(1)   & indice de la premi\`ere plan\`ete $p(1)$. Les indices commencent \`a 1.\\ \hline
+naf\_difflpm\_pla(2)   & indice de la deuxi\`eme plan\`ete $p(2)$. Les indices commencent \`a  1.\\ \hline
+
+ \end{tabularx}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\vspace{0.5cm}
+\subsubsection*{Contr\^ole de l'\'energie}
+Cela arr\^ete l'int\'egration si l'erreur relative sur l'\'energie varie trop. La valeur de l'\'energie au temps initial est pris comme r\'ef\'erence.
+
+\begin{tabularx}{\textwidth}{|l|X|}
+\hline
+Nom du champ& Descriptif \\ \hline \hline
+ctrl\_energie\_compute & =0, le contr\^ole de l'\'energie n'est pas r\'ealis\'e. Tous les autres champs sont ignor\'es.\\
+&=1, le contr\^ole de l'\'energie est r\'ealis\'e.\\  \hline
+ctrl\_energie\_stepcalc & fr\'equence des points de  contr\^ole de l'\'energie. Il est exprim\'e en nombre de pas d'int\'egrations. La variation de l'\'energie sera v\'erifi\'ee tous les ctrl\_energie\_stepcalc*dt ann\'ees. \\ \hline
+ctrl\_energie\_relenermax& valeur maximale de la variation de l'erreur relative sur l'\'energie. Si l'erreur relative d\'epasse cette valeur, l'int\'egration s'arr\^ete. La valeur de l'\'energie au temps initial est pris comme r\'ef\'erence.\\ \hline
+ \end{tabularx}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\vspace{0.5cm}
+\subsubsection*{Contr\^ole de la distance \`a l'\'etoile}
+Cela arr\^ete l'int\'egration si une plan\`ete s'approche trop pr\`es ou s'\'eloigne trop de l'\'etoile. 
+
+Si ctrl\_diststar\_compute =2, cela g\'en\`ere un fichier xxx.ctrlstar\_car.
+
+Si ctrl\_diststar\_compute =3, cela g\'en\`ere un fichier xxx.ctrlstar\_ell. 
+
+\begin{tabularx}{\textwidth}{|l|X|}
+\hline
+Nom du champ& Descriptif \\ \hline \hline
+ctrl\_diststar\_compute & =0, le contr\^ole de distance n'est pas r\'ealis\'e. Tous les autres champs sont ignor\'es.\\
+&=1, le contr\^ole de distance est r\'ealis\'e et aucun dump n'est r\'ealis\'e.\\  
+&=2, le contr\^ole de distance est r\'ealis\'e et un dump en coordon\'ees cart\'esiennes est effectu\'e.\\ 
+&=3, le contr\^ole de distance est r\'ealis\'e et un dump en coordon\'ees elliptiques est effectu\'e.\\  \hline
+ctrl\_diststar\_stepcalc & fr\'equence des points de  contr\^ole de distance. Il est exprim\'e en nombre de pas d'int\'egrations. La distance sera v\'erifi\'ee tous les ctrl\_diststar\_stepcalc*dt ann\'ees. \\ \hline
+ctrl\_diststar\_distmin & distance minimale en UA \`a l'\'etoile. Si une plan\`ete a une distance \`a l'\'etoile inf\'erieure \`a cette valeur, l'int\'egration s'arr\^ete. \\ \hline
+ctrl\_diststar\_distmax & distance maximale en UA \`a l'\'etoile. Si une plan\`ete a une distance \`a l'\'etoile sup\'erieure \`a cette valeur, l'int\'egration s'arr\^ete. \\ \hline
+ \end{tabularx}
+
+ %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\vspace{0.5cm}
+\subsubsection*{Contr\^ole de la distance entres plan\`etes}
+Cela arr\^ete l'int\'egration si une plan\`ete s'approche d'une autre plan\`ete. On définit une "boule interdite" (bas\'e sur un rayon) autour de chaque plan\`ete dans le fichier ctrl\_distpla\_nfdistmin. Chaque plan\`ete a son propre "rayon" de boule interdite.
+Donc d\`es qu'une autre plan\`ete est \`a l'intérieure de cette boule, on arr\^ete l'int\'egration.  
+
+Si ctrl\_distpla\_compute =2, cela g\'en\`ere un fichier xxx.ctrlpla\_car.
+
+Si ctrl\_distpla\_compute =3, cela g\'en\`ere un fichier xxx.ctrlpla\_ell. 
+
+\begin{tabularx}{\textwidth}{|l|X|}
+\hline
+Nom du champ& Descriptif \\ \hline \hline
+ctrl\_distpla\_compute & =0, le contr\^ole de distance n'est pas r\'ealis\'e. Tous les autres champs sont ignor\'es.\\
+&=1, le contr\^ole de distance est r\'ealis\'e et aucun dump n'est r\'ealis\'e.\\  
+&=2, le contr\^ole de distance est r\'ealis\'e et un dump en coordon\'ees cart\'esiennes est effectu\'e.\\
+&=3, le contr\^ole de distance est r\'ealis\'e et un dump en coordon\'ees elliptiques est effectu\'e.\\  \hline
+ctrl\_distpla\_stepcalc & fr\'equence des points de  contr\^ole de distance. Il est exprim\'e en nombre de pas d'int\'egrations. La distance sera v\'erifi\'ee tous les |ctrl\_distpla\_stepcalc|*dt ann\'ees. \\
+& si ce nombre est positif, le contrôle s'effectue sur les pas de sortie. \\
+& si ce nombre est n\'egatif, le contrôle s'effectue sur les pas du sch\'ema symplectique. \\ \hline
+ctrl\_distpla\_nfdistmin & Nom du fichier contenant les distances minimales entre les plan\`etes. \\ \hline
+ \end{tabularx}
+
+ %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsection{Sch\'ema d'intégration disponibles}\label{autresschemas}
+
+
+
+\begin{tabularx}{\textwidth}{|l|X|}
+\hline
+&Variables h\'eliocentriques\\
+\hline
+ABAH4 & \\
+ABAH5 & \\
+ABAH6 & \\
+ABAH7 & \\
+ABAH8 & \\
+ABAH9 & \\
+ABAH10 & \\
+ABA82 & Laskar $SABA_4$ and McLahan (8,2) \\
+ABA82 & McLahan (8,4) \\
+ABA844 & Blanes (8,4,4) \\
+ABAH864  & Blanes (8,6,4) \\
+ABAH1064 & Blanes (10,6,4) \\
+&\\
+BABH4& \\
+BABH5& \\
+BABH6& \\
+BABH7& \\
+BABH8& \\
+BABH9& \\
+BABH10& \\
+BABH82 &  Laskar $SBAB_4$ and McLahan (8,2) \\
+BABH84 &  McLahan (8,4) \\
+BABH844 & Blanes (8,4,4) \\
+BABH864  & Blanes (8,6,4) \\
+BABH1064 & Blanes (10,6,4) \\
+\hline
+\end{tabularx}
+
+"High order symplectic integrators for perturbed Hamiltonian systems".
+J. Laskar, P. Robutel, 2010
+
+
+"New families of symplectic splitting methods for numerical integration in dynamical astronomy". Blanes, Casas, Farres, Laskar, Makazaga, Murua, 2013 
+
+\begin{tabularx}{\textwidth}{|l|X|}
+\hline
+&Variables de Jacobi\\
+\hline
+ABA4& \\
+ABA5& \\
+ABA6& \\
+ABA7& \\
+ABA8& \\
+ABA9& \\
+ABA10& \\
+ABA82 & Laskar $SABA_4$ and McLahan (8,2) \\
+ABA864  & Blanes (8,6,4) \\
+ABA1064 & Blanes (10,6,4) \\
+ABA104 & Blanes (10,4) \\
+& \\
+BAB4& \\
+BAB5& \\
+BAB6& \\
+BAB7& \\
+BAB8& \\
+BAB9& \\
+BAB10& \\
+BAB82 &  Laskar $SBAB_4$ and McLahan (8,2) \\
+BAB84 &  McLahan (8,4) \\
+BAB864  & Blanes (8,6,4) \\
+\hline
+\end{tabularx}
+
+"High order symplectic integrators for perturbed Hamiltonian systems".
+J. Laskar, P. Robutel, 2010
+
+"New families of symplectic splitting methods for numerical integration in dynamical astronomy". Blanes, Casas, Farres, Laskar, Makazaga, Murua, 2013 
+
+
+
+\subsection{Format du fichier nf\_initext}
+
+Ce fichier contient les conditions initiales (masses et coordonn\'ees) des syst\`emes plan\'etaires. 
+Ce fichier stocke un syst\`eme plan\'etaire par ligne.
+
+Les masses sont exprimées en masse solaire.  La masse solaire de référence dépend du flag ref\_gmsun.
+Les unit\'es des coordonn\'ees des plan\`etes doivent \^etre en UA, an et radians.
+
+Sur chaque ligne, on a :
+\begin{itemize}
+\item colonne 1 : chaine sans espace donnant le nom du syst\`eme. Par exemple P0001 ou N0002, .... .
+\item colonne 2 : nombre de plan\`etes (sans l'\'etoile) , nomm\'e nbplan.
+\item colonne 3 : Masse de  l'\'etoile exprimée en masse solaire (=1 pour le système solaire)
+\item colonne 4 \`a 4+nbplan-1 : Masse des plan\`etes exprimée en masse solaire 
+\item colonne 4+nbplan : type de coordonn\'ees initiales des plan\`etes
+\begin{itemize}
+\item 1:  elliptiques h\'eliocentriques canoniques
+	     CI(1:6) = (a,e,I,M,omega,Omega)
+\item 2:  elliptiques h\'eliocentriques non canoniques
+	     CI(1:6) = (a,e,I,M,omega,Omega)
+\item 3:  elliptiques h\'eliocentriques canoniques
+	     CI(1:6) = (a,la,k,h,q,p)
+\item 4:  elliptiques h\'eliocentriques non canoniques
+	     CI(1:6) = (a,la,k,h,q,p)
+\item 5:  positions vitesses h\'eliocentriques
+	     CI(1:6) = (x,y,z,vx,vy,vz)
+\end{itemize}
+
+\item colonne 4+nbplan+1 \`a  4+nbplan+6 :   coordonn\'ees initiales (6 composantes) de la plan\`ete 1
+\item  colonnes suivantes :   coordonn\'ees initiales (6 composantes) pour les plan\`etes suivantes
+\end{itemize}
+
+ Par exemple, si on a 3 plan\`etes avec des positions/vitesses h\'eliocentriques, on a dans les colonnes :
+ 
+\begin{tabular}{|c|c|c|c|c|c|c|c|c|c|} \hline
+1 &  2 &  3 & 4 & 5 &6 &7 &8-13 &14-19 &20-25 \\ \hline
+P0001 & 3 & $M_{star}$  & $M_1$ &  $M_2$ & $M_3$  &5 &$CI_1(1:6)$ & $CI_2(1:6)$&$CI_3(1:6)$\\    \hline
+\end{tabular}
+
+
+\subsection{Format du fichier ctrl\_distpla\_nfdistmin }
+
+Ce fichier contient les distances minimales entre les plan\`etes des syst\`emes plan\'etaires. 
+Ce fichier stocke un syst\`eme plan\'etaire par ligne. L'ordre des syst\`emes plan\'etaires doit \^etre le m\^eme que dans le fichier nf\_initext.
+
+L'unit\'e des distances minimales doivent \^etre en UA.
+
+Sur chaque ligne, on a :
+\begin{itemize}
+\item colonne 1 : chaine sans espace donnant le nom du syst\`eme. Par exemple P0001 ou N0002, .... .
+\item colonne 2 : nombre de plan\`etes (sans l'\'etoile) , nomm\'e nbplan.
+\item colonne 3 \`a 3+nbplan-1 : Distance minimale pour chaque plan\`ete. 
+\end{itemize}
+
+ Par exemple, si on a 3 plan\`etes, on a dans les colonnes :
+ 
+\begin{tabular}{|c|c|c|c|c|} \hline
+1 &  2 &  3 & 4 & 5  \\ \hline
+P0001 & 3 & $dmin_{1}$  & $dmin_{2}$ & $dmin_{3}$\\    \hline
+\end{tabular}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%
+\section{Fichiers de sortie}
+
+%%%%%%%%%%%%%%%%%%%%%%%
+\subsection{Format du fichier {\bf ???.ci} }
+
+Ce fichier contient les conditions initiales (masses et coordonn\'ees) des syst\`emes plan\'etaires. 
+Ce fichier stocke un syst\`eme plan\'etaire par ligne.
+
+Son format est identique \`a   celui de nf\_initext.
+
+%%%%%%%%%%%%%%%%%%%%%%%
+\subsection{Format du fichier {\bf ???.control} }
+
+Ce fichier contient 5 colonnes et indique pour pour chaque condition initiale si l'int\'egration s'est bien d\'eroul\'ee ou non.
+Ce fichier stocke un syst\`eme plan\'etaire par ligne.
+
+Sur chaque ligne, on a :
+\begin{itemize}
+\item colonne 1 : chaine sans espace donnant le nom du syst\`eme. Par exemple P0001 ou N0002, .... .
+\item colonne 2 : 
+\begin{itemize}
+\item 0: l'int\'egration s'est correctement termin\'ee
+\item -3: probl\`eme de convergence dans kepsaut. L'int\'egration s'est interrompue.
+\item -4: cas non elliptique.  L'int\'egration s'est interrompue.
+\item -5: variation trop grande de l'énergie.  La colonne 6 contient la valeur absolue de l'erreur relative de l'énergie par rapport \`a l'énergie au temps 0. L'int\'egration s'est interrompue.
+\item -6: corps trop proche de l'\'etoile.  La colonne 6 contient la distance de la plan\`ete \`a l'\'etoile. L'int\'egration s'est interrompue.
+\item -7: corps trop loin de l'\'etoile.  La colonne 6 contient la distance de la plan\`ete \`a l'\'etoile. L'int\'egration s'est interrompue.
+\item -9: corps trop proche d'une plan\`ete.  La colonne 6 contient le num\'ero de la plan\`ete qui est trop proche. L'int\'egration s'est interrompue.
+\end{itemize}
+\item colonne 3 : temps initial de l'int\'egration
+\item colonne 4 : temps finale de l'int\'egration
+\item colonne 5 : corps (si disponible) ayant g\'en\'er\'e l'erreur
+\item colonne 6 : 0 si aucune erreur. Sinon, elle contient une valeur d\'ependante de la colonne 2.
+\end{itemize}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%
+\subsection{Format du fichier {\bf ???.int} }
+
+Chaque fichier contient un seul syst\`eme plan\'etaire.
+Ce fichier contient 5 colonnes et stocke la valeur des int\'egrales premi\`eres  : \'energie et moment cin\'etique.
+
+Sur chaque ligne, on a : 
+
+\begin{tabular}{|c|c|c|} \hline
+colonne 1 &  colonne 2 & colonne 3-5 \\ \hline
+temps & \'energie & moment cin\'etique (x,y,z)\\    \hline
+\end{tabular}
+
+La premi\`ere ligne contient la valeur initiale des int\'egrales premi\`eres. Les lignes suivantes contient la différence (absolue) des intégrales par rapport à la valeur initiale.
+
+
+%%%%%%%%%%%%%%%%%%%%%%%
+\subsection{Format du fichier {\bf ???.car} }
+
+Ce fichier contient les positions h\'eliocentriques et vitesses h\'eliocentriques cart\'esiennes des plan\`etes. Les unit\'es sont en AU et AU/an.
+Chaque fichier contient un seul syst\`eme plan\'etaire.
+
+
+Sur chaque ligne, on a : 
+
+\begin{tabular}{|c|c|c|c|} \hline
+colonne 1 &   colonne 2-7 & colonne 8-13 & ... \\ \hline
+temps & (x,y,z,vx,vy,vz) de la plan\`ete 1  & (x,y,z,vx,vy,vz) de la plan\`ete 2 & ... \\    \hline
+\end{tabular}
+
+%%%%%%%%%%%%%%%%%%%%%%%
+\subsection{Format du fichier {\bf ???.ell} }
+
+Ce fichier contient les \'el\'ements elliptiques des plan\`etes. Le type d'\'el\'ement d\'epend du param\`etres  {\bf out\_ell}. Les unit\'es sont en AU, an et radians.
+Chaque fichier contient un seul syst\`eme plan\'etaire.
+
+Sur chaque ligne, on a : 
+
+\begin{tabular}{|c|c|c|c|} \hline
+colonne 1 &   colonne 2-7 & colonne 8-13 & ... \\ \hline
+temps & ell(1:6) de la plan\`ete 1  & ell(1:6) de la plan\`ete 2 & ... \\    \hline
+\end{tabular}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%
+\subsection{Format du fichier  {\bf ???.ctrlstar\_car}}
+
+Ce fichier contient les positions h\'eliocentriques et vitesses h\'eliocentriques cart\'esiennes des plan\`etes lors de l'arr\^et de l'int\'egration d\^u \`a une distance trop proche ou lointaine \`a l'\'etoile. Les unit\'es sont en AU et AU/an.
+
+ Il y a un fichier par processeur. Chaque fichier contient plusieurs syst\`emes plan\'etaires.
+
+
+Sur chaque ligne, on a : 
+
+\begin{tabular}{|c|c|c|c|c|} \hline
+colonne 1 &   colonne 2 & colonne 3-8 & colonne 9-14 & ... \\ \hline
+nom & temps & (x,y,z,vx,vy,vz) de la plan\`ete 1  & (x,y,z,vx,vy,vz) de la plan\`ete 2 & ... \\    \hline
+\end{tabular}
+
+%%%%%%%%%%%%%%%%%%%%%%%
+\subsection{Format du fichier {\bf ???.ctrlstar\_ell}}
+
+Ce fichier contient les \'el\'ements elliptiques des plan\`etes lors de l'arr\^et de l'int\'egration d\^u \`a une distance trop proche ou lointaine \`a l'\'etoile. Le type d'\'el\'ement d\'epend du param\`etres  {\bf out\_ell}. Les unit\'es sont en AU, an et radians.
+
+ Il y a un fichier par processeur. Chaque fichier contient plusieurs syst\`emes plan\'etaires.
+
+Sur chaque ligne, on a : 
+
+\begin{tabular}{|c|c|c|c|c|} \hline
+colonne 1 &   colonne 2 & colonne 3-8 & colonne 9-14 & ... \\ \hline
+nom & temps & ell(1:6) de la plan\`ete 1  & ell(1:6) de la plan\`ete 2 & ... \\    \hline
+\end{tabular}
+
+%%%%%%%%%%%%%%%%%%%%%%%
+\subsection{Format du fichier  {\bf ???.ctrlpla\_car}}
+
+Ce fichier contient les positions h\'eliocentriques et vitesses h\'eliocentriques cart\'esiennes des plan\`etes lors de l'arr\^et de l'int\'egration d\^u \`a une distance trop proche entre plan\`etes. Les unit\'es sont en AU et AU/an.
+
+ Il y a un fichier par processeur. Chaque fichier contient plusieurs syst\`emes plan\'etaires.
+
+
+Sur chaque ligne, on a : 
+
+\begin{tabular}{|c|c|c|c|c|} \hline
+colonne 1 &   colonne 2 & colonne 3-8 & colonne 9-14 & ... \\ \hline
+nom & temps & (x,y,z,vx,vy,vz) de la plan\`ete 1  & (x,y,z,vx,vy,vz) de la plan\`ete 2 & ... \\    \hline
+\end{tabular}
+
+%%%%%%%%%%%%%%%%%%%%%%%
+\subsection{Format du fichier  {\bf ???.ctrlpla\_ell}}
+
+Ce fichier contient les \'el\'ements elliptiques des plan\`etes lors de l'arr\^et de l'int\'egration d\^u \`a une distance trop proche entre plan\`etes. Le type d'\'el\'ement d\'epend du param\`etres  {\bf out\_ell}. Les unit\'es sont en AU, an et radians.
+
+ Il y a un fichier par processeur. Chaque fichier contient plusieurs syst\`emes plan\'etaires.
+
+Sur chaque ligne, on a : 
+
+\begin{tabular}{|c|c|c|c|c|} \hline
+colonne 1 &   colonne 2 & colonne 3-8 & colonne 9-14 & ... \\ \hline
+nom & temps & ell(1:6) de la plan\`ete 1  & ell(1:6) de la plan\`ete 2 & ... \\    \hline
+\end{tabular}
+
+%%%%%%%%%%%%%%%%%%%%%%%
+\subsection{Format du fichier {\bf ???.minmax\_aei} }
+
+Ce fichier contient les minimum, maximum et moyenne en a,e et i sur une tranche de temps. Les unit\'es sont en AU et radians.
+Les types des \'el\'ements elliptiques d\'ependent du param\`etre  {\bf minmax\_aei\_elltype}.
+
+ Il y a un fichier par processeur. Chaque fichier contient plusieurs syst\`emes plan\'etaires.
+ 
+ 
+Sur chaque ligne, on a dans chaque colonne: 
+
+\begin{tabular}{|c|c|c|c|c|c|c|c|c|c|c|c|c|} \hline
+ 1 &    2 &  \multicolumn{9}{c|}{3-11} & \multicolumn{2}{c|}{12-...} \\ \hline
+  &    &  \multicolumn{9}{c|}{plan\`ete 1} &  \multicolumn{2}{c|}{plan\`ete 2 ...} \\ \hline
+  &    &  \multicolumn{3}{c|}{a} & \multicolumn{3}{c|}{e} & \multicolumn{3}{c|}{i} & \multicolumn{2}{c|}{a ....} \\ \hline
+nom & temps &  min   &moy & max  &  min   & moy & max   & min   & moy & max &  min &... \\  
+ & final &     & &   &     &  &    &    &  &  &   &
+\\\hline
+\end{tabular}
+ Ici, le temps final est le temps de fin de chaque tranche. Le fichier contient toutes les tranches d'une m\^eme  condition initiale.
+
+%%%%%%%%%%%%%%%%%%%%%%%
+\subsection{Format du fichier {\bf ???.minmax\_alp} }
+
+Ce fichier contient les minimum, maximum et moyenne en $a_{p(1)}-a_{p(2)}$, $\lambda_{p(1)}-\lambda_{p(2)}$ et $\varpi_{p(1)}-\varpi_{p(2)}$ sur une tranche de temps. Les unit\'es sont en AU et radians. Pour les diff\'erences d'angle, il y a une double d\'etermination entre $[0,2\pi]$ et entre $[-\pi, \pi]$.
+Les types des \'el\'ements elliptiques d\'ependent du param\`etre  {\bf minmax\_alp\_elltype}.
+
+ Il y a un fichier par processeur. Chaque fichier contient plusieurs syst\`emes plan\'etaires. Le fichier contient toutes les tranches d'une m\^eme  condition initiale.
+
+
+Sur chaque ligne, on a dans chaque colonne: 
+
+\begin{tabularx}{\textwidth}{|l|l|X|}
+ \hline
+ colonne &      \multicolumn{2}{c|}{description} \\ \hline
+1  &    \multicolumn{2}{l|}{nom} \\ \hline
+2  &    \multicolumn{2}{l|}{temps final de chaque tranche} \\ \hline
+3 &    & min\\
+4 &  $a_{p(1)}-a_{p(2)}$ & moy\\
+5 & &   max\\ \hline
+6 & &   min\\
+7 & $\lambda_{p(1)}-\lambda_{p(2)}$ sur $[0,2\pi]$&moy\\
+8 &    & max\\ \hline
+9 &    & min\\
+10& $\lambda_{p(1)}-\lambda_{p(2)}$ sur $[-\pi,\pi]$ & moy\\
+11 & &    max\\ \hline
+12 & &    min\\
+13 &   $\varpi_{p(1)}-\varpi_{p(2)}$ sur $[0,2\pi]$ & moy\\
+14 & &    max\\ \hline
+15 & &    min\\
+16 & $\varpi_{p(1)}-\varpi_{p(2)}$ sur $[-\pi,\pi]$ & moy\\
+17 & &    max\\ \hline
+\end{tabularx}
+
+%%%%%%%%%%%%%%%%%%%%%%%
+\subsection{Format du fichier {\bf ???.minmax\_alc} }
+
+Ce fichier contient les minimum, maximum et moyenne en $a_{p(1)}-a_{p(2)}$, $\lambda_{p(1)}-\lambda_{p(2)}$ et $\varpi_{p(1)}-\varpi_{p(2)}$ sur une tranche de temps. Les unit\'es sont en AU et radians. Pour les diff\'erences d'angle,les différences d'angles sotn redressés pour obtenir une différence continue.
+Les types des \'el\'ements elliptiques d\'ependent du param\`etre  {\bf minmax\_alc\_elltype}.
+
+ Il y a un fichier par processeur. Chaque fichier contient plusieurs syst\`emes plan\'etaires. Le fichier contient toutes les tranches d'une m\^eme  condition initiale.
+
+
+Sur chaque ligne, on a dans chaque colonne: 
+
+\begin{tabularx}{\textwidth}{|l|l|X|}
+ \hline
+ colonne &      \multicolumn{2}{c|}{description} \\ \hline
+1  &    \multicolumn{2}{l|}{nom} \\ \hline
+2  &    \multicolumn{2}{l|}{temps final de chaque tranche} \\ \hline
+3 &    & min\\
+4 &  $a_{p(1)}-a_{p(2)}$ & moy\\
+5 & &   max\\ \hline
+6 & &   min\\
+7 & $\lambda_{p(1)}-\lambda_{p(2)}$ &moy\\
+8 &    & max\\ \hline
+12 & &    min\\
+13 &   $\varpi_{p(1)}-\varpi_{p(2)}$& moy\\
+14 & &    max\\ \hline
+\end{tabularx}
+
+%%%%%%%%%%%%%%%%%%%%%%%
+\subsection{Format du fichier {\bf ???.minmax\_ae2} }
+
+Ce fichier contient les minimum, maximum et moyenne en $(a_{p(1)}-a_{p(2)})^2$, $(e_{p(1)}-e_{p(2)})^2$ et $(a_{p(1)}-a_{p(2)})^2+(e_{p(1)}-e_{p(2)})^2$ sur une tranche de temps. Les unit\'es sont en AU.
+Les types des \'el\'ements elliptiques d\'ependent du param\`etre  {\bf minmax\_ae2\_elltype}.
+
+ Il y a un fichier par processeur. Chaque fichier contient plusieurs syst\`emes plan\'etaires. Le fichier contient toutes les tranches d'une m\^eme  condition initiale.
+
+
+Sur chaque ligne, on a dans chaque colonne: 
+
+\begin{tabularx}{\textwidth}{|l|l|X|}
+ \hline
+ colonne &      \multicolumn{2}{c|}{description} \\ \hline
+1  &    \multicolumn{2}{l|}{nom} \\ \hline
+2  &    \multicolumn{2}{l|}{temps final de chaque tranche} \\ \hline
+3 &    & min\\
+4 &  $(a_{p(1)}-a_{p(2)})^2$ & moy\\
+5 & &   max\\ \hline
+3 &    & min\\
+4 &  $(e_{p(1)}-e_{p(2)})^2$ & moy\\
+5 & &   max\\ \hline
+3 &    & min\\
+4 &  $(a_{p(1)}-a_{p(2)})^2+(e_{p(1)}-e_{p(2)})^2$ & moy\\
+5 & &   max\\ \hline
+\end{tabularx}
+
+%%%%%%%%%%%%%%%%%%%%%%%
+\subsection{Format du fichier {\bf ???.naf\_alkhqp} }
+
+Ce fichier contient l'analyse en fr\'equence en $a\exp^{\imath\lambda}, k+\imath h, q+\imath p$ sur une tranche de temps. Les unit\'es des fr\'equences d\'ependent de naf\_alkhqp\_dtour.
+
+ Il y a un fichier par processeur. Chaque fichier contient plusieurs syst\`emes plan\'etaires. Le fichier contient toutes les tranches d'une m\^eme  condition initiale.
+
+
+Sur chaque ligne, on a dans chaque colonne: 
+
+\begin{tabularx}{\textwidth}{|l|l|l|l|X|}
+ \hline
+ colonne &      \multicolumn{4}{c|}{description} \\ \hline
+1  &    \multicolumn{4}{l|}{nom} \\ \hline
+2  &    \multicolumn{4}{l|}{temps initial (T0) de chaque tranche} \\ \hline
+3 & &   & & fr\'equence\\
+4 &planete 1 &$a\exp^{\imath\lambda}$& terme 1 & amplitude (partie r\'eelle)\\
+5 & &   & &amplitude (partie imaginaire)\\ \hline
+\dots & planete 1 &$a\exp^{\imath\lambda}$& terme ?? &\dots \\ \hline
+ & &   & &fr\'equence\\
+ &planete 1 & $a\exp^{\imath\lambda}$ & terme $naf\_alkhqp\_nterm$ & amplitude (partie r\'eelle)\\
+ & &   & &amplitude (partie imaginaire)\\ \hline
+ & &   & & fr\'equence\\
+ &planete 1 &$k+\imath h$& terme 1 & amplitude (partie r\'eelle)\\
+ & &   & &amplitude (partie imaginaire)\\ \hline
+\dots & planete 1 &$k+\imath h$& terme ?? &\dots \\ \hline
+ & &   & &fr\'equence\\
+ &planete 1 & $k+\imath j$ & terme $naf\_alkhqp\_nterm$ & amplitude (partie r\'eelle)\\
+ & &   & &amplitude (partie imaginaire)\\ \hline
+& &   & & fr\'equence\\
+ &planete 1 &$q+\imath p$& terme 1 & amplitude (partie r\'eelle)\\
+ & &   & &amplitude (partie imaginaire)\\ \hline
+\dots & planete 1 &$q+\imath p$& terme ?? &\dots \\ \hline
+ & &   & &fr\'equence\\
+ &planete 1 & $q+\imath p$ & terme $naf\_alkhqp\_nterm$ & amplitude (partie r\'eelle)\\
+ & &   & &amplitude (partie imaginaire)\\ \hline
+\dots & planete 2 &$a\exp^{\imath\lambda}$& terme 1 &fr\'equence \\ \hline
+\dots & & & \dots &\\\hline
+\end{tabularx}
+
+
+
+%%%%%%%%%%%%%%%%%%%%%%%
+\subsection{Format du fichier {\bf ???.naf\_alkh} }
+
+Ce fichier contient l'analyse en fr\'equence en $a\exp^{\imath\lambda}, k+\imath h$ sur une tranche de temps. Les unit\'es des fr\'equences d\'ependent de naf\_alkhqp\_dtour.
+
+ Il y a un fichier par processeur. Chaque fichier contient plusieurs syst\`emes plan\'etaires. Le fichier contient toutes les tranches d'une m\^eme  condition initiale.
+
+
+Sur chaque ligne, on a dans chaque colonne: 
+
+\begin{tabularx}{\textwidth}{|l|l|l|l|X|}
+ \hline
+ colonne &      \multicolumn{4}{c|}{description} \\ \hline
+1  &    \multicolumn{4}{l|}{nom} \\ \hline
+2  &    \multicolumn{4}{l|}{temps initial (T0) de chaque tranche} \\ \hline
+3 & &   & & fr\'equence\\
+4 &planete 1 &$a\exp^{\imath\lambda}$& terme 1 & amplitude (partie r\'eelle)\\
+5 & &   & &amplitude (partie imaginaire)\\ \hline
+\dots & planete 1 &$a\exp^{\imath\lambda}$& terme ?? &\dots \\ \hline
+ & &   & &fr\'equence\\
+ &planete 1 & $a\exp^{\imath\lambda}$ & terme $naf\_alkhqp\_nterm$ & amplitude (partie r\'eelle)\\
+ & &   & &amplitude (partie imaginaire)\\ \hline
+ & &   & & fr\'equence\\
+ &planete 1 &$k+\imath h$& terme 1 & amplitude (partie r\'eelle)\\
+ & &   & &amplitude (partie imaginaire)\\ \hline
+\dots & planete 1 &$k+\imath h$& terme ?? &\dots \\ \hline
+ & &   & &fr\'equence\\
+ &planete 1 & $k+\imath j$ & terme $naf\_alkhqp\_nterm$ & amplitude (partie r\'eelle)\\
+ & &   & &amplitude (partie imaginaire)\\ \hline
+\dots & planete 2 &$a\exp^{\imath\lambda}$& terme 1 &fr\'equence \\ \hline
+\dots & & & \dots &\\\hline
+\end{tabularx}
+
+%%%%%%%%%%%%%%%%%%%%%%%
+\subsection{Format du fichier {\bf ???.naf\_diffalp} }
+
+Ce fichier contient l'analyse en fr\'equence en  $\exp^{\imath(\lambda_{p(1)}-\lambda_{p(2)})}$ et $\exp^{\imath(\varpi_{p(1)}-\varpi_{p(2)})}$ sur une tranche de temps. Les unit\'es des fr\'equences d\'ependent de naf\_diffalp\_dtour.
+
+ Il y a un fichier par processeur. Chaque fichier contient plusieurs syst\`emes plan\'etaires. Le fichier contient toutes les tranches d'une m\^eme  condition initiale.
+
+
+Sur chaque ligne, on a dans chaque colonne: 
+
+\begin{tabularx}{\textwidth}{|l|l|l|X|}
+ \hline
+ colonne &      \multicolumn{3}{c|}{description} \\ \hline
+1  &    \multicolumn{3}{l|}{nom} \\ \hline
+2  &    \multicolumn{3}{l|}{temps initial (T0) de chaque tranche} \\ \hline
+3 & &    & fr\'equence\\
+4 &$\exp^{\imath(\lambda_{p(1)}-\lambda_{p(2)})}$& terme 1 & amplitude (partie r\'eelle)\\
+5 &   & &amplitude (partie imaginaire)\\ \hline
+\dots &  $\exp^{\imath(\lambda_{p(1)}-\lambda_{p(2)})}$& terme ?? &\dots \\ \hline
+ & &    &fr\'equence\\
+ &  $\exp^{\imath(\lambda_{p(1)}-\lambda_{p(2)})}$ & terme $naf\_diffalp\_nterm$ & amplitude (partie r\'eelle)\\
+ & &    &amplitude (partie imaginaire)\\ \hline
+ & &   & fr\'equence\\
+ &$\exp^{\imath(\varpi_{p(1)}-\varpi_{p(2)})}$& terme 1 & amplitude (partie r\'eelle)\\
+ &    & &amplitude (partie imaginaire)\\ \hline
+\dots & $\exp^{\imath(\varpi_{p(1)}-\varpi_{p(2)})}$& terme ?? &\dots \\ \hline
+ & &    &fr\'equence\\
+ & $\exp^{\imath(\varpi_{p(1)}-\varpi_{p(2)})}$ & terme $naf\_diffalp\_nterm$ & amplitude (partie r\'eelle)\\
+ &   & &amplitude (partie imaginaire)\\ \hline
+\end{tabularx}
+
+%%%%%%%%%%%%%%%%%%%%%%%
+\subsection{Format du fichier {\bf ???.naf\_difflpm} }
+
+Ce fichier contient l'analyse en fr\'equence en  $(\lambda_{p(1)}-\lambda_{p(2)})$ et $(\varpi_{p(1)}-\varpi_{p(2)})$ sur une tranche de temps. Les unit\'es des fr\'equences d\'ependent de naf\_difflpm\_dtour.
+
+ Il y a un fichier par processeur. Chaque fichier contient plusieurs syst\`emes plan\'etaires. Le fichier contient toutes les tranches d'une m\^eme  condition initiale.
+
+
+Sur chaque ligne, on a dans chaque colonne: 
+
+\begin{tabularx}{\textwidth}{|l|l|l|X|}
+ \hline
+ colonne &      \multicolumn{3}{c|}{description} \\ \hline
+1  &    \multicolumn{3}{l|}{nom} \\ \hline
+2  &    \multicolumn{3}{l|}{temps initial (T0) de chaque tranche} \\ \hline
+3 & &    & fr\'equence\\
+4 &$(\lambda_{p(1)}-\lambda_{p(2)})$ sur $[0,2\pi]$& terme 1 & amplitude (partie r\'eelle)\\
+5 &   & &amplitude (partie imaginaire)\\ \hline
+\dots &  $(\lambda_{p(1)}-\lambda_{p(2)})$ sur $[0,2\pi]$& terme ?? &\dots \\ \hline
+ & &    &fr\'equence\\
+ &  $(\lambda_{p(1)}-\lambda_{p(2)})$ sur $[0,2\pi]$ & terme $naf\_difflpm\_nterm$ & amplitude (partie r\'eelle)\\
+ & &    &amplitude (partie imaginaire)\\ \hline
+ & &    & fr\'equence\\
+ &$(\lambda_{p(1)}-\lambda_{p(2)})$ sur $[-\pi,\pi]$& terme 1 & amplitude (partie r\'eelle)\\
+ &   & &amplitude (partie imaginaire)\\ \hline
+\dots &  $(\lambda_{p(1)}-\lambda_{p(2)})$ sur $[-\pi,\pi]$& terme ?? &\dots \\ \hline
+ & &    &fr\'equence\\
+ &  $(\lambda_{p(1)}-\lambda_{p(2)})$ sur $[-\pi,\pi]$ & terme $naf\_difflpm\_nterm$ & amplitude (partie r\'eelle)\\
+ & &    &amplitude (partie imaginaire)\\ \hline
+ & &   & fr\'equence\\
+ &$(\varpi_{p(1)}-\varpi_{p(2)})$ sur $[0,2\pi]$& terme 1 & amplitude (partie r\'eelle)\\
+ &    & &amplitude (partie imaginaire)\\ \hline
+\dots & $(\varpi_{p(1)}-\varpi_{p(2)})$ sur $[0,2\pi]$& terme ?? &\dots \\ \hline
+ & &    &fr\'equence\\
+ & $(\varpi_{p(1)}-\varpi_{p(2)})$ sur $[0,2\pi]$ & terme $naf\_difflpm\_nterm$ & amplitude (partie r\'eelle)\\
+ &   & &amplitude (partie imaginaire)\\ \hline
+ & &   & fr\'equence\\
+ &$(\varpi_{p(1)}-\varpi_{p(2)})$ sur $[-\pi,\pi]$& terme 1 & amplitude (partie r\'eelle)\\
+ &    & &amplitude (partie imaginaire)\\ \hline
+\dots & $(\varpi_{p(1)}-\varpi_{p(2)})$ sur $[-\pi,\pi]$& terme ?? &\dots \\ \hline
+ & &    &fr\'equence\\
+ & $(\varpi_{p(1)}-\varpi_{p(2)})$ sur $[-\pi,\pi]$ & terme $naf\_difflpm\_nterm$ & amplitude (partie r\'eelle)\\
+ &   & &amplitude (partie imaginaire)\\ \hline
+\end{tabularx}
+
+\end{document}  

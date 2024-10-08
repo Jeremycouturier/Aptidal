@@ -9,6 +9,7 @@
 #include "transformation.h"
 #include "coefficients.h"
 #include "structure.h"
+#include "calculus.h"
 
 
 /******** Defining some global variables ********/
@@ -17,6 +18,7 @@ typ sma     [how_many_planet + 1];
 typ ecc     [how_many_planet + 1];
 typ lbd     [how_many_planet + 1];
 typ vrp     [how_many_planet + 1];
+typ Lbd_0   [how_many_planet + 1];
 int p_i     [how_many_planet + 1];
 int k_ij    [how_many_planet + 1][how_many_planet + 1];
 int q_ij    [how_many_planet]    [how_many_planet + 1];
@@ -98,7 +100,8 @@ void init(){
       transformation_display();
       Cppq_init();
       Hamiltonian_display();
-
+      X_old_init(X_old_t0);
+      old2new(X_old_t0, X_new_t0, X_uv_t0);
 }
 
 
@@ -115,19 +118,22 @@ void initialization(){
       typ buffer_lbd   [how_many_planet]     = body_lambda;
       typ buffer_vrp   [how_many_planet]     = body_varpi;
       typ buffer_chain [how_many_planet]     = resonance_chain;
-      for (i = 1; i < how_many_planet + 1; i++){
-            p_i[i] = buffer_chain[i-1];
-            sma[i] = buffer_sma  [i-1];
-            ecc[i] = buffer_ecc  [i-1];
-            lbd[i] = buffer_lbd  [i-1];
-            vrp[i] = buffer_vrp  [i-1];
+      for (i = 1; i < how_many_planet + 1; i ++){
+            p_i[i] = buffer_chain[i - 1];
+            sma[i] = buffer_sma  [i - 1];
+            ecc[i] = buffer_ecc  [i - 1];
+            lbd[i] = buffer_lbd  [i - 1];
+            vrp[i] = buffer_vrp  [i - 1];
       }
-      for (i = 0; i < how_many_planet + 1; i++){
+      for (i = 0; i < how_many_planet + 1; i ++){
             masses[i] = buffer_mass[i];
       }
       m0 = *masses;
+      for (i = 1; i < how_many_planet + 1; i ++){
+            Lbd_0[i]=masses[i]*sqrt(G*m0*sma[i]);
+      }
       
-      for (i = 1; i < how_many_planet + 1; i++){
+      for (i = 1; i < how_many_planet + 1; i ++){
             if (p_i[i] != 0 && (i == how_many_planet || p_i[i + 1] != p_i[i])){ //If the considered planet is resonant and is not the first member of a co-orbital pair
                   how_many_resonant ++;
             }
@@ -137,7 +143,7 @@ void initialization(){
       chain_missed = (int *)malloc((how_many_missed   + 1)*sizeof(int));
       int j = 1;
       int k = 1;
-      for (i = 1; i < how_many_planet + 1; i++){
+      for (i = 1; i < how_many_planet + 1; i ++){
             if (p_i[i] != 0 && (i == how_many_planet || p_i[i + 1] != p_i[i])){ //If the considered planet is resonant and is not the first member of a co-orbital pair
                   *(subchain + j) = i;
                   j ++;
@@ -164,7 +170,7 @@ void chain_validity(){
       
       /******** The chain cannot have only one resonant planet or negative nominal periods ********/
       int how_many_non_secular = 0;
-      for (i = 1; i < how_many_planet + 1; i++){
+      for (i = 1; i < how_many_planet + 1; i ++){
             if (p_i[i] < 0){
                   fprintf(stderr, "\nAptidal error : An invalid resonance chain was given. The nominal orbital periods cannot be negative.\n");
                   abort();
@@ -180,7 +186,7 @@ void chain_validity(){
       
       /******** The nominal periods must increase ********/
       int largest_orbital_period_so_far = 0;
-      for (i = 1; i < how_many_planet + 1; i++){
+      for (i = 1; i < how_many_planet + 1; i ++){
             if (p_i[i] != 0 && p_i[i] < largest_orbital_period_so_far){
                   fprintf(stderr,
                   "\nAptidal error : An invalid resonance chain was given. The nominal orbital periods must be given in increasing order (planets are ordered from innermost to outermost).\n"
@@ -195,7 +201,7 @@ void chain_validity(){
       /******** There can't be secular planets between co-orbital planets ********/
       int latest_orbital_period = 0;
       int secular_in_between = 0;
-      for (i = 1; i < how_many_planet + 1; i++){
+      for (i = 1; i < how_many_planet + 1; i ++){
             if (p_i[i] != 0 && p_i[i] == latest_orbital_period && secular_in_between){
                   fprintf(stderr,
                   "\nAptidal error : An invalid resonance chain was given. A non-resonant planet cannot be between co-orbital planets (planets are ordered from innermost to outermost).\n");
@@ -219,8 +225,8 @@ void array_init(){
       int i,j;
       
       /******** k_ij ********/
-      for (i = 1; i < how_many_resonant + 1; i++){
-            for (j = 1; j < how_many_resonant + 1; j++){
+      for (i = 1; i < how_many_resonant + 1; i ++){
+            for (j = 1; j < how_many_resonant + 1; j ++){
                   if (i != j){
                         k_ij[i][j] = p_i[subchain[i]] / gcd(p_i[subchain[i]],p_i[subchain[j]]);
                   }
@@ -228,14 +234,14 @@ void array_init(){
       }
       
       /******** q_ij ********/
-      for (i = 1; i < how_many_resonant; i++){
-            for (j = i + 1; j < how_many_resonant + 1; j++){
+      for (i = 1; i < how_many_resonant; i ++){
+            for (j = i + 1; j < how_many_resonant + 1; j ++){
                   q_ij[i][j] = k_ij[j][i] - k_ij[i][j];
             }
       }
       
       /******** k_i, k_star_i and q_i ********/
-      for (i = 1; i < how_many_resonant; i++){
+      for (i = 1; i < how_many_resonant; i ++){
             k_i     [i] = k_ij[i][i + 1];
             k_star_i[i] = k_ij[i + 1][i];
             q_i     [i] = q_ij[i][i + 1];
@@ -252,8 +258,8 @@ void array2rational(){
       int i,j;
       
       /******** k_ij ********/
-      for (i = 1; i < how_many_resonant + 1; i++){
-            for (j = 1; j < how_many_resonant + 1; j++){
+      for (i = 1; i < how_many_resonant + 1; i ++){
+            for (j = 1; j < how_many_resonant + 1; j ++){
                   if (i != j){
                         rat_k_ij[i][j] = int2rat(k_ij[i][j]);
                   }
@@ -261,14 +267,14 @@ void array2rational(){
       }
       
       /******** q_ij ********/
-      for (i = 1; i < how_many_resonant; i++){
-            for (j = i + 1; j < how_many_resonant + 1; j++){
+      for (i = 1; i < how_many_resonant; i ++){
+            for (j = i + 1; j < how_many_resonant + 1; j ++){
                   rat_q_ij[i][j] = int2rat(q_ij[i][j]);
             }
       }
       
       /******** k_i, k_star_i and q_i ********/
-      for (i = 1; i < how_many_resonant; i++){
+      for (i = 1; i < how_many_resonant; i ++){
             rat_k_i     [i] = int2rat(k_i[i]);
             rat_k_star_i[i] = int2rat(k_star_i[i]);
             rat_q_i     [i] = int2rat(q_i[i]);
@@ -297,26 +303,25 @@ struct pairOfReal b_12(typ alpha, typ precision){
       
       struct pairOfReal toBeReturned;
       typ m_buffer;
-      typ m = 1.0;
-      typ n = sqrt(1.0-alpha*alpha);
-      typ current_precision = absolute(m-n)/m;
+      typ m = 1.;
+      typ n = sqrt(1. - alpha*alpha);
+      typ current_precision = fabs(m - n)/m;
       typ b_12_1 = alpha;
-      typ loop = 2.0;
+      typ loop = 2.;
       
       while(current_precision > precision){
             m_buffer = m;
-            m = 0.5*(m+n);
+            m = 0.5*(m + n);
             n = sqrt(m_buffer*n);
-            current_precision = absolute(m-n)/m;
-            b_12_1 += loop*(m*m-n*n)/alpha;
-            loop *= 2.0;
+            current_precision = fabs(m - n)/m;
+            b_12_1 += loop*(m*m - n*n)/alpha;
+            loop *= 2.;
       }
       
       b_12_1 /= m;
-      toBeReturned.fst = 2.0/m;
+      toBeReturned.fst = 2./m;
       toBeReturned.snd = b_12_1;
       return toBeReturned;
-
 }
 
 
@@ -353,7 +358,6 @@ struct pairOfReal b_k2(typ alpha, struct pairOfReal b_km12, int k){
       toBeReturned.fst = b_k2_0;
       toBeReturned.snd = b_k2_1;
       return toBeReturned;
-      
 }
 
 
@@ -361,6 +365,7 @@ int gcd(int a, int b){
 
       /******** Computes the greatest common divisor of a and b with Euclide algorithm ********/
       /******** a and b are both positive                                              ********/
+
       
       if (a < b){
             return gcd(b,a);
@@ -445,18 +450,18 @@ struct rational ratadd(struct rational r1, struct rational r2){
 
 struct rational ratopp(struct rational r1){
 
-      /******** Return -r1 where r1 is a rational number ********/
+      /******** Returns -r1 where r1 is a rational number ********/
       
       struct rational mr1;
-      mr1.numerator = -r1.numerator;
-      mr1.denominator = r1.denominator;
+      mr1.numerator   = -r1.numerator;
+      mr1.denominator =  r1.denominator;
       return mr1;
 }
 
 
 struct rational ratinv(struct rational r1){
 
-      /******** Return 1/r1 where r1 is a rational number ********/
+      /******** Returns 1/r1 where r1 is a rational number ********/
 
       struct rational mr1;
       if (r1.numerator == 0){
@@ -464,11 +469,11 @@ struct rational ratinv(struct rational r1){
             abort();
       }
       if (r1.numerator > 0){
-            mr1.numerator = r1.denominator;
+            mr1.numerator   = r1.denominator;
             mr1.denominator = r1.numerator;
       }
       else {
-            mr1.numerator = -r1.denominator;
+            mr1.numerator   = -r1.denominator;
             mr1.denominator = -r1.numerator;
       }
       
@@ -540,33 +545,3 @@ void ratprint(struct rational r){
             printf("%d/%d", num, denom);
       }   
 }
-
-
-int min(int a, int b){
-
-      /******** Returns min(a,b) ********/
-      
-      if (a <= b){
-            return a;
-      }
-      else{
-            return b;
-      }
-}
-
-
-int max(int a, int b){
-
-      /******** Returns max(a,b) ********/
-      
-      if (a >= b){
-            return a;
-      }
-      else{
-            return b;
-      }
-}
-
-
-
-

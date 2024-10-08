@@ -55,33 +55,33 @@ void Cppq_init(){
       typ alp, ai, aj;
       
       /******** Initializing the array to 0.0 ********/
-      for (i = 0; i <= how_many_planet; i++){
-            for (j = 0; j <= how_many_planet; j++){
-                  for (k = 0; k < 32; k++){
-                        Cppq[i][j][k] = 0.0;
+      for (i = 0; i <= how_many_planet; i ++){
+            for (j = 0; j <= how_many_planet; j ++){
+                  for (k = 0; k < 32; k ++){
+                        Cppq[i][j][k] = 0.;
                   }
             }
       }
       
       /******** Initializing it with the relevant coefficients ********/
-      for (i = 1; i <= how_many_planet; i++){
-            for (j = i + 1; j <= how_many_planet; j++){
-                  ai  = sma   [i];
-                  aj  = sma   [j];
+      for (i = 1; i <= how_many_planet; i ++){
+            for (j = i + 1; j <= how_many_planet; j ++){
+                  ai  = sma[i];
+                  aj  = sma[j];
                   alp = ai/aj;
-                  pi = p_i[i];
-                  pj = p_i[j];
+                  pi  = p_i[i];
+                  pj  = p_i[j];
                   
-                  if (pi == 0 || pj == 0 || pi != pj){ //If the pair is not co-orbital
-                        resonances[0][0](alp,masses[i]); //Retrieving the 10 coefficients of the resonance 0:0
+                  if ((pi == 0 || pi != pj) && non_resonant_bool){ //If the pair is not co-orbital
+                        resonances[0][0](alp, masses[i]); //Retrieving the 10 coefficients of the resonance 0:0
                         /******** Storing the 10 coefficients of the resonance 0:0 ********/
                         Cppq[i][j][0] = C_00_1;
-                        if (max_deg >= 1){
+                        if ((max_deg + one_more_deg_bool) >= 2){
                               Cppq[i][j][1] = C_00_2;
                               Cppq[i][j][2] = C_00_3;
                               Cppq[i][j][3] = C_00_4;
                         }
-                        if (max_deg >= 3){
+                        if ((max_deg + one_more_deg_bool) >= 4){
                               Cppq[i][j][4] = C_00_5;
                               Cppq[i][j][5] = C_00_6;
                               Cppq[i][j][6] = C_00_7;
@@ -2578,7 +2578,7 @@ void resonance_89(typ alp, typ mi){
       /******** mi is the mass of the inner planet.                                              ********/
       
       /******** Computing the necessary Laplace coefficients ********/
-      struct pairOfReal b_12_01 = b_12(alp,1.0e-15);
+      struct pairOfReal b_12_01 = b_12(alp,1.0e-14);
       struct pairOfReal b_32_01 = b_k2(alp,b_12_01,3);
       struct pairOfReal b_52_01 = b_k2(alp,b_32_01,5);
       typ b_3_0 = b_32_01.fst;
@@ -3722,4 +3722,3 @@ void resonance_58(typ alp, typ mi){
        - 3.422222222222222223e2*alp7*b_5_0
        + 1.368888888888888888e2*alp8*b_5_1;
 }
-

@@ -1,0 +1,181 @@
+\documentclass[11pt]{article}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{geometry}                % See geometry.pdf to learn the layout options. There are lots.
+\geometry{a4paper}                   % ... or a4paper or a5paper or ... 
+%\geometry{landscape}                % Activate for for rotated page geometry
+%\usepackage[parfill]{parskip}    % Activate to begin paragraphs with an empty line rather than an indent
+\usepackage{graphicx}
+\usepackage{amssymb}
+\usepackage{epstopdf}
+\DeclareGraphicsRule{.tif}{png}{.png}{`convert #1 `dirname #1`/`basename #1 .tif`.png}
+\usepackage{tabularx}
+
+\title{HELIODEBASIC}
+\author{Micka\"el Gastineau}
+
+\begin{document}
+\maketitle
+
+\section{Version s\'equentielle}
+
+\begin{itemize}
+ \item Compilation:  
+ 
+make clean
+
+make
+ 
+\item Execution en interactif: 
+
+heliodebasic.x  ???.par
+\item Soumission sur bessel
+
+qsubserial -fastsse4 heliodebasic.x  ???.par
+\end{itemize}
+
+
+\section{Fichiers d'entree}
+
+\subsection{Fichier de param\`etres  intplabasic.par}
+
+\subsubsection*{Contr\^oles de l'int\'egration}
+
+\begin{tabularx}{\textwidth}{|l|X|}
+\hline
+Nom du champ& Descriptif \\ \hline 
+chemin   & dossier o\`u seront stock\'es les fichiers \\ \hline
+ nf\_rad    & radical de tous les fichiers g\'en\'er\'es\\ \hline
+ nf\_initext& fichier de conditions initiales des plan\`etes\\ \hline
+ ref\_gmsun& Valeur du GM du soleil de r\'ef\'erence \\ 
+& 0: valeur issue de la Table 1 de "NOMINAL VALUES FOR SELECTED SOLAR AND PLANETARY QUANTITIES: IAU 2015 RESOLUTION B3"\\
+& 1: valeur calculée à partir de la constante de Gauss (k=0.01720209895e0) \\\hline
+
+
+ int\_type& sch\'ema de l'int\'egrateur  \\
+&'DOPRI' : utilise dopri8 \\
+&'ODEX1' : utilise odex1D \\
+&'ODEX2' : utilise odex2D \\
+ \hline
+
+ 
+ tinit & temps initial (en g\'eneral 0) \\ \hline
+
+ dt& pas de temps de l'int\'egration en ann\'ee \\ \hline
+
+ n\_iter& nombre de pas d'int\'egrations \`a calculer. A la fin de l'int\'egration, le temps final sera  n\_iter*dt ans.\\ \hline
+
+ n\_out & fr\'equence d'\'ecriture des int\'egrales premi\`eres, coordonn\'ees cart\'esiennes et \'el\'ements elliptiques. Il est exprim\'e en nombre de pas d'int\'egrations. Les donn\'ees seront \'ecrites tous les n\_out*dt ann\'ees.
+ \\ \hline
+ out\_ell & format des \'el\'ements elliptiques \'ecrites dans les fichiers xxx.ell \\
+&1:  elliptiques h\'eliocentriques canoniques\\
+&	     CI(1:6) = (a,e,I,M,omega,Omega)\\
+&2:  elliptiques h\'eliocentriques non canoniques\\
+&	     CI(1:6) = (a,e,I,M,omega,Omega)\\
+&3:  elliptiques h\'eliocentriques canoniques\\
+&	     CI(1:6) = (a,la,k,h,q,p)\\
+&4:  elliptiques h\'eliocentriques non canoniques\\
+&	     CI(1:6) = (a,la,k,h,q,p)\\ \hline
+ if\_invar & =0 , l'int\'egration se fait dans le rep\`ere actuel. \\
+& =1, l'int\'egration se fait dans le plan invariant et les donn\'ees g\'en\'er\'ees sont dans ce plan invariant 
+\\ \hline
+
+ if\_int & =0 , les int\'egrales premi\`eres ne sont pas \'ecrites.\\
+&=1, les int\'egrales premi\`eres sont \'ecrites dans les fichiers xxx.int. Un fichier par syst\`eme\\ \hline
+ 
+ if\_ell & =0 , les \'el\'ements elliptiques ne sont pas \'ecrits.\\
+&=1, les \'el\'ements elliptiques sont \'ecrits dans les fichiers xxx.ell. Un fichier par syst\`eme\\ \hline
+ 
+ if\_car &  =0 , les \'el\'ements cart\'esiens (positions/vitesses) ne sont pas \'ecrits.\\
+&=1, les \'el\'ements cart\'esiens positions/vitesses) sont \'ecrits dans les fichiers xxx.car. Un fichier par syst\`eme\\ \hline 
+ \end{tabularx}
+
+
+
+\subsection{Format du fichier nf\_initext}
+
+Ce fichier contient les conditions initiales (masses et coordonn\'ees) des syst\`emes plan\'etaires. 
+Ce fichier stocke un syst\`eme plan\'etaire par ligne.
+
+Les masses sont exprimées en masse solaire.  La masse solaire de référence dépend du flag ref\_gmsun. 
+Les unit\'es des coordonn\'ees des plan\`etes doivent \^etre en UA, an et radians.
+
+Sur chaque ligne, on a :
+\begin{itemize}
+\item colonne 1 : chaine sans espace donnant le nom du syst\`eme. Par exemple P0001 ou N0002, .... .
+\item colonne 2 : nombre de plan\`etes (sans l'\'etoile) , nomm\'e nbplan.
+\item colonne 3 : Masse de  l'\'etoile exprimée en masse solaire (=1 pour le système solaire)
+\item colonne 4 \`a 4+nbplan-1 :  Masse des plan\`etes exprimée en masse solaire 
+\item colonne 4+nbplan : type de coordonn\'ees initiales des plan\`etes
+\begin{itemize}
+\item 1:  elliptiques h\'eliocentriques canoniques
+	     CI(1:6) = (a,e,I,M,omega,Omega)
+\item 2:  elliptiques h\'eliocentriques non canoniques
+	     CI(1:6) = (a,e,I,M,omega,Omega)
+\item 3:  elliptiques h\'eliocentriques canoniques
+	     CI(1:6) = (a,la,k,h,q,p)
+\item 4:  elliptiques h\'eliocentriques non canoniques
+	     CI(1:6) = (a,la,k,h,q,p)
+\item 5:  positions vitesses h\'eliocentriques
+	     CI(1:6) = (x,y,z,vx,vy,vz)
+\end{itemize}
+
+\item colonne 4+nbplan+1 \`a  4+nbplan+6 :   coordonn\'ees initiales (6 composantes) de la plan\`ete 1
+\item  colonnes suivantes :   coordonn\'ees initiales (6 composantes) pour les plan\`etes suivantes
+\end{itemize}
+
+ Par exemple, si on a 3 plan\`etes avec des positions/vitesses h\'eliocentriques, on a dans les colonnes :
+ 
+\begin{tabular}{|c|c|c|c|c|c|c|c|c|c|} \hline
+1 &  2 &  3 & 4 & 5 &6 &7 &8-13 &14-19 &20-25 \\ \hline
+P0001 & 3 & $M_{star}$  & $M_1$ &  $M_2$ & $M_3$  &5 &$CI_1(1:6)$ & $CI_2(1:6)$&$CI_3(1:6)$\\    \hline
+\end{tabular}
+
+%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%
+\section{Fichiers de sortie}
+
+%%%%%%%%%%%%%%%%%%%%%%%
+\subsection{Format du fichier {\bf ???.int} }
+
+Chaque fichier contient un seul syst\`eme plan\'etaire.
+Ce fichier contient 5 colonnes et stocke la valeur de int\'egrales premi\`eres  : \'energie du moment cin\'etique.
+
+Sur chaque ligne, on a : 
+
+\begin{tabular}{|c|c|c|} \hline
+colonne 1 &  colonne 2 & colonne 3-5 \\ \hline
+temps & \'energie & moment cin\'etique (x,y,z)\\    \hline
+\end{tabular}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%
+\subsection{Format du fichier {\bf ???.car} }
+
+Ce fichier contient les positions h\'eliocentriques et vitesses h\'eliocentriques cart\'esiennes des plan\`etes. Les unit\'es sont en AU et AU/an.
+Chaque fichier contient un seul syst\`eme plan\'etaire.
+
+
+Sur chaque ligne, on a : 
+
+\begin{tabular}{|c|c|c|c|} \hline
+colonne 1 &   colonne 2-7 & colonne 8-13 & ... \\ \hline
+temps & (x,y,z,vx,vy,vz) de la plan\`ete 1  & (x,y,z,vx,vy,vz) de la plan\`ete 2 & ... \\    \hline
+\end{tabular}
+
+%%%%%%%%%%%%%%%%%%%%%%%
+\subsection{Format du fichier {\bf ???.ell} }
+
+Ce fichier contient les \'el\'ements elliptiques des plan\`etes. le type d\'el\'ement d\'pend du param\`etres  {\bf out\_ell}. Les unit\'es sont en AU, an et radians.
+Chaque fichier contient un seul syst\`eme plan\'etaire.
+
+Sur chaque ligne, on a : 
+
+\begin{tabular}{|c|c|c|c|} \hline
+colonne 1 &   colonne 2-7 & colonne 8-13 & ... \\ \hline
+temps & ell(1:6) de la plan\`ete 1  & ell(1:6) de la plan\`ete 2 & ... \\    \hline
+\end{tabular}
+
+
+\end{document}  
