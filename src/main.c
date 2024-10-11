@@ -25,11 +25,12 @@ int main(){
       typ dH_polar[4*how_many_planet + 1];
       typ dH_rect [4*how_many_planet + 1];
       
-      X_old_init(X_old);
-      //SABA1(0.25, 10000., 1, X_old);
+      /*X_old_init(X_old);
+      SABA1(0.25, 2000., 1, X_old);*/
       //RK2(0.25, 10000., 1);
       //EquilibriumFind(X_old, 1);
-      UnaveragedSABA1(0.25, 100., 1, X_old);
+      X_old_init(X_old);
+      UnaveragedSABA4(0.0078125, 10000., 10, X_old);
       
       /*int i;
       typ a, e, sig, vp, M, mu, nu, beta, H;
@@ -45,6 +46,7 @@ int main(){
             nu = mean2true(M, mu, a, e);
             printf("M = %.12lf, nu = %.12lf\n", M, nu);
             ell2cart(a, e, 0., nu, vp, 0., mu, X_cart + 4*i - 4);
+            //printf("X_old = (%.12lf, %.12lf, %.12lf, %.12lf)\n", X_old[4*i - 3], X_old[4*i - 2], X_old[4*i - 1], X_old[4*i]);
       }
       
       for (i = 1; i <= how_many_planet; i ++){
@@ -62,6 +64,7 @@ int main(){
             X_old[4*i - 2] = -atan2(alkhqp[3], alkhqp[2]);
             X_old[4*i - 1] = beta*sqrt(mu*alkhqp[0]);
             X_old[4*i]     = X_old[4*i - 1]*(1. - sqrt(1. - e*e));
+            //printf("X_old = (%.12lf, %.12lf, %.12lf, %.12lf)\n", X_old[4*i - 3], X_old[4*i - 2], X_old[4*i - 1], X_old[4*i]);
       }
       old2new(X_old, X_new, X_uv);             // (lbd_j, -vrp_j; Lbd_j, D_j) -> (phi_j, v_j; Phi_j, u_j)
       H = 0.;

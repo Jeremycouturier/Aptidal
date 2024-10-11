@@ -23,4 +23,19 @@ void newt(typ DM, typ A, typ B, typ * const p_X, typ * const p_C, typ * const p_
 
 void kepsaut(typ * cart, typ mu, typ dt);
 
+
+void exp_tau_LB(typ tau, typ * X_cart);
+
+
+void UnaveragedSABA1(typ tau, typ T, int output_step, typ * X_old);
+
+
+void UnaveragedSABA2(typ tau, typ T, int output_step, typ * X_old);
+
+
+void UnaveragedSABA3(typ tau, typ T, int output_step, typ * X_old);
+
+
+void UnaveragedSABA4(typ tau, typ T, int output_step, typ * X_old);
+
 #endif

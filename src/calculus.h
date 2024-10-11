@@ -32,6 +32,9 @@ void X_old_init(typ * X_old);
 void nonDofReinit(typ * X_new, typ * X_uv);
 
 
+void exp_tau_LB_Ralston(typ tau, typ * X_old);
+
+
 void SABA1(typ tau, typ T, int output_step, typ * X_old);
 
 

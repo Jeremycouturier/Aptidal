@@ -355,6 +355,43 @@ void nonDofReinit(typ * X_new, typ * X_uv){
 }
 
 
+void exp_tau_LB_Ralston(typ tau, typ * X_old){
+
+      /******** Performs a step of size tau on the perturbative part of the Hamiltonian. The operator exp(tau*L_B) is   ********/
+      /******** approximated to (Id + tau*L_B + tau^2/2*L_B^2) by a Runge-Kutta 2 (Ralston) because B is not integrable ********/
+
+      int i;
+      typ two_third = 2./3.;
+      typ dH_old  [4*how_many_planet + 1];
+      typ dH_polar[4*how_many_planet + 1];
+      typ dH_rect [4*how_many_planet + 1];
+      typ K2      [4*how_many_planet + 1];
+      typ X_new   [4*how_many_planet + 1];
+      typ X_uv    [4*how_many_planet + 1];
+      typ X_K2    [4*how_many_planet + 1];
+
+      dHdold(dH_old, X_old, 1);                       //Computing gradient of the perturbative Hamiltonian
+      old2new(X_old, X_new, X_uv);                    //(lbd, -vrp; Lbd, D) -> (phi, sig; Phi, D) -> (phi, v; Phi, u)
+      dHdnew(dH_polar, dH_rect, dH_old, X_new, X_uv); //Gradient of the perturbation in the new coordinates. dH_rect is k1 of Ralston method
+      for (i = 1; i <= how_many_planet; i ++){        //Computing the argument passed to the vector field to compute k2
+            X_K2[4*i - 3] = X_uv[4*i - 3] + two_third*tau*dH_rect[4*i - 1];
+            X_K2[4*i - 2] = X_uv[4*i - 2] + two_third*tau*dH_rect[4*i]    /Lbd_0[i];
+            X_K2[4*i - 1] = X_uv[4*i - 1] - two_third*tau*dH_rect[4*i - 3];
+            X_K2[4*i]     = X_uv[4*i]     - two_third*tau*dH_rect[4*i - 2]/Lbd_0[i];
+      }
+      new2old(X_old, X_new, X_K2);
+      dHdold(dH_old, X_old, 1);
+      dHdnew(dH_polar, K2, dH_old, X_new, X_K2);      //K2 is k2 of Ralston method
+      for (i = 1; i <= how_many_planet; i ++){        //Completing Ralston method
+            X_uv[4*i - 3] += 0.25*tau*(dH_rect[4*i - 1] + 3.*K2[4*i - 1]);
+            X_uv[4*i - 2] += 0.25*tau*(dH_rect[4*i]     + 3.*K2[4*i])     /Lbd_0[i];
+            X_uv[4*i - 1] -= 0.25*tau*(dH_rect[4*i - 3] + 3.*K2[4*i - 3]);
+            X_uv[4*i]     -= 0.25*tau*(dH_rect[4*i - 2] + 3.*K2[4*i - 2]) /Lbd_0[i];
+      }
+      new2old(X_old, X_new, X_uv); //(phi, v; Phi, u) -> (phi, sig; Phi, D) -> (lbd, -vrp; Lbd, D)
+}
+
+
 void SABA1(typ tau, typ T, int output_step, typ * X_old){
 
       /******** Integrates the Hamiltonian with a SABA1 method         ********/
@@ -375,15 +412,10 @@ void SABA1(typ tau, typ T, int output_step, typ * X_old){
       char file_path[800];
       FILE * file;
       int N_step, iter, i;
-      typ two_third = 2./3.;
       typ e, a, sig, H;
       typ dH_old  [4*how_many_planet + 1];
-      typ dH_polar[4*how_many_planet + 1];
-      typ dH_rect [4*how_many_planet + 1];
-      typ K2      [4*how_many_planet + 1];
       typ X_new   [4*how_many_planet + 1];
       typ X_uv    [4*how_many_planet + 1];
-      typ X_K2    [4*how_many_planet + 1];
       typ old_buff[4*how_many_planet + 1];
       
       /******** Opening output file ********/
@@ -460,8 +492,9 @@ void SABA1(typ tau, typ T, int output_step, typ * X_old){
             }
             
             
-            /******** Step exp(tau*L_B). Approximated to (Id + tau*L_B + tau^2/2*L_B^2) by a Runge-Kutta 2 because B is not integrable ********/
-            dHdold(dH_old, X_old, 1);                       //Computing gradient of the perturbative Hamiltonian
+            /******** Step exp(tau*L_B). Approximated to (Id + tau*L_B + tau^2/2*L_B^2) by a Ralston method because B is not integrable ********/
+            exp_tau_LB_Ralston(tau, X_old);
+            /*dHdold(dH_old, X_old, 1);                       //Computing gradient of the perturbative Hamiltonian
             old2new(X_old, X_new, X_uv);                    //(lbd, -vrp; Lbd, D) -> (phi, sig; Phi, D) -> (phi, v; Phi, u)
             dHdnew(dH_polar, dH_rect, dH_old, X_new, X_uv); //Gradient of the perturbation in the new coordinates. dH_rect is k1 of Ralston method
             for (i = 1; i <= how_many_planet; i ++){        //Computing the argument passed to the vector field to compute k2
@@ -479,9 +512,9 @@ void SABA1(typ tau, typ T, int output_step, typ * X_old){
                   X_uv[4*i - 1] -= 0.25*tau*(dH_rect[4*i - 3] + 3.*K2[4*i - 3]);
                   X_uv[4*i]     -= 0.25*tau*(dH_rect[4*i - 2] + 3.*K2[4*i - 2]) /Lbd_0[i];
             }
+            new2old(X_old, X_new, X_uv); //(phi, v; Phi, u) -> (phi, sig; Phi, D) -> (lbd, -vrp; Lbd, D)*/
             
             /******** Step exp(tau*L_A) ********/
-            new2old(X_old, X_new, X_uv); //(phi, v; Phi, u) -> (phi, sig; Phi, D) -> (lbd, -vrp; Lbd, D)
             dHdold(dH_old, X_old, 0);    //Computing gradient of the Keplerian Hamiltonian
             for (i = 1; i <= how_many_planet; i ++){
                   X_old[4*i - 3] += tau*dH_old[4*i - 1]; //lbd_i = lbd_i + tau*dH_K/dLbd_i
@@ -503,24 +536,18 @@ void SABA1_average(typ tau, typ T, int Hanning_order, typ * X_uv_mean, typ * X_o
       /******** v_j; Phi_j, u_j)                                          ********/
       
       int N_step, iter, i;
-      typ two_third = 2./3.;
       typ dH_old  [4*how_many_planet + 1];
-      typ dH_polar[4*how_many_planet + 1];
-      typ dH_rect [4*how_many_planet + 1];
-      typ K2      [4*how_many_planet + 1];
       typ X_new   [4*how_many_planet + 1];
-      typ X_uv    [4*how_many_planet + 1];
       typ X_uv_0  [4*how_many_planet + 1]; //Left   of the segment
       typ X_uv_1  [4*how_many_planet + 1]; //Middle of the segment
       typ X_uv_2  [4*how_many_planet + 1]; //Right  of the segment
-      typ X_K2    [4*how_many_planet + 1];
       typ old_buff[4*how_many_planet + 1];
       typ facto   [11] = {1., 1., 2., 6., 24., 120., 720., 5040., 40320., 362880., 3628800.};
       typ two_to_p[6]  = {1., 2., 4., 8., 16., 32.};
       typ Cp, Hanning0, Hanning1, Hanning2, t0, t1, t2;
       
       if (Hanning_order > 5){
-            fprintf(stderr, "Error: The order of the Hanning filter cannot exceed 5 in function SABA1_average.\n");
+            fprintf(stderr, "Error: The order of the Hanning filter cannot exceed 5.\n");
             abort();
       }
       Cp = two_to_p[Hanning_order]*facto[Hanning_order]*facto[Hanning_order]/facto[2*Hanning_order];
@@ -547,8 +574,9 @@ void SABA1_average(typ tau, typ T, int Hanning_order, typ * X_uv_mean, typ * X_o
             }
             
             
-            /******** Step exp(tau*L_B). Approximated to (Id + tau*L_B + tau^2/2*L_B^2) by a Runge-Kutta 2 because B is not integrable ********/
-            dHdold(dH_old, X_old, 1);                       //Computing gradient of the perturbative Hamiltonian
+            /******** Step exp(tau*L_B). Approximated to (Id + tau*L_B + tau^2/2*L_B^2) by a Ralston method because B is not integrable ********/
+            exp_tau_LB_Ralston(tau, X_old);
+            /*dHdold(dH_old, X_old, 1);                       //Computing gradient of the perturbative Hamiltonian
             old2new(X_old, X_new, X_uv);                    //(lbd, -vrp; Lbd, D) -> (phi, sig; Phi, D) -> (phi, v; Phi, u)
             dHdnew(dH_polar, dH_rect, dH_old, X_new, X_uv); //Gradient of the perturbation in the new coordinates. dH_rect is k1 of Ralston method
             for (i = 1; i <= how_many_planet; i ++){        //Computing the argument passed to the vector field to compute k2
@@ -566,10 +594,10 @@ void SABA1_average(typ tau, typ T, int Hanning_order, typ * X_uv_mean, typ * X_o
                   X_uv[4*i - 1] -= 0.25*tau*(dH_rect[4*i - 3] + 3.*K2[4*i - 3]);
                   X_uv[4*i]     -= 0.25*tau*(dH_rect[4*i - 2] + 3.*K2[4*i - 2]) /Lbd_0[i];
             }
+            new2old(X_old, X_new, X_uv); //(phi, v; Phi, u) -> (phi, sig; Phi, D) -> (lbd, -vrp; Lbd, D)*/
             
             
             /******** Step exp(tau*L_A) ********/
-            new2old(X_old, X_new, X_uv); //(phi, v; Phi, u) -> (phi, sig; Phi, D) -> (lbd, -vrp; Lbd, D)
             dHdold(dH_old, X_old, 0);    //Computing gradient of the Keplerian Hamiltonian
             for (i = 1; i <= how_many_planet; i ++){
                   X_old[4*i - 3] += tau*dH_old[4*i - 1]; //lbd_i = lbd_i + tau*dH_K/dLbd_i

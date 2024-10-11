@@ -1,14 +1,14 @@
 &lect
  chemin   = '/home/jeremy/Documents/Aptidal_simulation/intplabasic/'
  nf_rad    = 'ABAH4'
- nf_initext= 'chain_346_eq.txt'
+ nf_initext= 'chain_346.txt'
  int_type ='ABAH4'
  type_pas = 0
  ref_gmsun = 0
  
  tinit    = 0.
  dt       = 0.0078125
- n_iter   = 320000
+ n_iter   = 1280000
  n_out    = 10
  out_ell  = 3
  if_invar = 0

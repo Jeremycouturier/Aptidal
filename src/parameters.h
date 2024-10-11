@@ -2,13 +2,13 @@
 #define _PARAMETERS_H_
 
 
-#define pth "/home/jeremy/Documents/Aptidal_simulation/test/"
+#define pth "/home/jeremy/Documents/Aptidal_simulation/"
 
 
 /*********************************************************************/
 /******** Defining the resonance chain p_1 : p_2 : ... : p_n. ********/
 /*********************************************************************/
-#define resonance_chain {3, 4, 6}
+#define resonance_chain   {3, 4, 6}
 
 
 
@@ -30,10 +30,10 @@
 #define how_many_planet 3                                                           //Number of orbiting bodies in the system
 #define G 39.478417604357434475337964                                               //Gravitational constant is set to 4*pi^2, so the orbital period of the innermost planet is 1
 #define body_masses {1.,   0.0000164, 0.0000232,    0.0000191}                      //Masses of the bodies of the system, beginning with the star.
-#define body_sma          {1.,        1.2122713869, 1.5907785824}                   //Initial and nominal semi-major axes of the orbiting bodies. Used to computed the Hamiltonian's coef
-#define body_ecc          {0.00002,   0.00002,      0.00002}                        //Initial eccentricities              of the orbiting bodies.
-#define body_lambda       {0.01,     -0.02,         0.0015}                         //Initial mean longitudes             of the orbiting bodies.
-#define body_varpi        {3.14,      0.00,         3.14}                           //Initial longitude of the periapsis  of the orbiting bodies.
+#define body_sma          {1.,        1.2114137286, 1.5874010520}                   //Initial and nominal semi-major axes of the orbiting bodies. Used to computed the Hamiltonian's coef
+#define body_ecc          {0.02,      0.02,         0.02}                           //Initial eccentricities              of the orbiting bodies.
+#define body_lambda      {-1.2678,    0.27182,     -2.8035}                         //Initial mean longitudes             of the orbiting bodies.
+#define body_varpi       {-1.0614,    0.81578,     -3.07126}                        //Initial longitude of the periapsis  of the orbiting bodies.
 #define body_radii  {0.12, 0.006744,  0.010036}                                     //Radii               of the bodies of the system, beginning with the star. Unimportant if no tides
 #define body_k2     {0.0,  0.8,       1.32}                                         //Second Love numbers of the bodies of the system, beginning with the star. Unimportant if no tides
 #define body_Q  {10000.0,  234.8,     78.9}                                         //Quality factors     of the bodies of the system, beginning with the star. Unimportant if no tides
