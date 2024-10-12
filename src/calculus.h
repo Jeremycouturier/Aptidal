@@ -38,6 +38,9 @@ void exp_tau_LB_Ralston(typ tau, typ * X_old);
 void SABA1(typ tau, typ T, int output_step, typ * X_old);
 
 
+void SABAn(typ tau, typ T, int output_step, typ * X_old, int n);
+
+
 void SABA1_average(typ tau, typ T, int Hanning_order, typ * X_uv_mean, typ * X_old);
 
 
