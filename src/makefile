@@ -13,7 +13,7 @@ coefficients.o: coefficients.c coefficients.h structure.o parameters.h
 transformation.o: transformation.c transformation.h structure.o coefficients.o parameters.h
 	$(FF) $(OPTF) -c transformation.c
 	
-calculus.o: calculus.c calculus.h structure.o coefficients.o transformation.o parameters.h
+calculus.o: calculus.c calculus.h structure.o coefficients.o transformation.o parameters.h intpla.h
 	$(FF) $(OPTF) -c calculus.c
 	
 intpla.o: intpla.c intpla.h structure.o coefficients.o transformation.o calculus.o parameters.h

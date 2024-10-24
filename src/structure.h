@@ -108,4 +108,10 @@ struct rational ratabs(struct rational r1);
 void ratprint(struct rational r);
 
 
+typ rdm(typ min, typ max);
+
+
+typ continuousAngle(typ newAngle, typ oldAngle);
+
+
 #endif

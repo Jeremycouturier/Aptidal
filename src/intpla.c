@@ -198,7 +198,7 @@ typ mean2true(typ M, typ mu, typ a, typ e){
       dt          /= e < 1. && e > 0.8 ? 4. : 1.;
       N_step       = (int) n_step;
       if (fabs(time - n_step*dt) > 1.e-12){
-            fprintf(stderr, "Error : Wrong computation of the integration time in function mean2true.\n");
+            fprintf(stderr, "\nError: Wrong computation of the integration time in function mean2true.\n");
             abort();
       }
       
@@ -370,11 +370,11 @@ void newt(typ DM, typ A, typ B, typ * const p_X, typ * const p_C, typ * const p_
             if (i > NMAX){
                   #ifndef __CUDACC__
                   if (bexitonerror){
-                        fprintf(stderr, "Error: Fatal error in function newt: X = %lf, DIFF = %lf, i = %d\n", X, DIFF, i);
+                        fprintf(stderr, "\nError: Fatal error in function newt: X = %lf, DIFF = %lf, i = %d\n", X, DIFF, i);
                         abort();
                   }
                   else{
-                        printf("Error: Fatal error in function newt: X = %lf, DIFF = %lf, i = %d\n", X, DIFF, i);
+                        printf("\nError: Fatal error in function newt: X = %lf, DIFF = %lf, i = %d\n", X, DIFF, i);
                   }
                   #endif
                   niter = -1;
@@ -492,32 +492,61 @@ void exp_tau_LB(typ tau, typ * X_cart){
 }
 
 
-void UnaveragedSABA1(typ tau, typ T, int output_step, typ * X_old){
+void UnaveragedSABAn(typ tau, typ T, int output_step, typ * X_old, int n){
 
-      /******** Integrates the unaveraged Hamiltonian with a SABA1 method   ********/
-      /******** (Leapfrog) for a time T with a timestep tau. Outputs every  ********/
-      /******** output_step timestep to file pth/UnaveragedSABA1.txt.       ********/
+      /******** Integrates the complete Hamiltonian with a SABAn where      ********/
+      /******** 1 <= n <= 6 for a time T with a timestep tau. Outputs every ********/
+      /******** output_step timestep to file pth/UnaveragedSABAn_chain.txt. ********/
       /******** The Keplerian part A is integrated exactly, but the         ********/
       /******** perturbative part takes the form B = B_1(p) + B_2(q) and is ********/
       /******** integrated approximetaly but symplectically with a SABA1.   ********/
 
 
       char file_path[800];
+      char nn[10];
       FILE * file;
       int N_step, iter, i;
       typ X_cart[4*how_many_planet + 1];
       typ X_buff[4*how_many_planet + 1];
       typ X_new [4*how_many_planet + 1];
       typ X_uv  [4*how_many_planet + 1];
-      typ a, e, sig, vp, M, mu, nu, beta, H;
+      typ lbdOld[  how_many_planet + 1];
+      typ   gOld[  how_many_planet + 1];
+      typ a, e, vp, M, mu, nu, beta, H, lbd, g;
+      typ c1, c2, c3, c4, d1, d2, d3;
       typ alkhqp[6];
       
       /******** Opening output file ********/
       strcpy(file_path, pth);
-      strcat(file_path, "UnaveragedSABA1.txt");
+      strcat(file_path, "UnaveragedSABA");
+      sprintf(nn, "%d", n);
+      strcat(file_path, nn);
+      strcat(file_path, "_");
+      for (i = 1; i <= how_many_planet; i ++){
+            sprintf(nn, "%d", p_i[i]);
+            strcat(file_path, nn);
+      }
+      strcat(file_path, ".txt");
       file = fopen(file_path, "w");
       if (file == NULL){
-            fprintf(stderr, "Error : Cannot create or open file UnaveragedSABA1.txt in function UnaveragedSABA1.\n");
+            fprintf(stderr, "\nError: Cannot create or open file UnaveragedSABAn_chain.txt in function UnaveragedSABAn.\n");
+            abort();
+      }
+      
+      /******** Initializing constants ********/
+      c1 = 0.;  c2 = 0.;  c3 = 0.;  c4 = 0.;  d1 = 0.;  d2 = 0.;  d3 = 0.;
+      if      (n == 1){c1 = 0.5;                   d1 = 1.;}
+      else if (n == 2){c1 = 0.5 - sqrt(3.)/6.;     d1 = 0.5;                   c2 = sqrt(3.)/3.;}
+      else if (n == 3){c1 = 0.5 - sqrt(15.)/10.;   d1 = 5./18.;                c2 = sqrt(15.)/10.;         d2 = 4./9.;}
+      else if (n == 4){c1 = 0.0694318442029737124; d1 = 0.1739274225687269287; c2 = 0.2605776340045981552; d2 = 0.3260725774312730713; c3 = 0.3399810435848562648;}
+      else if (n == 5){c1 = 0.0469100770306680036; d1 = 0.1184634425280945438; c2 = 0.1838552679164904509; d2 = 0.2393143352496832340; c3 = 0.2692346550528415455; d3 = 64./225.;}
+      else if (n == 6){c1 = 0.0337652428984239861; d1 = 0.0856622461895851725; c2 = 0.1356300638684437571; d2 = 0.1803807865240693038; c3 = 0.2112951001915338025;
+                       d3 = 0.2339569672863455237; c4 = 0.2386191860831969086;}
+      else{fprintf(stderr, "\nError: n must be between 1 and 6 in function SABAn.\n");  abort();}
+
+      /******** Checking validity of coefficients. To be removed when robust ********/
+      if (fabs(2.*c1 + (n == 2 ? 1. : 2.)*c2 + (n == 4 ? 1. : 2.)*c3 + c4 - 1.) > 1.e-15 || fabs((n == 1 ? 1. : 2.)*d1 + (n == 3 ? 1. : 2.)*d2 + (n == 5 ? 1. : 2.)*d3 - 1.) > 1.e-15){
+            fprintf(stderr, "\nError: The sum of the coefficients does not seem to be 1 in function SABAn.\n");
             abort();
       }
       
@@ -530,6 +559,7 @@ void UnaveragedSABA1(typ tau, typ T, int output_step, typ * X_old){
             M  =  X_old[4*i - 3] - vp;
             nu = mean2true(M, mu, a, e);
             ell2cart(a, e, 0., nu, vp, 0., mu, X_cart + 4*i - 4);
+            lbdOld[i] = X_old[4*i - 3];  gOld[i] = X_old[4*i - 2];
       }
 
       /******** Integrating ********/
@@ -541,58 +571,114 @@ void UnaveragedSABA1(typ tau, typ T, int output_step, typ * X_old){
                   for (i = 1; i <= how_many_planet; i ++){
                         X_buff[4*i - 3] = X_cart[4*i - 3]; X_buff[4*i - 2] = X_cart[4*i - 2]; X_buff[4*i - 1] = X_cart[4*i - 1]; X_buff[4*i] = X_cart[4*i];
                   }
-                  if (iter){ //Need to perform a step exp(-tau/2*L_A) on the buffer before outputting
+                  if (iter){ //Need to perform a step exp(-c1*tau*L_A) on the buffer before outputting
                         for (i = 1; i <= how_many_planet; i ++){
                               mu = G*(m0 + masses[i]);
-                              kepsaut(X_buff + 4*i - 4, mu, -tau/2.);
+                              kepsaut(X_buff + 4*i - 4, mu, -c1*tau);
                         }
                   }
                   else{
-                        fprintf(file, "Numerical integration of the unaveraged Hamiltonian with a SABA1 integrator in the cartesian coordinates.\n");
+                        /*fprintf(file, "Numerical integration of the unaveraged Hamiltonian with a SABA%d integrator in Poincaré's cartesian canonical coordinates.\n", n);
                         fprintf(file, "The Keplerian part A is integrated exactly using function kepsaut. The perturbative part B is not integrable but can be\n");
                         fprintf(file, "written B = B1 + B2 with B1 and B2 both integrable. Therefore, B is integrated approximately but symplectically with a SABA1.\n");
                         fprintf(file, "\n");
                         fprintf(file, "This file has %d columns that are (for 1 <= j <= %d):\n", 2 + 7*how_many_planet, how_many_planet);
                         fprintf(file, "Time, Hamiltonian, phi_j, v_j, Phi_j, u_j, a_j, e_j, sig_j.\n");
-                        fprintf(file, "\n");
+                        fprintf(file, "\n");*/
                   }
                   for (i = 1; i <= how_many_planet; i ++){ // (x, y; vx, vy) -> (lbd_j, -vrp_j; Lbd_j, D_j)
                         beta = m0*masses[i]/(m0 + masses[i]);
                         mu   = G*(m0 + masses[i]);
                         cart2ell(X_buff + 4*i - 4, alkhqp, mu);
                         e    = sqrt(alkhqp[2]*alkhqp[2] + alkhqp[3]*alkhqp[3]);
-                        X_old[4*i - 3] = alkhqp[1];
-                        X_old[4*i - 2] = -atan2(alkhqp[3], alkhqp[2]);
+                        lbd  = continuousAngle(alkhqp[1],                  lbdOld[i]);
+                        g    = continuousAngle(-atan2(alkhqp[3], alkhqp[2]), gOld[i]);
+                        X_old[4*i - 3] = lbd;
+                        X_old[4*i - 2] = g;
                         X_old[4*i - 1] = beta*sqrt(mu*alkhqp[0]);
                         X_old[4*i]     = X_old[4*i - 1]*(1. - sqrt(1. - e*e));
+                        lbdOld[i]      = lbd;  gOld[i] = g;
                   }
                   old2new(X_old, X_new, X_uv);             // (lbd_j, -vrp_j; Lbd_j, D_j) -> (phi_j, v_j; Phi_j, u_j)
                   H = 0;
                   fprintf(file, "%.12lf %.12lf", tau*(typ) iter, H);
                   for (i = 1; i <= how_many_planet; i ++){
-                        sig = atan2(X_uv[4*i - 2], X_uv[4*i]);
                         e   = sqrt(1. - (1. - X_old[4*i]/X_old[4*i - 1])*(1. - X_old[4*i]/X_old[4*i - 1]));
                         a   = X_old[4*i - 1]*X_old[4*i - 1]*(m0 + masses[i])/(G*m0*m0*masses[i]*masses[i]);
-                        fprintf(file, " %.12lf %.12lf %.12lf %.12lf %.12lf %.12lf %.12lf", X_uv[4*i - 3], X_uv[4*i - 2], X_uv[4*i - 1], X_uv[4*i], a, e, sig);
+                        fprintf(file, " %.12lf %.12lf %.12lf %.12lf %.12lf %.12lf %.12lf", X_uv [4*i - 3], X_uv[4*i - 2], X_uv[4*i - 1], X_uv[4*i], a, e, X_new[4*i - 2]);
                   }
                   fprintf(file, "\n");
             }
             
-            /******** Step exp(tau/2*L_A). For the first iteration only ********/
+            /******** Step exp(c1*tau*L_A). For the first iteration only ********/
             if (!iter){
                   for (i = 1; i <= how_many_planet; i ++){
                         mu = G*(m0 + masses[i]);
-                        kepsaut(X_cart + 4*i - 4, mu, tau/2.);
+                        kepsaut(X_cart + 4*i - 4, mu, c1*tau);
                   }
             }
             
-            /******** Step exp(tau*L_B) ********/
-            exp_tau_LB(tau, X_cart);
+            /******** Step exp(d1*tau*L_B) ********/
+            exp_tau_LB(d1*tau, X_cart);
             
-            /******** Step exp(tau*L_A) ********/
+            if (n >= 2){
+                  /******** Step exp(c2*tau*L_A) ********/
+                  for (i = 1; i <= how_many_planet; i ++){
+                        mu = G*(m0 + masses[i]);
+                        kepsaut(X_cart + 4*i - 4, mu, c2*tau);
+                  }
+
+                  if (n >= 3){
+                        /******** Step exp(d2*tau*L_B) ********/
+                        exp_tau_LB(d2*tau, X_cart);
+
+                        if (n >= 4){
+                              /******** Step exp(c3*tau*L_A) ********/
+                              for (i = 1; i <= how_many_planet; i ++){
+                                    mu = G*(m0 + masses[i]);
+                                    kepsaut(X_cart + 4*i - 4, mu, c3*tau);
+                              }
+
+                              if (n >= 5){
+                                    /******** Step exp(d3*tau*L_B) ********/
+                                    exp_tau_LB(d3*tau, X_cart);
+                                    
+                                    if (n >= 6){
+                                          /******** Step exp(c4*tau*L_A) ********/
+                                          for (i = 1; i <= how_many_planet; i ++){
+                                                mu = G*(m0 + masses[i]);
+                                                kepsaut(X_cart + 4*i - 4, mu, c4*tau);
+                                          }
+                                          
+                                          /******** Step exp(d3*tau*L_B) ********/
+                                          exp_tau_LB(d3*tau, X_cart);
+                                    }
+                                    
+                                    /******** Step exp(c3*tau*L_A) ********/
+                                    for (i = 1; i <= how_many_planet; i ++){
+                                          mu = G*(m0 + masses[i]);
+                                          kepsaut(X_cart + 4*i - 4, mu, c3*tau);
+                                    }
+                              }
+                              /******** Step exp(d2*tau*L_B) ********/
+                              exp_tau_LB(d2*tau, X_cart);
+                        }
+                        
+                        /******** Step exp(c2*tau*L_A) ********/
+                        for (i = 1; i <= how_many_planet; i ++){
+                              mu = G*(m0 + masses[i]);
+                              kepsaut(X_cart + 4*i - 4, mu, c2*tau);
+                        }
+                  }
+                  
+                  /******** Step exp(d1*tau*L_B) ********/
+                  exp_tau_LB(d1*tau, X_cart);
+            }
+            
+            /******** Step exp(2*c1*tau*L_A) ********/
             for (i = 1; i <= how_many_planet; i ++){
                   mu = G*(m0 + masses[i]);
-                  kepsaut(X_cart + 4*i - 4, mu, tau);
+                  kepsaut(X_cart + 4*i - 4, mu, 2.*c1*tau);
             }
       }
 
@@ -601,37 +687,49 @@ void UnaveragedSABA1(typ tau, typ T, int output_step, typ * X_old){
 }
 
 
-void UnaveragedSABA2(typ tau, typ T, int output_step, typ * X_old){
+void UnaveragedSABAn_average(typ tau, typ T, int Hanning_order, typ * X_uv_mean, typ * X_uv_fast, typ * X_old, int n){
 
-      /******** Integrates the unaveraged Hamiltonian with a SABA2 method   ********/
-      /******** for a time T with a timestep tau. Outputs every output_step ********/
-      /******** timestep to file pth/UnaveragedSABA2.txt.                   ********/
-      /******** The Keplerian part A is integrated exactly, but the         ********/
-      /******** perturbative part takes the form B = B_1(p) + B_2(q) and is ********/
-      /******** integrated approximetaly but symplectically with a SABA1.   ********/
+      /******** Same as above but computes and stores the average of X_uv ********/
+      /******** instead of writing to file. Hanning_order is the order of ********/
+      /******** the Hanning filter used to compute the averages. The time ********/
+      /******** step is tau/2 to use a Simpson 3pt method to compute      ********/
+      /******** integrals. Fills X_uv_mean with the average of (phi_j,    ********/
+      /******** v_j; Phi_j, u_j) and U_uv_fast with the fast term         ********/
 
 
-      char file_path[800];
-      FILE * file;
       int N_step, iter, i;
       typ X_cart[4*how_many_planet + 1];
       typ X_buff[4*how_many_planet + 1];
       typ X_new [4*how_many_planet + 1];
-      typ X_uv  [4*how_many_planet + 1];
-      typ a, e, sig, vp, M, mu, nu, beta, H;
-      typ c_2 = 1./sqrt(3.);
-      typ c_1 = 0.5*(1. - c_2);
-      typ d_1 = 0.5;
+      typ X_uv_0[4*how_many_planet + 1]; //Left   of the segment
+      typ X_uv_1[4*how_many_planet + 1]; //Middle of the segment
+      typ X_uv_2[4*how_many_planet + 1]; //Right  of the segment
+      typ lbdOld[  how_many_planet + 1];
+      typ   gOld[  how_many_planet + 1];
+      typ a, e, vp, M, mu, nu, beta, lbd, g;
+      typ facto   [11] = {1., 1., 2., 6., 24., 120., 720., 5040., 40320., 362880., 3628800.};
+      typ two_to_p[6]  = {1., 2., 4., 8., 16., 32.};
+      typ Cp, Hanning0, Hanning1, Hanning2, t0, t1, t2;
+      typ c1, c2, c3, c4, d1, d2, d3;
       typ alkhqp[6];
       
-      /******** Opening output file ********/
-      strcpy(file_path, pth);
-      strcat(file_path, "UnaveragedSABA2.txt");
-      file = fopen(file_path, "w");
-      if (file == NULL){
-            fprintf(stderr, "Error : Cannot create or open file UnaveragedSABA2.txt in function UnaveragedSABA2.\n");
+      /******** Initializing constants ********/
+      c1 = 0.;  c2 = 0.;  c3 = 0.;  c4 = 0.;  d1 = 0.;  d2 = 0.;  d3 = 0.;
+      if      (n == 1){c1 = 0.5;                   d1 = 1.;}
+      else if (n == 2){c1 = 0.5 - sqrt(3.)/6.;     d1 = 0.5;                   c2 = sqrt(3.)/3.;}
+      else if (n == 3){c1 = 0.5 - sqrt(15.)/10.;   d1 = 5./18.;                c2 = sqrt(15.)/10.;         d2 = 4./9.;}
+      else if (n == 4){c1 = 0.0694318442029737124; d1 = 0.1739274225687269287; c2 = 0.2605776340045981552; d2 = 0.3260725774312730713; c3 = 0.3399810435848562648;}
+      else if (n == 5){c1 = 0.0469100770306680036; d1 = 0.1184634425280945438; c2 = 0.1838552679164904509; d2 = 0.2393143352496832340; c3 = 0.2692346550528415455; d3 = 64./225.;}
+      else if (n == 6){c1 = 0.0337652428984239861; d1 = 0.0856622461895851725; c2 = 0.1356300638684437571; d2 = 0.1803807865240693038; c3 = 0.2112951001915338025;
+                       d3 = 0.2339569672863455237; c4 = 0.2386191860831969086;}
+      else{fprintf(stderr, "\nError: n must be between 1 and 6 in function SABAn.\n");  abort();}
+      
+      /******** Initializing constant of Hanning filter ********/
+      if (Hanning_order > 5){
+            fprintf(stderr, "\nError: The order of the Hanning filter cannot exceed 5.\n");
             abort();
       }
+      Cp = two_to_p[Hanning_order]*facto[Hanning_order]*facto[Hanning_order]/facto[2*Hanning_order];
       
       /******** Initializing the cartesian coordinates ********/
       for (i = 1; i <= how_many_planet; i ++){
@@ -642,32 +740,24 @@ void UnaveragedSABA2(typ tau, typ T, int output_step, typ * X_old){
             M  =  X_old[4*i - 3] - vp;
             nu = mean2true(M, mu, a, e);
             ell2cart(a, e, 0., nu, vp, 0., mu, X_cart + 4*i - 4);
+            lbdOld[i] = X_old[4*i - 3];  gOld[i] = X_old[4*i - 2];
+      }
+      
+      /******** Initializing amplitudes to 0 ********/
+      for (i = 1; i <= 4*how_many_planet; i ++){
+            X_uv_mean[i] = 0.;
+            X_uv_fast[i] = 0.;
       }
 
       /******** Integrating ********/
-      N_step = (int) ceil(T/tau);
-      for (iter = 0; iter < N_step; iter ++){
-      
-            /******** Writing to file ********/
-            if (iter%output_step == 0){
-                  for (i = 1; i <= how_many_planet; i ++){
-                        X_buff[4*i - 3] = X_cart[4*i - 3]; X_buff[4*i - 2] = X_cart[4*i - 2]; X_buff[4*i - 1] = X_cart[4*i - 1]; X_buff[4*i] = X_cart[4*i];
-                  }
-                  if (iter){ //Need to perform a step exp(-c_1*tau*L_A) on the buffer before outputting
-                        for (i = 1; i <= how_many_planet; i ++){
-                              mu = G*(m0 + masses[i]);
-                              kepsaut(X_buff + 4*i - 4, mu, -c_1*tau);
-                        }
-                  }
-                  else{
-                        fprintf(file, "Numerical integration of the unaveraged Hamiltonian with a SABA2 integrator in the cartesian coordinates.\n");
-                        fprintf(file, "The Keplerian part A is integrated exactly using function kepsaut. The perturbative part B is not integrable but can be\n");
-                        fprintf(file, "written B = B1 + B2 with B1 and B2 both integrable. Therefore, B is integrated approximately but symplectically with a SABA1.\n");
-                        fprintf(file, "\n");
-                        fprintf(file, "This file has %d columns that are (for 1 <= j <= %d):\n", 2 + 7*how_many_planet, how_many_planet);
-                        fprintf(file, "Time, Hamiltonian, phi_j, v_j, Phi_j, u_j, a_j, e_j, sig_j.\n");
-                        fprintf(file, "\n");
-                  }
+      tau    /= 2.;
+      N_step  = (int) ceil(T/tau);
+      T       = tau* (typ) N_step;
+      for (iter = -N_step + 1; iter <= N_step; iter ++){
+            
+            /******** For the first iteration only ********/
+            if (iter == -N_step + 1){
+                  /******** Initializing X_uv_0 ********/
                   for (i = 1; i <= how_many_planet; i ++){ // (x, y; vx, vy) -> (lbd_j, -vrp_j; Lbd_j, D_j)
                         beta = m0*masses[i]/(m0 + masses[i]);
                         mu   = G*(m0 + masses[i]);
@@ -678,317 +768,220 @@ void UnaveragedSABA2(typ tau, typ T, int output_step, typ * X_old){
                         X_old[4*i - 1] = beta*sqrt(mu*alkhqp[0]);
                         X_old[4*i]     = X_old[4*i - 1]*(1. - sqrt(1. - e*e));
                   }
-                  old2new(X_old, X_new, X_uv);             // (lbd_j, -vrp_j; Lbd_j, D_j) -> (phi_j, v_j; Phi_j, u_j)
-                  H = 0;
-                  fprintf(file, "%.12lf %.12lf", tau*(typ) iter, H);
-                  for (i = 1; i <= how_many_planet; i ++){
-                        sig = atan2(X_uv[4*i - 2], X_uv[4*i]);
-                        e   = sqrt(1. - (1. - X_old[4*i]/X_old[4*i - 1])*(1. - X_old[4*i]/X_old[4*i - 1]));
-                        a   = X_old[4*i - 1]*X_old[4*i - 1]*(m0 + masses[i])/(G*m0*m0*masses[i]*masses[i]);
-                        fprintf(file, " %.12lf %.12lf %.12lf %.12lf %.12lf %.12lf %.12lf", X_uv[4*i - 3], X_uv[4*i - 2], X_uv[4*i - 1], X_uv[4*i], a, e, sig);
-                  }
-                  fprintf(file, "\n");
-            }
-            
-            /******** Step exp(c_1*tau*L_A). For the first iteration only ********/
-            if (!iter){
+                  old2new(X_old, X_new, X_uv_0);
+                  /******** Step exp(c1*tau*L_A) ********/
                   for (i = 1; i <= how_many_planet; i ++){
                         mu = G*(m0 + masses[i]);
-                        kepsaut(X_cart + 4*i - 4, mu, c_1*tau);
+                        kepsaut(X_cart + 4*i - 4, mu, c1*tau);
                   }
             }
             
-            /******** Step exp(d_1*tau*L_B) ********/
-            exp_tau_LB(d_1*tau, X_cart);
+            /******** Step exp(d1*tau*L_B) ********/
+            exp_tau_LB(d1*tau, X_cart);
             
-            /******** Step exp(c_2*tau*L_A) ********/
-            for (i = 1; i <= how_many_planet; i ++){
-                  mu = G*(m0 + masses[i]);
-                  kepsaut(X_cart + 4*i - 4, mu, c_2*tau);
-            }
+            if (n >= 2){
+                  /******** Step exp(c2*tau*L_A) ********/
+                  for (i = 1; i <= how_many_planet; i ++){
+                        mu = G*(m0 + masses[i]);
+                        kepsaut(X_cart + 4*i - 4, mu, c2*tau);
+                  }
 
-            /******** Step exp(d_1*tau*L_B) ********/
-            exp_tau_LB(d_1*tau, X_cart);
+                  if (n >= 3){
+                        /******** Step exp(d2*tau*L_B) ********/
+                        exp_tau_LB(d2*tau, X_cart);
+
+                        if (n >= 4){
+                              /******** Step exp(c3*tau*L_A) ********/
+                              for (i = 1; i <= how_many_planet; i ++){
+                                    mu = G*(m0 + masses[i]);
+                                    kepsaut(X_cart + 4*i - 4, mu, c3*tau);
+                              }
+
+                              if (n >= 5){
+                                    /******** Step exp(d3*tau*L_B) ********/
+                                    exp_tau_LB(d3*tau, X_cart);
+                                    
+                                    if (n >= 6){
+                                          /******** Step exp(c4*tau*L_A) ********/
+                                          for (i = 1; i <= how_many_planet; i ++){
+                                                mu = G*(m0 + masses[i]);
+                                                kepsaut(X_cart + 4*i - 4, mu, c4*tau);
+                                          }
+                                          
+                                          /******** Step exp(d3*tau*L_B) ********/
+                                          exp_tau_LB(d3*tau, X_cart);
+                                    }
+                                    
+                                    /******** Step exp(c3*tau*L_A) ********/
+                                    for (i = 1; i <= how_many_planet; i ++){
+                                          mu = G*(m0 + masses[i]);
+                                          kepsaut(X_cart + 4*i - 4, mu, c3*tau);
+                                    }
+                              }
+                              /******** Step exp(d2*tau*L_B) ********/
+                              exp_tau_LB(d2*tau, X_cart);
+                        }
+                        
+                        /******** Step exp(c2*tau*L_A) ********/
+                        for (i = 1; i <= how_many_planet; i ++){
+                              mu = G*(m0 + masses[i]);
+                              kepsaut(X_cart + 4*i - 4, mu, c2*tau);
+                        }
+                  }
+                  
+                  /******** Step exp(d1*tau*L_B) ********/
+                  exp_tau_LB(d1*tau, X_cart);
+            }
             
-            /******** Step exp(2*c_1*tau*L_A) ********/
+            /******** Step exp(2*c1*tau*L_A) ********/
             for (i = 1; i <= how_many_planet; i ++){
                   mu = G*(m0 + masses[i]);
-                  kepsaut(X_cart + 4*i - 4, mu, 2.*c_1*tau);
+                  kepsaut(X_cart + 4*i - 4, mu, 2.*c1*tau);
+            }
+            
+            /******** Averaging ********/
+            for (i = 1; i <= how_many_planet; i ++){
+                  X_buff[4*i - 3] = X_cart[4*i - 3]; X_buff[4*i - 2] = X_cart[4*i - 2]; X_buff[4*i - 1] = X_cart[4*i - 1]; X_buff[4*i] = X_cart[4*i];
+            }
+            for (i = 1; i <= how_many_planet; i ++){
+                  mu = G*(m0 + masses[i]);
+                  kepsaut(X_buff + 4*i - 4, mu, -c1*tau);
+            }
+            for (i = 1; i <= how_many_planet; i ++){ // (x, y; vx, vy) -> (lbd_j, -vrp_j; Lbd_j, D_j)
+                  beta = m0*masses[i]/(m0 + masses[i]);
+                  mu   = G*(m0 + masses[i]);
+                  cart2ell(X_buff + 4*i - 4, alkhqp, mu);
+                  e    = sqrt(alkhqp[2]*alkhqp[2] + alkhqp[3]*alkhqp[3]);
+                  lbd  = continuousAngle(alkhqp[1],                  lbdOld[i]);
+                  g    = continuousAngle(-atan2(alkhqp[3], alkhqp[2]), gOld[i]);
+                  X_old[4*i - 3] = lbd;
+                  X_old[4*i - 2] = g;
+                  X_old[4*i - 1] = beta*sqrt(mu*alkhqp[0]);
+                  X_old[4*i]     = X_old[4*i - 1]*(1. - sqrt(1. - e*e));
+                  lbdOld[i]      = lbd;  gOld[i] = g;
+            }
+            if (iter % 2 == 0){
+                  old2new(X_old, X_new, X_uv_2);
+                  t0       = tau* (typ) (iter - 2);
+                  t1       = tau* (typ) (iter - 1);
+                  t2       = tau* (typ) iter;
+                  Hanning0 = Cp*fast_pow(1. + cos(M_PI*t0/T), Hanning_order);
+                  Hanning1 = Cp*fast_pow(1. + cos(M_PI*t1/T), Hanning_order);
+                  Hanning2 = Cp*fast_pow(1. + cos(M_PI*t2/T), Hanning_order);
+                  for (i = 1; i <= how_many_planet; i ++){
+                        X_uv_mean[4*i - 3] += tau*(Hanning0*X_uv_0[4*i - 3] + 4.*Hanning1*X_uv_1[4*i - 3] + Hanning2*X_uv_2[4*i - 3])/(6.*T);
+                        X_uv_mean[4*i - 2] += tau*(Hanning0*X_uv_0[4*i - 2] + 4.*Hanning1*X_uv_1[4*i - 2] + Hanning2*X_uv_2[4*i - 2])/(6.*T);
+                        X_uv_mean[4*i - 1] += tau*(Hanning0*X_uv_0[4*i - 1] + 4.*Hanning1*X_uv_1[4*i - 1] + Hanning2*X_uv_2[4*i - 1])/(6.*T);
+                        X_uv_mean[4*i]     += tau*(Hanning0*X_uv_0[4*i]     + 4.*Hanning1*X_uv_1[4*i]     + Hanning2*X_uv_2[4*i])    /(6.*T);
+                  }              
+                  for (i = 1; i <= 4*how_many_planet; i ++){
+                        X_uv_0[i] = X_uv_2[i];
+                  }
+            }
+            else{
+                  old2new(X_old, X_new, X_uv_1);
             }
       }
-
-      /******** Closing output file ********/
-      fclose(file);
 }
 
 
-void UnaveragedSABA3(typ tau, typ T, int output_step, typ * X_old){
+void LibrationCenterFind(typ * X_old, int verbose){
 
-      /******** Integrates the unaveraged Hamiltonian with a SABA3 method   ********/
-      /******** for a time T with a timestep tau. Outputs every output_step ********/
-      /******** timestep to file pth/UnaveragedSABA3.txt.                   ********/
-      /******** The Keplerian part A is integrated exactly, but the         ********/
-      /******** perturbative part takes the form B = B_1(p) + B_2(q) and is ********/
-      /******** integrated approximetaly but symplectically with a SABA1.   ********/
+      /******** Finds a libration center of the complete Hamiltonian by iteratively ********/
+      /******** integrating and keeping only the average and fast frequency.        ********/
+      /******** verbose is a boolean that specifies if the function should talk     ********/
 
-
-      char file_path[800];
-      FILE * file;
-      int N_step, iter, i;
-      typ X_cart[4*how_many_planet + 1];
-      typ X_buff[4*how_many_planet + 1];
-      typ X_new [4*how_many_planet + 1];
-      typ X_uv  [4*how_many_planet + 1];
-      typ a, e, sig, vp, M, mu, nu, beta, H;
-      typ c_2 = sqrt(15.)/10.;
-      typ c_1 = 0.5 - c_2;
-      typ d_1 = 5./18.;
-      typ d_2 = 4./9.;
-      typ alkhqp[6];
+      int n_iter = 1;
+      int i;
+      typ precision = 1.;
+      typ X_new[4*how_many_planet + 1];
+      typ X_uv [4*how_many_planet + 1];
+      typ xvXu [4*how_many_planet + 1];
+      typ Fast [4*how_many_planet + 1];
+      typ T   = 8000.;
+      typ tau = 0.0078125;
       
-      /******** Opening output file ********/
-      strcpy(file_path, pth);
-      strcat(file_path, "UnaveragedSABA3.txt");
-      file = fopen(file_path, "w");
-      if (file == NULL){
-            fprintf(stderr, "Error : Cannot create or open file UnaveragedSABA3.txt in function UnaveragedSABA3.\n");
-            abort();
+      if (verbose){
+            printf("-------------------------------------------------------------------------------------------\n\n");
+            printf("Starting the search for a libration center.\n\n");
+            PointPrint(X_old, 0);
       }
       
-      /******** Initializing the cartesian coordinates ********/
+      /******** I first try to converge with a low precision using a small integration time and a large timestep ********/
+      /*while(precision > 1.e-2 && n_iter <= 10){
+            UnaveragedSABAn_average(2.*tau, T/2., 1, xvXu, X_old, 1);
+            nonDofReinit(X_new, xvXu);
+            precision = 0.;
+            for (i = 1; i <= how_many_planet; i ++){
+                  precision += fabs(xvXu[4*i - 3] - X_uv[4*i - 3]) + fabs(xvXu[4*i - 2] - X_uv[4*i - 2]) + fabs(xvXu[4*i - 1] - X_uv[4*i - 1]) + fabs(xvXu[4*i] - X_uv[4*i]);
+            }
+            precision /= (typ) how_many_planet;   
+            for (i = 1; i <= how_many_planet; i ++){
+                  X_uv[4*i - 3] = xvXu[4*i - 3];
+                  X_uv[4*i - 2] = xvXu[4*i - 2];
+                  X_uv[4*i - 1] = xvXu[4*i - 1];
+                  X_uv[4*i]     = xvXu[4*i];
+            } 
+            new2old(X_old, X_new, X_uv);
+            if (verbose){
+                  PointPrint(X_old, n_iter);
+            }
+            n_iter ++;
+      }
+      
+      if (n_iter > 10 && precision > 1.e-2){ //This initial condition is hopeless
+            if (verbose){
+                  printf("This initial condition is hopeless.\n");
+            }
+            return;
+      }
+      if (verbose){
+            printf("A precision of 10^-2 was reached.\n\n");
+      }*/
+      
+      /******** I now refine to a moderate precision using a moderate integration time and a moderate timestep ********/
+      /*while(precision > 1.e-7){
+            UnaveragedSABAn_average(tau, T, 5, xvXu, Fast, X_old, 1);
+            nonDofReinit(X_new, xvXu);
+            precision = 0.;
+            for (i = 1; i <= how_many_planet; i ++){
+                  precision += fabs(xvXu[4*i - 3] - X_uv[4*i - 3]) + fabs(xvXu[4*i - 2] - X_uv[4*i - 2]) + fabs(xvXu[4*i - 1] - X_uv[4*i - 1]) + fabs(xvXu[4*i] - X_uv[4*i]);
+            }
+            precision /= (typ) how_many_planet;   
+            for (i = 1; i <= how_many_planet; i ++){
+                  X_uv[4*i - 3] = xvXu[4*i - 3];
+                  X_uv[4*i - 2] = xvXu[4*i - 2];
+                  X_uv[4*i - 1] = xvXu[4*i - 1];
+                  X_uv[4*i]     = xvXu[4*i];
+            } 
+            new2old(X_old, X_new, X_uv);
+            if (verbose){
+                  PointPrint(X_old, n_iter);
+            }
+            n_iter ++;
+            if (n_iter > 16 && precision > 1.e-7){
+                  fprintf(stderr, "\nError : In function EquilibriumFind, the precision cannot reach 10^-7 even though it reached 10^-2. Try decreasing tau and increasing T.\n");
+                  abort();
+            }
+      }
+      if (verbose){
+            printf("A precision of 10^-7 was reached.\n\n");
+      }*/
+      
+      /******** I now refine to a higher precision using a larger integration time and a smaller timestep.                             ********/
+      /******** No need to use more than a SABA1 due to non-conservative errors. Only one iteration more to prevent error accumulation ********/     
+      UnaveragedSABAn_average(tau/4., 2.*T, 5, xvXu, Fast, X_old, 1);
+      nonDofReinit(X_new, xvXu);
       for (i = 1; i <= how_many_planet; i ++){
-            mu = G*(m0 + masses[i]);
-            a  = X_old[4*i - 1]*X_old[4*i - 1]*(m0 + masses[i])/(G*m0*m0*masses[i]*masses[i]);
-            e  = sqrt(1. - (1. - X_old[4*i]/X_old[4*i - 1])*(1. - X_old[4*i]/X_old[4*i - 1]));
-            vp = -X_old[4*i - 2];
-            M  =  X_old[4*i - 3] - vp;
-            nu = mean2true(M, mu, a, e);
-            ell2cart(a, e, 0., nu, vp, 0., mu, X_cart + 4*i - 4);
+            X_uv[4*i - 3] = xvXu[4*i - 3];
+            X_uv[4*i - 2] = xvXu[4*i - 2];
+            X_uv[4*i - 1] = xvXu[4*i - 1];
+            X_uv[4*i]     = xvXu[4*i];
       }
-
-      /******** Integrating ********/
-      N_step = (int) ceil(T/tau);
-      for (iter = 0; iter < N_step; iter ++){
-      
-            /******** Writing to file ********/
-            if (iter%output_step == 0){
-                  for (i = 1; i <= how_many_planet; i ++){
-                        X_buff[4*i - 3] = X_cart[4*i - 3]; X_buff[4*i - 2] = X_cart[4*i - 2]; X_buff[4*i - 1] = X_cart[4*i - 1]; X_buff[4*i] = X_cart[4*i];
-                  }
-                  if (iter){ //Need to perform a step exp(-c_1*tau*L_A) on the buffer before outputting
-                        for (i = 1; i <= how_many_planet; i ++){
-                              mu = G*(m0 + masses[i]);
-                              kepsaut(X_buff + 4*i - 4, mu, -c_1*tau);
-                        }
-                  }
-                  else{
-                        fprintf(file, "Numerical integration of the unaveraged Hamiltonian with a SABA3 integrator in the cartesian coordinates.\n");
-                        fprintf(file, "The Keplerian part A is integrated exactly using function kepsaut. The perturbative part B is not integrable but can be\n");
-                        fprintf(file, "written B = B1 + B2 with B1 and B2 both integrable. Therefore, B is integrated approximately but symplectically with a SABA1.\n");
-                        fprintf(file, "\n");
-                        fprintf(file, "This file has %d columns that are (for 1 <= j <= %d):\n", 2 + 7*how_many_planet, how_many_planet);
-                        fprintf(file, "Time, Hamiltonian, phi_j, v_j, Phi_j, u_j, a_j, e_j, sig_j.\n");
-                        fprintf(file, "\n");
-                  }
-                  for (i = 1; i <= how_many_planet; i ++){ // (x, y; vx, vy) -> (lbd_j, -vrp_j; Lbd_j, D_j)
-                        beta = m0*masses[i]/(m0 + masses[i]);
-                        mu   = G*(m0 + masses[i]);
-                        cart2ell(X_buff + 4*i - 4, alkhqp, mu);
-                        e    = sqrt(alkhqp[2]*alkhqp[2] + alkhqp[3]*alkhqp[3]);
-                        X_old[4*i - 3] = alkhqp[1];
-                        X_old[4*i - 2] = -atan2(alkhqp[3], alkhqp[2]);
-                        X_old[4*i - 1] = beta*sqrt(mu*alkhqp[0]);
-                        X_old[4*i]     = X_old[4*i - 1]*(1. - sqrt(1. - e*e));
-                  }
-                  old2new(X_old, X_new, X_uv);             // (lbd_j, -vrp_j; Lbd_j, D_j) -> (phi_j, v_j; Phi_j, u_j)
-                  H = 0;
-                  fprintf(file, "%.12lf %.12lf", tau*(typ) iter, H);
-                  for (i = 1; i <= how_many_planet; i ++){
-                        sig = atan2(X_uv[4*i - 2], X_uv[4*i]);
-                        e   = sqrt(1. - (1. - X_old[4*i]/X_old[4*i - 1])*(1. - X_old[4*i]/X_old[4*i - 1]));
-                        a   = X_old[4*i - 1]*X_old[4*i - 1]*(m0 + masses[i])/(G*m0*m0*masses[i]*masses[i]);
-                        fprintf(file, " %.12lf %.12lf %.12lf %.12lf %.12lf %.12lf %.12lf", X_uv[4*i - 3], X_uv[4*i - 2], X_uv[4*i - 1], X_uv[4*i], a, e, sig);
-                  }
-                  fprintf(file, "\n");
-            }
-            
-            /******** Step exp(c_1*tau*L_A). For the first iteration only ********/
-            if (!iter){
-                  for (i = 1; i <= how_many_planet; i ++){
-                        mu = G*(m0 + masses[i]);
-                        kepsaut(X_cart + 4*i - 4, mu, c_1*tau);
-                  }
-            }
-            
-            /******** Step exp(d_1*tau*L_B) ********/
-            exp_tau_LB(d_1*tau, X_cart);
-            
-            /******** Step exp(c_2*tau*L_A) ********/
-            for (i = 1; i <= how_many_planet; i ++){
-                  mu = G*(m0 + masses[i]);
-                  kepsaut(X_cart + 4*i - 4, mu, c_2*tau);
-            }
-
-            /******** Step exp(d_2*tau*L_B) ********/
-            exp_tau_LB(d_2*tau, X_cart);
-            
-            /******** Step exp(c_2*tau*L_A) ********/
-            for (i = 1; i <= how_many_planet; i ++){
-                  mu = G*(m0 + masses[i]);
-                  kepsaut(X_cart + 4*i - 4, mu, c_2*tau);
-            }
-
-            /******** Step exp(d_1*tau*L_B) ********/
-            exp_tau_LB(d_1*tau, X_cart);
-
-            /******** Step exp(2*c_1*tau*L_A) ********/
-            for (i = 1; i <= how_many_planet; i ++){
-                  mu = G*(m0 + masses[i]);
-                  kepsaut(X_cart + 4*i - 4, mu, 2.*c_1*tau);
-            }
+      new2old(X_old, X_new, X_uv);
+      if (verbose){
+            PointPrint(X_old, n_iter);
+            UnaveragedSABAn(tau, T/2., 1, X_old, 6);
       }
-
-      /******** Closing output file ********/
-      fclose(file);
-}
-
-
-void UnaveragedSABA4(typ tau, typ T, int output_step, typ * X_old){
-
-      /******** Integrates the unaveraged Hamiltonian with a SABA4 method   ********/
-      /******** for a time T with a timestep tau. Outputs every output_step ********/
-      /******** timestep to file pth/UnaveragedSABA4.txt.                   ********/
-      /******** The Keplerian part A is integrated exactly, but the         ********/
-      /******** perturbative part takes the form B = B_1(p) + B_2(q) and is ********/
-      /******** integrated approximetaly but symplectically with a SABA1.   ********/
-
-
-      char file_path[800];
-      FILE * file;
-      int N_step, iter, i;
-      typ X_cart[4*how_many_planet + 1];
-      typ X_buff[4*how_many_planet + 1];
-      typ X_new [4*how_many_planet + 1];
-      typ X_uv  [4*how_many_planet + 1];
-      typ a, e, sig, vp, M, mu, nu, beta, H;
-      typ c_1 = 0.5 - sqrt(525. + 70.*sqrt(30.))/70.;
-      typ c_2 = (sqrt(525. + 70.*sqrt(30.)) - sqrt(525. - 70.*sqrt(30.)))/70.;
-      typ c_3 = sqrt(525. - 70.*sqrt(30.))/35.;
-      typ d_1 = 0.25 - sqrt(30.)/72.;
-      typ d_2 = 0.25 + sqrt(30.)/72.;
-      typ alkhqp[6];
-      
-      /******** Opening output file ********/
-      strcpy(file_path, pth);
-      strcat(file_path, "UnaveragedSABA4.txt");
-      file = fopen(file_path, "w");
-      if (file == NULL){
-            fprintf(stderr, "Error : Cannot create or open file UnaveragedSABA4.txt in function UnaveragedSABA4.\n");
-            abort();
-      }
-      
-      /******** Initializing the cartesian coordinates ********/
-      for (i = 1; i <= how_many_planet; i ++){
-            mu = G*(m0 + masses[i]);
-            a  = X_old[4*i - 1]*X_old[4*i - 1]*(m0 + masses[i])/(G*m0*m0*masses[i]*masses[i]);
-            e  = sqrt(1. - (1. - X_old[4*i]/X_old[4*i - 1])*(1. - X_old[4*i]/X_old[4*i - 1]));
-            vp = -X_old[4*i - 2];
-            M  =  X_old[4*i - 3] - vp;
-            nu = mean2true(M, mu, a, e);
-            ell2cart(a, e, 0., nu, vp, 0., mu, X_cart + 4*i - 4);
-      }
-
-      /******** Integrating ********/
-      N_step = (int) ceil(T/tau);
-      for (iter = 0; iter < N_step; iter ++){
-      
-            /******** Writing to file ********/
-            if (iter%output_step == 0){
-                  for (i = 1; i <= how_many_planet; i ++){
-                        X_buff[4*i - 3] = X_cart[4*i - 3]; X_buff[4*i - 2] = X_cart[4*i - 2]; X_buff[4*i - 1] = X_cart[4*i - 1]; X_buff[4*i] = X_cart[4*i];
-                  }
-                  if (iter){ //Need to perform a step exp(-c_1*tau*L_A) on the buffer before outputting
-                        for (i = 1; i <= how_many_planet; i ++){
-                              mu = G*(m0 + masses[i]);
-                              kepsaut(X_buff + 4*i - 4, mu, -c_1*tau);
-                        }
-                  }
-                  else{
-                        fprintf(file, "Numerical integration of the unaveraged Hamiltonian with a SABA4 integrator in the cartesian coordinates.\n");
-                        fprintf(file, "The Keplerian part A is integrated exactly using function kepsaut. The perturbative part B is not integrable but can be\n");
-                        fprintf(file, "written B = B1 + B2 with B1 and B2 both integrable. Therefore, B is integrated approximately but symplectically with a SABA1.\n");
-                        fprintf(file, "\n");
-                        fprintf(file, "This file has %d columns that are (for 1 <= j <= %d):\n", 2 + 7*how_many_planet, how_many_planet);
-                        fprintf(file, "Time, Hamiltonian, phi_j, v_j, Phi_j, u_j, a_j, e_j, sig_j.\n");
-                        fprintf(file, "\n");
-                  }
-                  for (i = 1; i <= how_many_planet; i ++){ // (x, y; vx, vy) -> (lbd_j, -vrp_j; Lbd_j, D_j)
-                        beta = m0*masses[i]/(m0 + masses[i]);
-                        mu   = G*(m0 + masses[i]);
-                        cart2ell(X_buff + 4*i - 4, alkhqp, mu);
-                        e    = sqrt(alkhqp[2]*alkhqp[2] + alkhqp[3]*alkhqp[3]);
-                        X_old[4*i - 3] = alkhqp[1];
-                        X_old[4*i - 2] = -atan2(alkhqp[3], alkhqp[2]);
-                        X_old[4*i - 1] = beta*sqrt(mu*alkhqp[0]);
-                        X_old[4*i]     = X_old[4*i - 1]*(1. - sqrt(1. - e*e));
-                  }
-                  old2new(X_old, X_new, X_uv);             // (lbd_j, -vrp_j; Lbd_j, D_j) -> (phi_j, v_j; Phi_j, u_j)
-                  H = 0;
-                  fprintf(file, "%.12lf %.12lf", tau*(typ) iter, H);
-                  for (i = 1; i <= how_many_planet; i ++){
-                        sig = atan2(X_uv[4*i - 2], X_uv[4*i]);
-                        e   = sqrt(1. - (1. - X_old[4*i]/X_old[4*i - 1])*(1. - X_old[4*i]/X_old[4*i - 1]));
-                        a   = X_old[4*i - 1]*X_old[4*i - 1]*(m0 + masses[i])/(G*m0*m0*masses[i]*masses[i]);
-                        fprintf(file, " %.12lf %.12lf %.12lf %.12lf %.12lf %.12lf %.12lf", X_uv[4*i - 3], X_uv[4*i - 2], X_uv[4*i - 1], X_uv[4*i], a, e, sig);
-                  }
-                  fprintf(file, "\n");
-            }
-            
-            /******** Step exp(c_1*tau*L_A). For the first iteration only ********/
-            if (!iter){
-                  for (i = 1; i <= how_many_planet; i ++){
-                        mu = G*(m0 + masses[i]);
-                        kepsaut(X_cart + 4*i - 4, mu, c_1*tau);
-                  }
-            }
-            
-            /******** Step exp(d_1*tau*L_B) ********/
-            exp_tau_LB(d_1*tau, X_cart);
-            
-            /******** Step exp(c_2*tau*L_A) ********/
-            for (i = 1; i <= how_many_planet; i ++){
-                  mu = G*(m0 + masses[i]);
-                  kepsaut(X_cart + 4*i - 4, mu, c_2*tau);
-            }
-
-            /******** Step exp(d_2*tau*L_B) ********/
-            exp_tau_LB(d_2*tau, X_cart);
-
-            /******** Step exp(c_3*tau*L_A) ********/
-            for (i = 1; i <= how_many_planet; i ++){
-                  mu = G*(m0 + masses[i]);
-                  kepsaut(X_cart + 4*i - 4, mu, c_3*tau);
-            }
-
-            /******** Step exp(d_2*tau*L_B) ********/
-            exp_tau_LB(d_2*tau, X_cart);
-            
-            /******** Step exp(c_2*tau*L_A) ********/
-            for (i = 1; i <= how_many_planet; i ++){
-                  mu = G*(m0 + masses[i]);
-                  kepsaut(X_cart + 4*i - 4, mu, c_2*tau);
-            }
-
-            /******** Step exp(d_1*tau*L_B) ********/
-            exp_tau_LB(d_1*tau, X_cart);
-
-            /******** Step exp(2*c_1*tau*L_A) ********/
-            for (i = 1; i <= how_many_planet; i ++){
-                  mu = G*(m0 + masses[i]);
-                  kepsaut(X_cart + 4*i - 4, mu, 2.*c_1*tau);
-            }
-      }
-
-      /******** Closing output file ********/
-      fclose(file);
+      n_iter ++;
 }

@@ -27,15 +27,12 @@ void kepsaut(typ * cart, typ mu, typ dt);
 void exp_tau_LB(typ tau, typ * X_cart);
 
 
-void UnaveragedSABA1(typ tau, typ T, int output_step, typ * X_old);
+void UnaveragedSABAn(typ tau, typ T, int output_step, typ * X_old, int n);
 
 
-void UnaveragedSABA2(typ tau, typ T, int output_step, typ * X_old);
+void UnaveragedSABAn_average(typ tau, typ T, int Hanning_order, typ * X_uv_mean, typ * X_uv_fast, typ * X_old, int n);
 
 
-void UnaveragedSABA3(typ tau, typ T, int output_step, typ * X_old);
-
-
-void UnaveragedSABA4(typ tau, typ T, int output_step, typ * X_old);
+void LibrationCenterFind(typ * X_old, int verbose);
 
 #endif

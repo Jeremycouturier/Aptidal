@@ -83,6 +83,9 @@ void init(){
 
       /******** Calls all the initialization-related functions ********/
       
+      time_t t;
+      time(&t);
+      srand((unsigned) t);
       initialization();
       chain_validity();
       array_init();
@@ -164,15 +167,15 @@ void chain_validity(){
 
       /******** The system cannot have less than two planets *********/
       if (how_many_planet < 2){
-            fprintf(stderr, "\nAptidal error : The system must have at least two planets.\n");
+            fprintf(stderr, "\nError: The system must have at least two planets.\n");
             abort();
       }
       
       /******** The chain cannot have only one resonant planet or negative nominal periods ********/
       int how_many_non_secular = 0;
-      for (i = 1; i < how_many_planet + 1; i ++){
+      for (i = 1; i <= how_many_planet; i ++){
             if (p_i[i] < 0){
-                  fprintf(stderr, "\nAptidal error : An invalid resonance chain was given. The nominal orbital periods cannot be negative.\n");
+                  fprintf(stderr, "\nError: An invalid resonance chain was given. The nominal orbital periods cannot be negative.\n");
                   abort();
             }
             if (p_i[i] != 0){
@@ -180,7 +183,7 @@ void chain_validity(){
             }
       }
       if (how_many_non_secular == 1){
-            fprintf(stderr, "\nAptidal error : An invalid resonance chain was given. The chain cannot contain exactly one resonant planet.\n");
+            fprintf(stderr, "\nError: An invalid resonance chain was given. The chain cannot contain exactly one resonant planet.\n");
             abort();
       }
       
@@ -189,7 +192,7 @@ void chain_validity(){
       for (i = 1; i < how_many_planet + 1; i ++){
             if (p_i[i] != 0 && p_i[i] < largest_orbital_period_so_far){
                   fprintf(stderr,
-                  "\nAptidal error : An invalid resonance chain was given. The nominal orbital periods must be given in increasing order (planets are ordered from innermost to outermost).\n"
+                  "\nError: An invalid resonance chain was given. The nominal orbital periods must be given in increasing order (planets are ordered from innermost to outermost).\n"
                   );
                   abort();
             }
@@ -204,7 +207,7 @@ void chain_validity(){
       for (i = 1; i < how_many_planet + 1; i ++){
             if (p_i[i] != 0 && p_i[i] == latest_orbital_period && secular_in_between){
                   fprintf(stderr,
-                  "\nAptidal error : An invalid resonance chain was given. A non-resonant planet cannot be between co-orbital planets (planets are ordered from innermost to outermost).\n");
+                  "\nError: An invalid resonance chain was given. A non-resonant planet cannot be between co-orbital planets (planets are ordered from innermost to outermost).\n");
                   abort();
             }
             if (p_i[i] == 0){
@@ -343,7 +346,7 @@ struct pairOfReal b_k2(typ alpha, struct pairOfReal b_km12, int k){
             coef1 = 2.5;  coef2 = 3.0;  coef3 = 1.5;  coef4 = 5.0;
       }
       else{
-            fprintf(stderr, "\nAptidal error : The argument k must be 3, 5 or 7 in function b_k2.\n");
+            fprintf(stderr, "\nError: The argument k must be 3, 5 or 7 in function b_k2.\n");
             abort();
       }
       
@@ -373,7 +376,7 @@ int gcd(int a, int b){
       
       if (b == 0){
             if (a == 0){
-                  fprintf(stderr, "\nAptidal error : Trying to compute gcd(0,0) in function gcd.\n");
+                  fprintf(stderr, "\nError: Trying to compute gcd(0,0) in function gcd.\n");
                   abort();
             }
             return a;
@@ -465,7 +468,7 @@ struct rational ratinv(struct rational r1){
 
       struct rational mr1;
       if (r1.numerator == 0){
-            fprintf(stderr, "\nAptidal error : Trying to divide by 0 in function ratinv.\n");
+            fprintf(stderr, "\nError: Trying to divide by 0 in function ratinv.\n");
             abort();
       }
       if (r1.numerator > 0){
@@ -544,4 +547,25 @@ void ratprint(struct rational r){
       else{
             printf("%d/%d", num, denom);
       }   
+}
+
+
+typ rdm(typ min, typ max){
+      
+      /******** Returns a random number between min and max according to a uniform distribution ********/
+
+      typ MyRand = ((typ) rand())/((typ) RAND_MAX); //between 0 and 1
+      MyRand = min + (max - min)*MyRand;            //between min and max
+
+      return MyRand;
+}
+
+
+typ continuousAngle(typ newAngle, typ oldAngle){
+
+      /******** Maintain continuity of the angle ********/
+
+      typ dAngle = newAngle - oldAngle;
+      typ qtient = round(dAngle/(2.*M_PI));
+      return newAngle - qtient*2.*M_PI;
 }

@@ -107,10 +107,8 @@ void rat_c_i_init(){
             
             rat_c_i[i] = c;
             
-            free(N);
-            N = NULL;
-            free(D);
-            D = NULL;
+            free(N);  N = NULL;
+            free(D);  D = NULL;
       }
 }
 
@@ -273,7 +271,7 @@ void verification(){
                   num   = coef.numerator;
                   denom = coef.denominator;
                   if (i != j && (num != 0 || denom != 1) || i == j && (num != 1 || denom != 1)){
-                        fprintf(stderr, "\nAptidal error : The transformation failed verification. This is a bug. Please contact Aptidal's developer.\n");
+                        fprintf(stderr, "\nError: The transformation failed verification. This is a bug. Please contact Aptidal's developer.\n");
                         abort();
                   }
             }

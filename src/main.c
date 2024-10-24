@@ -25,12 +25,14 @@ int main(){
       typ dH_polar[4*how_many_planet + 1];
       typ dH_rect [4*how_many_planet + 1];
       
-      /*X_old_init(X_old);
-      SABA1(0.25, 2000., 1, X_old);*/
+      X_old_init(X_old);
+      //SABA1(0.25, 2000., 1, X_old);
+      //SABAn(0.5, 4000., 2, X_old, 6);
       //RK2(0.25, 10000., 1);
       //EquilibriumFind(X_old, 1);
-      X_old_init(X_old);
-      UnaveragedSABA4(0.0078125, 10000., 10, X_old);
+      LibrationCenterFind(X_old, 1);
+      //X_old_init(X_old);
+      //UnaveragedSABAn(0.0078125, 4000., 2, X_old, 6);
       
       /*int i;
       typ a, e, sig, vp, M, mu, nu, beta, H;
