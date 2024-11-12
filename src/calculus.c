@@ -55,7 +55,7 @@ void dHdold(typ * dH, typ * X_old, int KP){
       /******** Fills the array dH with the gradient of the Keplerian part of the Hamiltonian if KP is 0 ********/
       /******** and with the perturbative part if KP is 1. Indexes 4*i - 3 to 4*i contain dH/dlbd_i,     ********/
       /******** dH/d(-vrp_i), dH/dLbd_i and dH/dsq2DsLi=sqrt(2*D_i*Lbd_i0)*dH/dD_i, respectively.        ********/
-      /******** The total gradient (of H_K+H_P) is computed if KP is 2                                   ********/
+      /******** The total gradient (of H_K + H_P) is computed if KP is 2                                 ********/
       
       int i, j, k, pi, pj, the_gcd, is_coorbital;
       typ p, q, l, r;
@@ -192,7 +192,7 @@ void dHdold(typ * dH, typ * X_old, int KP){
 
 void dHdnew(typ * dH_polar, typ * dH_rect, typ * dH_old, typ * X_new, typ * X_uv){
 
-      /******** Fills arrays dH_polar and dH_rect with the gradient of the new polar and     ********/
+      /******** Fills arrays dH_polar and dH_rect with the gradient in the new polar and     ********/
       /******** rectangular variables. Indexes 4*i - 3 to 4*i of dH_polar contain dH/dphi_i, ********/
       /******** dH/dsig_i, dH/dPhi_i and dH/dsq2DsLi=sqrt(2*D_i*Lbd_i0)*dH/dD_i, while those ********/
       /******** of dH_rect contain dH/dphi_i, dH/dv_i, dH/dPhi_i and dH/du_i                 ********/
@@ -631,13 +631,14 @@ void SABAn_average(typ tau, typ T, int Hanning_order, typ * X_uv_mean, typ * X_o
       /******** Integrating ********/
       tau    /= 2.;
       N_step  = (int) ceil(T/tau);
+      N_step += N_step % 2 == 0 ? 0 : 1;
       T       = tau* (typ) N_step;
       for (iter = -N_step + 1; iter <= N_step; iter ++){
       
             /******** Step exp(c1*tau*L_A). For the first iteration only ********/
             if (iter == -N_step + 1){
-                  old2new(X_old, X_new, X_uv_0);
-                  dHdold(dH_old, X_old, 0); //Computing gradient of the Keplerian Hamiltonian
+                  old2new(X_old, X_new, X_uv_0); //Initializing X_uv_0
+                  dHdold(dH_old, X_old, 0);      //Computing gradient of the Keplerian Hamiltonian
                   for (i = 1; i <= how_many_planet; i ++){
                         X_old[4*i - 3] += c1*tau*dH_old[4*i - 1];
                   }
@@ -1090,7 +1091,8 @@ void EquilibriumFind(typ * X_old, int verbose){
             PointPrint(X_old, n_iter);
             SABAn(tau, T/2., 1 + (int) (T/2./tau/8192.), X_old, 4);
             new2old(X_old, X_new, X_uv);
-            UnaveragedSABAn(tau/32., T/2., 1 + (int) (T/2./tau/8192.), X_old, 4);
+            UnaveragedSABAn(tau/32., T/2., 1, X_old, 4);
+            new2old(X_old, X_new, X_uv);
       }
 }
 

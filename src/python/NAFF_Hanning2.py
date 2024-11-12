@@ -6,26 +6,13 @@ import numpy as np
 ######## Trying to compute the average of the function f(t) = a_0 + 2*a_1*cos(nu_1*t) - 2*a_2*sin(nu_2*t) + 2*a_3*cos(nu_3*t) ########
 ######## with the NAFF algorithm (Laskar et al. 1992) and different value for the power p of the weight function              ########
 
-p    = 1
-
-a_0  = 1.0
-a_1  = 2.0
-a_2  = 3.0
-a_3  = 1.5
-nu_1 = 0.47267
-nu_2 = 1.10372
-nu_3 = 1.42289
-T1   = 2.0*m.pi/(nu_1)
-T2   = 2.0*m.pi/(nu_2)
-T3   = 2.0*m.pi/(nu_3)
-T    = 10  *max(T1, T2, T3)
-dT   = 0.01*min(T1, T2, T3)
-nu_0 = m.pi/T
-
+plot_scalar_product = 0
+plot_Fourier_serie  = 1
+calculate_nu2       = 0
 
 N = 50000 #Number of points for plotting
-omega_min = 1.596768
-omega_max = 1.596770
+omega_min = 1*1.56
+omega_max = 1*1.605
 
 
 def sinx(x): #Defining the function x -> sin(x)/x
@@ -46,139 +33,152 @@ def hp(x,p):
             prod = prod * (x**2 - i**2*m.pi**2)
       return (-1)**p*np.pi**(2*p)*m.factorial(p)**2*sinx(x)/prod
 
+def Fourier(t, N):
+      f = 0
+      for i in range(N):
+            nu = i*nu_0
+            f  = f + As[i]*m.cos(nu*t) + Bs[i]*m.sin(nu*t)
+      return f
 
 #######################################################################
 ######## Plot of Re(<f(t),1>) as a function of p for a given T ########
 #######################################################################
-N_points = 401
+N_points = 201
 om = np.linspace(omega_min,omega_max,N_points)
 count = 0
 
-path_towards_phi = "/home/jeremy/Documents/Aptidal_simulation/test/UnaveragedSABA6_346.txt"
+path_towards_phi = "/home/jeremy/Documents/Aptidal_simulation/test/UnaveragedSABA6_346_for_python.txt"
 t, phi, Phi      = np.loadtxt(path_towards_phi,  dtype = np.float64, delimiter=' ', unpack=True, usecols=np.array([0, 2, 4]))
 
-'''p1_numerical  = []
-phi_numerical = []
-Phi_numerical = []
-n   = int(T/dT)
-dT  = T/n #Slightly changing the value of dT so that 2T/dT is an integer
-w1  = 5/9
-w2  = 8/9
-w3  = 5/9
-xi1 = -m.sqrt(3/5)
-xi2 = 0
-xi3 = m.sqrt(3/5)
-print(len(phi))
-for omeg in om:
-      A       = 0
-      phi_dot = 0
-      Phi_dot = 0
+if (plot_scalar_product):
+      estimated_nu  = 1.59600928
+      phi_numerical = []
+      Phi_numerical = []
       T = (t[len(t) - 1] - t[0])/2
-      for i in range(-n,n):
-            t1  = dT*(i+0.5+xi1/2)
-            t2  = dT*(i+0.5+xi2/2)
-            t3  = dT*(i+0.5+xi3/2)
-            ft1 = f(t1)*m.cos(omeg*t1)*weight(t1, 5)
-            ft2 = f(t2)*m.cos(omeg*t2)*weight(t2, 5)
-            ft3 = f(t3)*m.cos(omeg*t3)*weight(t3, 5)
-            A = A + 0.5*dT*w1*ft1 + 0.5*dT*w2*ft2 + 0.5*dT*w3*ft3
-      for i in range(2, len(phi), 2):
-            t0  = t[i - 2] - T
-            t1  = t[i - 1] - T
-            t2  = t[i]     - T
-            dt  = t2 - t0
-            ft0 = Phi[i - 2]*m.cos(omeg*t0)*weight(t0, 5)
-            ft1 = Phi[i - 1]*m.cos(omeg*t1)*weight(t1, 5)
-            ft2 = Phi[i]    *m.cos(omeg*t2)*weight(t2, 5)
-            Phi_dot = Phi_dot + dt*(ft0 + 4.*ft1 + ft2)/6.
+      print(len(phi))
+      for omeg in om:
+            phi_dot = 0
+            Phi_dot = 0
+            for i in range(2, len(phi), 2):
+                  t0  = t[i - 2] - T
+                  t1  = t[i - 1] - T
+                  t2  = t[i]     - T
+                  dt  = t2 - t0
+                  ft0 = Phi[i - 2]*m.cos(omeg*t0)*weight(t0, 5)
+                  ft1 = Phi[i - 1]*m.cos(omeg*t1)*weight(t1, 5)
+                  ft2 = Phi[i]    *m.cos(omeg*t2)*weight(t2, 5)
+                  Phi_dot = Phi_dot + dt*(ft0 + 4.*ft1 + ft2)/6.
       
-      A = A/(2*T)
-      phi_dot = phi_dot/(2.*T)
-      Phi_dot = Phi_dot/(2.*T)
-      p1_numerical.append(A)
-      phi_numerical.append(phi_dot)
-      Phi_numerical.append(Phi_dot)
-      count = count + 1
-      print(count)
-p1_numerical  = np.array(p1_numerical)
-phi_numerical = np.array(phi_numerical)
-Phi_numerical = np.array(Phi_numerical)'''
+            phi_dot = phi_dot/(2.*T)
+            Phi_dot = Phi_dot/(2.*T)
+            phi_numerical.append(phi_dot)
+            Phi_numerical.append(Phi_dot)
+            count = count + 1
+            print(count)
+      phi_numerical = np.array(phi_numerical)
+      Phi_numerical = np.array(Phi_numerical)
+      py.plot(om, 10000.*Phi_numerical, "-", color = "green", linewidth = 3, label=r'$\Phi$')
+      py.vlines(x=1*estimated_nu, ymin=-1e-5, ymax=4e-5, colors='black', ls='-', lw=2)
+      py.vlines(x=m.pi/2., ymin=-1e-5, ymax=4e-5, colors='black', ls='-', lw=2)
+      py.xticks(fontsize=25)
+      py.yticks(fontsize=25)
+      py.xlabel(r"$\omega$", fontsize=30)
+      py.ylabel(r"$\left<f(t),e^{i\omega t}\right>_p$", fontsize=30)
+      py.grid(linewidth=0.3)
+      py.legend(fontsize = 25)
+      py.show()
+      
 
-T    = (t[len(t) - 1] - t[0])/2
-nu_0 = 1.596768654
-As   = []
-Bs   = []
-N    = 100
-for j in range(N):
-      nu  = j*nu_0
-      A_j = 0
-      B_j = 0
-      for i in range(2, len(Phi), 2):
-            t0  = t[i - 2] - T
-            t1  = t[i - 1] - T
-            t2  = t[i]     - T
-            dt  = t2 - t0
-            ft0 = 10000.*Phi[i - 2]*m.cos(nu*t0)*weight(t0, 5)
-            ft1 = 10000.*Phi[i - 1]*m.cos(nu*t1)*weight(t1, 5)
-            ft2 = 10000.*Phi[i]    *m.cos(nu*t2)*weight(t2, 5)
-            A_j = A_j + dt*(ft0 + 4.*ft1 + ft2)/6.
-            ft0 = 10000.*Phi[i - 2]*m.sin(nu*t0)*weight(t0, 5)
-            ft1 = 10000.*Phi[i - 1]*m.sin(nu*t1)*weight(t1, 5)
-            ft2 = 10000.*Phi[i]    *m.sin(nu*t2)*weight(t2, 5)
-            B_j = B_j + dt*(ft0 + 4.*ft1 + ft2)/6.
-      A_j = A_j/(2*T)
-      B_j = B_j/(2*T)
-      As.append(A_j)
-      Bs.append(B_j)
-      print("A_", j, " = ", A_j)
-      print("B_", j, " = ", B_j)
-As = np.array(As)
-Bs = np.array(Bs)
-
-def Fourier(t, N):
-      f = 0
-      for i in range(N):
-            f = f + As[i]*m.cos(i*nu_0*t) + Bs[i]*m.sin(i*nu_0*t)
-      return f
+if (plot_Fourier_serie):
+      T    = (t[len(t) - 1] - t[0])/2
+      nu_0 = 1.596768654
+      estimated_nu = 1.59600928
+      As   = []
+      Bs   = []
+      N    = 100
+      for j in range(N):
+            nu  = j*nu_0
+            A_j = 0
+            B_j = 0
+            for i in range(2, len(Phi), 2):
+                  t0  = t[i - 2] - T
+                  t1  = t[i - 1] - T
+                  t2  = t[i]     - T
+                  dt  = t2 - t0
+                  ft0 = 10000.*Phi[i - 2]*m.cos(nu*t0)*weight(t0, 5)
+                  ft1 = 10000.*Phi[i - 1]*m.cos(nu*t1)*weight(t1, 5)
+                  ft2 = 10000.*Phi[i]    *m.cos(nu*t2)*weight(t2, 5)
+                  A_j = A_j + dt*(ft0 + 4.*ft1 + ft2)/6.
+                  ft0 = 10000.*Phi[i - 2]*m.sin(nu*t0)*weight(t0, 5)
+                  ft1 = 10000.*Phi[i - 1]*m.sin(nu*t1)*weight(t1, 5)
+                  ft2 = 10000.*Phi[i]    *m.sin(nu*t2)*weight(t2, 5)
+                  B_j = B_j + dt*(ft0 + 4.*ft1 + ft2)/6.
+            A_j = A_j/(2*T)
+            B_j = B_j/(2*T)
+            As.append(A_j)
+            Bs.append(B_j)
+            print("A_", j, " = ", A_j)
+            print("B_", j, " = ", B_j)
+      As = np.array(As)
+      Bs = np.array(Bs)
             
-time = np.linspace(0, 20, 20000)
-X4   = np.zeros(20000)
-X10  = np.zeros(20000)
-X50  = np.zeros(20000)
-X100 = np.zeros(20000)
-for i in range(20000):
-      X4[i]   = Fourier(time[i], 4)
-for i in range(20000):
-      X10[i]  = Fourier(time[i], 10)
-for i in range(20000):
-      X50[i]  = Fourier(time[i], 50)
-for i in range(20000):
-      X100[i] = Fourier(time[i], 100)
+      time = np.linspace(0, 20, 20000)
+      X4   = np.zeros(20000)
+      X10  = np.zeros(20000)
+      X50  = np.zeros(20000)
+      X100 = np.zeros(20000)
+      for i in range(20000):
+            X4[i]   = Fourier(time[i], 4)
+      for i in range(20000):
+            X10[i]  = Fourier(time[i], 10)
+      for i in range(20000):
+            X50[i]  = Fourier(time[i], 50)
+      for i in range(20000):
+            X100[i] = Fourier(time[i], 100)
+      
+      print(Fourier(-T, 4))
+      print(Fourier(-T, 10))
+      print(Fourier(-T, 50))
+      print(Fourier(-T, 100))
 
-py.plot(time, X100, "-", color = "blue",  linewidth = 3, label=r'$100$ terms')
-py.plot(time, X50,  "-", color = "red",   linewidth = 3, label=r'$50$  terms')
-py.plot(time, X10,  "-", color = "green", linewidth = 3, label=r'$10$  terms')
-py.plot(time, X4,   "-", color = "orange",linewidth = 3, label=r'$4$   terms')
+      py.plot(time, X100, "-", color = "blue",  linewidth = 3, label=r'$100$ terms')
+      py.plot(time, X50,  "-", color = "red",   linewidth = 3, label=r'$50$  terms')
+      py.plot(time, X10,  "-", color = "green", linewidth = 3, label=r'$10$  terms')
+      py.plot(time, X4,   "-", color = "orange",linewidth = 3, label=r'$4$   terms')
 
-'''py.plot(om, p5, "-", color = "red",    linewidth = 3, label=r'$p=5$')
-py.plot(om, p4, "-", color = "blue",   linewidth = 3, label=r'$p=4$')
-py.plot(om, p3, "-", color = "gold",   linewidth = 3, label=r'$p=3$')
-py.plot(om, p2, "-", color = "orange", linewidth = 3, label=r'$p=2$')
-py.plot(om, p1, "-", color = "green",  linewidth = 3, label=r'$p=1$')
-py.plot(om, p0, "-", color = "purple", linewidth = 3, label=r'$p=0$')'''
-#py.plot(om, p1_numerical,  "-", color = "green", linewidth = 3, label=r'$p=5$')
-#py.plot(om, 10000.*Phi_numerical, "-", color = "green", linewidth = 3, label=r'$\Phi$')
-'''py.vlines(x=0,    ymin=-3, ymax=3, colors='black', ls='-', lw=2)
-py.vlines(x=nu_1, ymin=-3, ymax=3, colors='black', ls='-', lw=2)
-py.vlines(x=nu_2, ymin=-3, ymax=3, colors='black', ls='-', lw=2)
-py.vlines(x=nu_3, ymin=-3, ymax=3, colors='black', ls='-', lw=2)'''
-py.xticks(fontsize=25)
-py.yticks(fontsize=25)
-py.xlabel("Time", fontsize=30)
-py.ylabel("Naff decomposition of the fast frequency", fontsize=30)
-py.grid(linewidth=0.3)
-py.legend(fontsize = 25)
-py.show()
+      py.xticks(fontsize=25)
+      py.yticks(fontsize=25)
+      py.xlabel("Time", fontsize=30)
+      py.ylabel("Naff decomposition of the fast frequency", fontsize=30)
+      py.grid(linewidth=0.3)
+      py.legend(fontsize = 25)
+      py.show()
+      
+if (calculate_nu2):
+      d_nu         = 1
+      estimated_nu = 1.59600928
+      nu_0         = estimated_nu
+      T            = (t[len(t) - 1] - t[0])/2
+      while(abs(d_nu) > 1.e-8):
+            num = 0
+            den = 0
+            print(nu_0)
+            for i in range(2, len(Phi), 2):
+                  t0  = t[i - 2] - T
+                  t1  = t[i - 1] - T
+                  t2  = t[i]     - T
+                  dt  = t2 - t0
+                  ft0 = t0*Phi[i - 2]*m.sin(nu_0*t0)*weight(t0, 5)
+                  ft1 = t1*Phi[i - 1]*m.sin(nu_0*t1)*weight(t1, 5)
+                  ft2 = t2*Phi[i]    *m.sin(nu_0*t2)*weight(t2, 5)
+                  num = num + dt*(ft0 + 4.*ft1 + ft2)/6.
+                  ft0 = t0**2*Phi[i - 2]*m.cos(nu_0*t0)*weight(t0, 5)
+                  ft1 = t1**2*Phi[i - 1]*m.cos(nu_0*t1)*weight(t1, 5)
+                  ft2 = t2**2*Phi[i]    *m.cos(nu_0*t2)*weight(t2, 5)
+                  den = den + dt*(ft0 + 4.*ft1 + ft2)/6.
+            d_nu = -num/den
+            nu_0 = nu_0 + d_nu
+      print(nu_0)
 
 '''
 ######################################################################################

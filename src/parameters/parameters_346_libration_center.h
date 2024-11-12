@@ -35,10 +35,10 @@
 #define how_many_planet 3                                                           //Number of planets in the system. Must match the length of the resonance chain. Minimum is 2
 #define G 39.478417604357434475337964                                               //Gravitational constant is set to 4*pi^2, so the orbital period of the innermost planet is 1
 #define body_masses {1.,   0.0000164,   0.0000232,   0.0000191}                     //Masses of the bodies of the system, beginning with the star.
-#define body_sma          {0.999964606, 1.215712517, 1.604557352}                   //Initial and nominal semi-major axes of the planets. Used to computed the Hamiltonian's coef
-#define body_ecc          {0.003925403, 0.003563875, 0.001476109}                   //Initial eccentricities              of the planets.
-#define body_lambda       {3.14159,     0.00,        0.00}                          //Initial mean longitudes             of the planets.
-#define body_varpi        {3.14159,     0.00,        3.14159}                       //Initial longitude of the periapsis  of the planets.
+#define body_sma          {0.99988697, 1.21569214,   1.60466999}                    //Initial and nominal semi-major axes of the planets. Used to computed the Hamiltonian's coef
+#define body_ecc          {0.00393958, 0.00353186,   0.00148199}                    //Initial eccentricities              of the planets.
+#define body_lambda       {1.98541188,  5.41677367,  5.70557755}                    //Initial mean longitudes             of the planets.
+#define body_varpi        {3.11590651,  0.02156921,  3.24801745}                    //Initial longitude of the periapsis  of the planets.
 #define body_radii  {0.12, 0.006744,    0.010036}                                   //Radii               of the planets, beginning with the star. Unimportant if no tides
 #define body_k2     {0.0,  0.8,         1.32}                                       //Second Love numbers of the planets, beginning with the star. Unimportant if no tides
 #define body_Q  {10000.0,  234.8,       78.9}                                       //Quality factors     of the planets, beginning with the star. Unimportant if no tides

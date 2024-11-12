@@ -28,7 +28,7 @@ extern typ Lbd_0 [how_many_planet + 1];      //Nominal circular angular momenta 
 extern typ m0;                               //Mass of the star
 
 
-/******** Some global arrays ********/
+/******** Some global variables and arrays ********/
 extern int p_i     [how_many_planet + 1];
 extern int k_ij    [how_many_planet + 1][how_many_planet + 1];
 extern int q_ij    [how_many_planet]    [how_many_planet + 1];
@@ -40,8 +40,8 @@ extern struct rational rat_q_ij    [how_many_planet]    [how_many_planet + 1];
 extern struct rational rat_k_i     [how_many_planet];
 extern struct rational rat_k_star_i[how_many_planet];
 extern struct rational rat_q_i     [how_many_planet];
-extern int how_many_resonant;                 //number of planets in the resonance chain that are not unresonant of the first member of a co-orbital pair
-extern int how_many_missed;                   //number of planets in the resonance chain that are unresonant of that are the first member of a co-orbital pair
+extern int how_many_resonant;                 //number of planets in the system that are resonant     and are not the first member of a co-orbital pair
+extern int how_many_missed;                   //number of planets in the system that are not resonant or that are the first member of a co-orbital pair
 extern int * subchain;
 extern int * chain_missed;
 extern typ qnmlr[32][5];                        

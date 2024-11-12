@@ -51,12 +51,12 @@ void NoverD_init(){
 
       /******** Computes the coefficients N_r,s^(i) and D_r,s^(i) under the form of a rational number ********/
       
-      int i,r,s;
+      int i, r, s;
       
       for (i = 1; i < how_many_resonant - 1; i ++){
             for (r = 1; r <= i; r ++){
-                  for (s = r + 1; s < how_many_resonant + 1; s++){
-                        NoverD[i][r][s] = ratabs(ratdiff(ratmul(rat_k_ij[s][r],rat_l_ij[i][s]),ratmul(rat_k_ij[r][s],rat_l_ij[i][r])));
+                  for (s = r + 1; s < how_many_resonant + 1; s ++){
+                        NoverD[i][r][s] = ratabs(ratdiff(ratmul(rat_k_ij[s][r], rat_l_ij[i][s]), ratmul(rat_k_ij[r][s], rat_l_ij[i][r])));
                   }
             }
       }
@@ -67,21 +67,21 @@ void rat_c_i_init(){
 
       /******** Computes the coefficients c_i and stores them into rat_c_i ********/
 
-      int i,j,r,s;
+      int i, j, r, s;
       int * N;
       int * D;
       int k; //Number of coefficients N_r,s^(i)/D_r,s^(i) for a fixed i
-      struct rational R,c;
+      struct rational R, c;
       int num, denom, irrec;
       
-      for (i = 1; i < how_many_resonant - 1; i++){
-            k = how_many_resonant*i-(i*(i+1))/2;
+      for (i = 1; i < how_many_resonant - 1; i ++){
+            k = how_many_resonant*i - (i*(i + 1))/2;
             N = (int *)malloc(k * sizeof(int));
             D = (int *)malloc(k * sizeof(int));
             j = 0;
-            for (r = 1; r <= i; r++){
-                  for (s = r + 1; s < how_many_resonant + 1; s++){
-                        R = NoverD[i][r][s];
+            for (r = 1; r <= i; r ++){
+                  for (s = r + 1; s < how_many_resonant + 1; s ++){
+                        R     = NoverD[i][r][s];
                         num   = R.numerator;
                         denom = R.denominator;
                         if (q_ij[r][s] <= max_deg && k_ij[s][r] <= max_res){ //If the pair (r,s) is really resonant despite the approximations
@@ -92,12 +92,12 @@ void rat_c_i_init(){
                   }
             }
             if (j == 0){
-                  num = 1;
+                  num   = 1;
                   denom = 1;
             }
             else{
-                  num   = LCM(D,j);
-                  denom = GCD(N,j);
+                  num   = LCM(D, j);
+                  denom = GCD(N, j);
                   irrec = gcd(num, denom);
                   num   = num / irrec;
                   denom = denom/irrec;
@@ -117,29 +117,29 @@ void transformation_init(){
 
       /******** Fills the matrix M (array transformation) of the transformation ********/
 
-      int i,j;
+      int i, j;
       int is_coorbital;
 
-      for (i = 1; i < 2*how_many_planet + 1; i++){
-            for (j = 1; j < 2*how_many_planet + 1; j++){
+      for (i = 1; i < 2*how_many_planet + 1; i ++){
+            for (j = 1; j < 2*how_many_planet + 1; j ++){
                   transformation[i][j] = int2rat(0);
             }
       }
 
       if (how_many_resonant == 0){ //All planets are secular
-            for (i = 1; i < 2*how_many_planet + 1; i++){
+            for (i = 1; i < 2*how_many_planet + 1; i ++){
                   transformation[i][i] = int2rat(1); //The transformation is identity
             }
       }
       else if (how_many_resonant == 1){ //All planets are secular except for a pair or a triplet of co-orbitals
-            for (i = 1; i < how_many_planet + 1; i++){
+            for (i = 1; i < how_many_planet + 1; i ++){
                   transformation[i][i] = int2rat(1);
-                  is_coorbital = p_i[i];
+                  is_coorbital         = p_i[i];
                   if (is_coorbital && i != subchain[how_many_resonant]){
                         transformation[i][i + 1] = int2rat(-1);
                   }
             }
-            for (i = how_many_planet + 1; i < 2*how_many_planet + 1; i++){
+            for (i = how_many_planet + 1; i < 2*how_many_planet + 1; i ++){
                   transformation[i][i] = int2rat(1);
             }
       }
@@ -147,8 +147,8 @@ void transformation_init(){
       
             /******** Upper-left block of the transformation matrix ********/
             /******** Resonant planets and trailing co-orbitals ********/
-            for (i = 1; i < how_many_resonant - 1; i++){
-                  transformation[subchain[i]][subchain[i]]     = ratmul(ratinv(rat_c_i[i]),ratover(rat_k_i[i],rat_q_i[i]));
+            for (i = 1; i < how_many_resonant - 1; i ++){
+                  transformation[subchain[i]][subchain[i]]     = ratmul(ratinv(rat_c_i[i]), ratover(rat_k_i[i], rat_q_i[i]));
                   transformation[subchain[i]][subchain[i + 1]] = ratopp(ratmul(ratinv(rat_c_i[i]),ratadd(ratover(rat_k_star_i[i],rat_q_i[i]),ratover(rat_k_i[i + 1],rat_q_i[i + 1]))));
                   transformation[subchain[i]][subchain[i + 2]] = ratmul(ratinv(rat_c_i[i]),ratover(rat_k_star_i[i + 1],rat_q_i[i + 1]));
             }
@@ -157,21 +157,21 @@ void transformation_init(){
             transformation[subchain[how_many_resonant]]    [subchain[how_many_resonant]]     = ratover(  rat_k_star_i[how_many_resonant - 1],rat_q_i[how_many_resonant - 1]);
             transformation[subchain[how_many_resonant]]    [subchain[how_many_resonant - 1]] = ratopp(ratover(rat_k_i[how_many_resonant - 1],rat_q_i[how_many_resonant - 1]));
             /******** Secular planets and leading co-orbitals ********/
-            for (i = 1; i < how_many_missed + 1; i++){
+            for (i = 1; i < how_many_missed + 1; i ++){
                   transformation[chain_missed[i]][chain_missed[i]] = int2rat(1);
-                  is_coorbital = p_i[chain_missed[i]];
+                  is_coorbital                                     = p_i[chain_missed[i]];
                   if (is_coorbital){
                         transformation[chain_missed[i]][chain_missed[i] + 1] = int2rat(-1);
                   }
             }
             
             /******** Bottom-right block of the transformation matrix ********/
-            for (i = how_many_planet + 1; i < 2*how_many_planet + 1; i++){
+            for (i = how_many_planet + 1; i < 2*how_many_planet + 1; i ++){
                   transformation[i][i] = int2rat(1); //The Bottom-right block is identity
             }
             
             /******** Bottom-left block of the transformation matrix ********/
-            for (i = how_many_planet + 1; i < 2*how_many_planet + 1; i++){
+            for (i = how_many_planet + 1; i < 2*how_many_planet + 1; i ++){
                   transformation[i][subchain[how_many_resonant - 1]] = ratopp(ratover(rat_k_i[how_many_resonant - 1],rat_q_i[how_many_resonant - 1]));
                   transformation[i][subchain[how_many_resonant]]     = ratover(  rat_k_star_i[how_many_resonant - 1],rat_q_i[how_many_resonant - 1]);
             }
@@ -187,30 +187,30 @@ void transpose_inv_init(){
       int is_coorbital;
       struct rational Gamma_factor;
 
-      for (i = 1; i < 2*how_many_planet + 1; i++){
-            for (j = 1; j < 2*how_many_planet + 1; j++){
+      for (i = 1; i < 2*how_many_planet + 1; i ++){
+            for (j = 1; j < 2*how_many_planet + 1; j ++){
                   transpose_inv[i][j] = int2rat(0);
             }
       }
       
       if (how_many_resonant == 0){ //All planets are secular
-            for (i = 1; i < 2*how_many_planet + 1; i++){
+            for (i = 1; i < 2*how_many_planet + 1; i ++){
                   transpose_inv[i][i] = int2rat(1); //The transformation is identity
             }
       }
       else if (how_many_resonant == 1){ //All planets are secular except for a pair or a triplet of co-orbitals
-            for (i = 1; i < how_many_planet + 1; i++){
+            for (i = 1; i < how_many_planet + 1; i ++){
                   transpose_inv[i][i] = int2rat(1);
-                  is_coorbital = p_i[i];
+                  is_coorbital        = p_i[i];
                   if (is_coorbital){
-                        for (j = 1; j < i; j++){
+                        for (j = 1; j < i; j ++){
                               if (p_i[j]){
                                     transpose_inv[i][j] = int2rat(1);
                               }
                         }
                   }
             }
-            for (i = how_many_planet + 1; i < 2*how_many_planet + 1; i++){
+            for (i = how_many_planet + 1; i < 2*how_many_planet + 1; i ++){
                   transpose_inv[i][i] = int2rat(1);
             }
       }
@@ -219,25 +219,25 @@ void transpose_inv_init(){
             /******** Upper-left block of the inverse transpose matrix ********/
             /******** Resonant planets and trailing co-orbitals ********/
             Gamma_factor = ratover(rat_k_i[how_many_resonant - 1],rat_q_i[how_many_resonant - 1]);
-            for (i = 1; i < how_many_resonant - 1; i++){
-                  for (j = 1; j <= i; j++){
+            for (i = 1; i < how_many_resonant - 1; i ++){
+                  for (j = 1; j <= i; j ++){
                         transpose_inv[subchain[i]][subchain[j]] = ratmul(rat_c_i[i], rat_l_ij[i][j]);
                   }
             }
-            for (j = 1; j < how_many_resonant; j++){
+            for (j = 1; j < how_many_resonant; j ++){
                   transpose_inv[subchain[how_many_resonant - 1]][subchain[j]] = ratmul(Gamma_factor,ratover(rat_k_ij[how_many_resonant][j],rat_k_ij[j][how_many_resonant]));
             }
             transpose_inv[subchain[how_many_resonant - 1]][subchain[how_many_resonant]] = Gamma_factor;
-            for (j = 1; j < how_many_resonant + 1; j++){
+            for (j = 1; j < how_many_resonant + 1; j ++){
                   transpose_inv[subchain[how_many_resonant]][subchain[j]] = int2rat(1);
             }
             
             /******** Secular planets and leading co-orbitals ********/
-            for (i = how_many_missed; i > 0; i--){
+            for (i = how_many_missed; i > 0; i --){
                   transpose_inv[chain_missed[i]][chain_missed[i]] = int2rat(1);
                   is_coorbital = p_i[chain_missed[i]];
                   if (is_coorbital){
-                        for (j = chain_missed[i] + 1; j < how_many_planet + 1; j++){
+                        for (j = chain_missed[i] + 1; j < how_many_planet + 1; j ++){
                               transpose_inv[j][chain_missed[i]] = transpose_inv[j][chain_missed[i] + 1];
                         }
                         transpose_inv[subchain[how_many_resonant - 1]][chain_missed[i]] = transpose_inv[subchain[how_many_resonant - 1]][chain_missed[i] + 1];
@@ -245,9 +245,9 @@ void transpose_inv_init(){
             }
             
             /******** Upper and bottom-right block of the inverse transpose matrix ********/
-            for (j = how_many_planet + 1; j < 2*how_many_planet + 1; j++){
+            for (j = how_many_planet + 1; j < 2*how_many_planet + 1; j ++){
                   transpose_inv[subchain[how_many_resonant]][j] = int2rat(-1);
-                  transpose_inv[j][j] = int2rat(1);
+                  transpose_inv[j][j]                           = int2rat(1);
             }
       }
 }
@@ -258,20 +258,20 @@ void verification(){
       /******** Checks that transpose_inv is indeed t(transformation)^-1 by computing ********/
       /******** the product transformation*t(transpose_inv), that should be identity  ********/
 
-      int i,j,k;
+      int i, j, k;
       struct rational coef;
       int num, denom;
       
-      for (i = 1; i < 2*how_many_planet + 1; i++){
-            for (j = 1; j < 2*how_many_planet + 1; j++){
+      for (i = 1; i < 2*how_many_planet + 1; i ++){
+            for (j = 1; j < 2*how_many_planet + 1; j ++){
                   coef = int2rat(0);
-                  for (k = 1; k < 2*how_many_planet + 1; k++){
+                  for (k = 1; k < 2*how_many_planet + 1; k ++){
                         coef = ratadd(coef,ratmul(transformation[i][k],transpose_inv[j][k]));
                   }
                   num   = coef.numerator;
                   denom = coef.denominator;
                   if (i != j && (num != 0 || denom != 1) || i == j && (num != 1 || denom != 1)){
-                        fprintf(stderr, "\nError: The transformation failed verification. This is a bug. Please contact Aptidal's developer.\n");
+                        fprintf(stderr, "\nError: The transformation failed verification. This is a bug.\n");
                         abort();
                   }
             }
@@ -283,7 +283,7 @@ void matrix_fill(){
 
       /******** Fills the arrays Transformation and Transpose_inv ********/
 
-      int i,j;
+      int i, j;
       for (i = 1; i < 2*how_many_planet + 1; i ++){
             for (j = 1; j < 2*how_many_planet + 1; j ++){
                   Transformation[i][j] = rat2real(transformation[i][j]);
@@ -604,7 +604,7 @@ void Hamiltonian_display(){
       int p, q, n, m, l, r, s;
       
       printf("-------------------------------------------------------------------------------------------\n\n");
-      printf("The Hamiltonian of the system reads, in the old variables\n\n H = ");
+      printf("The Hamiltonian of the model reads, in the old variables\n\n H = ");
       
       /******** Displaying the Keplerian part ********/
       printf("- sum_{1 <= j <= %d} beta_j**3 * mu_j**2 / (2*Lbd_j**2)\n\n", how_many_planet);
@@ -613,7 +613,7 @@ void Hamiltonian_display(){
       for (i = 1; i <= how_many_planet; i ++){
             for (j = i + 1; j <= how_many_planet; j ++){
                   
-                  /******** Retrieving the value of p for a resonance p:p+q ********/
+                  /******** Retrieving the value of p for a resonance p : p + q ********/
                   pi      = p_i[i];
                   pj      = p_i[j];
                   if (pi == 0 || pj == 0){
@@ -621,9 +621,9 @@ void Hamiltonian_display(){
                   }
                   else{
                         the_gcd = gcd(pi, pj);
-                        p = pi/the_gcd;
-                        pi = pi/the_gcd;
-                        pj = pj/the_gcd;
+                        p       = pi/the_gcd;
+                        pi      = pi/the_gcd;
+                        pj      = pj/the_gcd;
                   }
                   
                   if ((non_resonant_bool && (max_deg + one_more_deg_bool) >= 2) || ((pj - pi) <= max_deg && pj <= max_res)){
@@ -763,12 +763,12 @@ void Hamiltonian_display(){
 
 int GCD(int * As, int k){
 
-      /******** Returns the gcd of integers *As to *(As + k-1) ********/
+      /******** Returns the gcd of integers *As to *(As + k - 1) ********/
 
       int i, toBeReturned;
       toBeReturned = *As;
       
-      for (i = 1; i < k; i++){
+      for (i = 1; i < k; i ++){
             toBeReturned = gcd(toBeReturned, *(As + i));
       }
       
@@ -778,12 +778,12 @@ int GCD(int * As, int k){
 
 int LCM(int * As, int k){
 
-      /******** Returns the lcm of integers *As to *(As + k-1) ********/
+      /******** Returns the lcm of integers *As to *(As + k - 1) ********/
 
       int i, toBeReturned;
       toBeReturned = *As;
       
-      for (i = 1; i < k; i++){
+      for (i = 1; i < k; i ++){
             toBeReturned = lcm(toBeReturned, *(As + i));
       }
       

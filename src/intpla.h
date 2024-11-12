@@ -30,7 +30,13 @@ void exp_tau_LB(typ tau, typ * X_cart);
 void UnaveragedSABAn(typ tau, typ T, int output_step, typ * X_old, int n);
 
 
-void UnaveragedSABAn_average(typ tau, typ T, int Hanning_order, typ * X_uv_mean, typ * X_uv_fast, typ * X_old, int n);
+void get_fast_frequency(typ tau, typ T, int Hanning_order, typ * X_old, int n, typ * nu_2);
+
+
+void UnaveragedSABAn_NAFF(typ tau, typ T, int Hanning_order, typ * X_uv, typ * X_old, int n, int how_many_harmonics);
+
+
+void ConstantParameter(typ * X_new, typ * X_uv);
 
 
 void LibrationCenterFind(typ * X_old, int verbose);

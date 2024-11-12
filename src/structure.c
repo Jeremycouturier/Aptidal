@@ -111,7 +111,8 @@ void init(){
 void initialization(){
 
       /******** Initializes the code ********/
-      int i;
+      
+      int i, j, k;
       
       /******** Initializing the planetary masses and the resonance chain ********/
       how_many_resonant = 0;
@@ -133,7 +134,7 @@ void initialization(){
       }
       m0 = *masses;
       for (i = 1; i < how_many_planet + 1; i ++){
-            Lbd_0[i]=masses[i]*sqrt(G*m0*sma[i]);
+            Lbd_0[i] = masses[i]*sqrt(G*m0*sma[i]);
       }
       
       for (i = 1; i < how_many_planet + 1; i ++){
@@ -142,10 +143,10 @@ void initialization(){
             }
       }
       how_many_missed = how_many_planet - how_many_resonant;
-      subchain     = (int *)malloc((how_many_resonant + 1)*sizeof(int));
-      chain_missed = (int *)malloc((how_many_missed   + 1)*sizeof(int));
-      int j = 1;
-      int k = 1;
+      subchain        = (int *)malloc((how_many_resonant + 1)*sizeof(int));
+      chain_missed    = (int *)malloc((how_many_missed   + 1)*sizeof(int));
+      j               = 1;
+      k               = 1;
       for (i = 1; i < how_many_planet + 1; i ++){
             if (p_i[i] != 0 && (i == how_many_planet || p_i[i + 1] != p_i[i])){ //If the considered planet is resonant and is not the first member of a co-orbital pair
                   *(subchain + j) = i;
@@ -203,7 +204,7 @@ void chain_validity(){
       
       /******** There can't be secular planets between co-orbital planets ********/
       int latest_orbital_period = 0;
-      int secular_in_between = 0;
+      int secular_in_between    = 0;
       for (i = 1; i < how_many_planet + 1; i ++){
             if (p_i[i] != 0 && p_i[i] == latest_orbital_period && secular_in_between){
                   fprintf(stderr,
@@ -225,7 +226,7 @@ void array_init(){
 
       /******** Initializes the arrays k_ij, q_ij, k_i, k_star_i and q_i ********/
       
-      int i,j;
+      int i, j;
       
       /******** k_ij ********/
       for (i = 1; i < how_many_resonant + 1; i ++){
@@ -258,7 +259,7 @@ void array2rational(){
       /******** Converts the arrays k_ij, q_ij, k_i, k_star_i and q_i from integer to rational ********/
       /******** Updates  the arrays rat_ accordingly                                           ********/
 
-      int i,j;
+      int i, j;
       
       /******** k_ij ********/
       for (i = 1; i < how_many_resonant + 1; i ++){
@@ -306,22 +307,22 @@ struct pairOfReal b_12(typ alpha, typ precision){
       
       struct pairOfReal toBeReturned;
       typ m_buffer;
-      typ m = 1.;
-      typ n = sqrt(1. - alpha*alpha);
+      typ m                 = 1.;
+      typ n                 = sqrt(1. - alpha*alpha);
       typ current_precision = fabs(m - n)/m;
-      typ b_12_1 = alpha;
-      typ loop = 2.;
+      typ b_12_1            = alpha;
+      typ loop              = 2.;
       
       while(current_precision > precision){
-            m_buffer = m;
-            m = 0.5*(m + n);
-            n = sqrt(m_buffer*n);
+            m_buffer          = m;
+            m                 = 0.5*(m + n);
+            n                 = sqrt(m_buffer*n);
             current_precision = fabs(m - n)/m;
-            b_12_1 += loop*(m*m - n*n)/alpha;
-            loop *= 2.;
+            b_12_1           += loop*(m*m - n*n)/alpha;
+            loop             *= 2.;
       }
       
-      b_12_1 /= m;
+      b_12_1          /= m;
       toBeReturned.fst = 2./m;
       toBeReturned.snd = b_12_1;
       return toBeReturned;
@@ -336,13 +337,13 @@ struct pairOfReal b_k2(typ alpha, struct pairOfReal b_km12, int k){
       
       typ kk = (typ) k;
       typ coef1, coef2, coef3, coef4;
-      if (k==3){
+      if      (k == 3){
             coef1 = 0.5;  coef2 = -1.0;  coef3 = -0.5; coef4 = 1.0;
       }
-      else if (k==5){
+      else if (k == 5){
             coef1 = 1.5;  coef2 = 1.0;  coef3 = 0.5;  coef4 = 3.0;
       }
-      else if (k==7){
+      else if (k == 7){
             coef1 = 2.5;  coef2 = 3.0;  coef3 = 1.5;  coef4 = 5.0;
       }
       else{
@@ -351,13 +352,13 @@ struct pairOfReal b_k2(typ alpha, struct pairOfReal b_km12, int k){
       }
       
       struct pairOfReal toBeReturned;
-      typ b_km12_0 = b_km12.fst;
-      typ b_km12_1 = b_km12.snd;
-      typ malp2 = 1.0-alpha*alpha;
-      typ palp2 = 1.0+alpha*alpha;
-      typ denominator = coef1*malp2*malp2;
-      typ b_k2_0 = (coef1*palp2*b_km12_0 + coef2*alpha*b_km12_1)/denominator;
-      typ b_k2_1 = (coef3*palp2*b_km12_1 + coef4*alpha*b_km12_0)/denominator;
+      typ b_km12_0     = b_km12.fst;
+      typ b_km12_1     = b_km12.snd;
+      typ malp2        = 1.0 - alpha*alpha;
+      typ palp2        = 1.0 + alpha*alpha;
+      typ denominator  = coef1*malp2*malp2;
+      typ b_k2_0       = (coef1*palp2*b_km12_0 + coef2*alpha*b_km12_1)/denominator;
+      typ b_k2_1       = (coef3*palp2*b_km12_1 + coef4*alpha*b_km12_0)/denominator;
       toBeReturned.fst = b_k2_0;
       toBeReturned.snd = b_k2_1;
       return toBeReturned;
@@ -371,7 +372,7 @@ int gcd(int a, int b){
 
       
       if (a < b){
-            return gcd(b,a);
+            return gcd(b, a);
       }
       
       if (b == 0){
@@ -401,7 +402,7 @@ int lcm(int a, int b){
       /******** Computes the least common multiple of a and b ********/
       /******** a and b are both positive                     ********/
       
-      return a*b/gcd(a,b);
+      return a*b/gcd(a, b);
 }
 
 
@@ -441,7 +442,7 @@ struct rational ratadd(struct rational r1, struct rational r2){
       
       r12_num         = p1*q2 + p2*q1;
       r12_denom       = q1*q2;
-      irrec = gcd(abs(r12_num),r12_denom);
+      irrec           = gcd(abs(r12_num), r12_denom);
       r12_num         = r12_num  /  irrec;
       r12_denom       = r12_denom / irrec;
       r12.numerator   = r12_num;
@@ -538,7 +539,7 @@ struct rational ratabs(struct rational r1){
 
 void ratprint(struct rational r){
 
-      /******** Prints the rational r. ********/
+      /******** Prints the rational r ********/
       int num   = r.numerator;
       int denom = r.denominator;
       if (denom == 1){

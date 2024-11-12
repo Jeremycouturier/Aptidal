@@ -27,12 +27,12 @@ int main(){
       
       X_old_init(X_old);
       //SABA1(0.25, 2000., 1, X_old);
-      //SABAn(0.5, 4000., 2, X_old, 6);
+      //SABAn(0.5, 4000., 2, X_old, 4);
       //RK2(0.25, 10000., 1);
       //EquilibriumFind(X_old, 1);
       LibrationCenterFind(X_old, 1);
       //X_old_init(X_old);
-      //UnaveragedSABAn(0.0078125, 4000., 2, X_old, 6);
+      //UnaveragedSABAn(0.0078125, 4000., 1, X_old, 4);
       
       /*int i;
       typ a, e, sig, vp, M, mu, nu, beta, H;
