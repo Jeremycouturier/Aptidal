@@ -17,22 +17,49 @@
 int main(){
 
       init();
-      
+            
+      int i;
       typ X_old   [4*how_many_planet + 1];
       typ X_new   [4*how_many_planet + 1];
       typ X_uv    [4*how_many_planet + 1];
+      typ X_cart  [4*how_many_planet + 1];
       typ dH_old  [4*how_many_planet + 1];
       typ dH_polar[4*how_many_planet + 1];
       typ dH_rect [4*how_many_planet + 1];
+      typ epsilon = 0.;
+      
+      for (i = 1; i <= how_many_planet; i ++){
+            epsilon += masses[i]/m0;
+      }
+      
       
       X_old_init(X_old);
       //SABA1(0.25, 2000., 1, X_old);
-      //SABAn(0.5, 4000., 2, X_old, 4);
+      //SABAn(0.25, 4000., 2, X_old, 4);
       //RK2(0.25, 10000., 1);
-      //EquilibriumFind(X_old, 1);
-      LibrationCenterFind(X_old, 1);
+      //EquilibriumFind(X_old);
+      //LibrationCenterFind(X_old, 1);
+      //LibrationCenterFollow(X_old, 0.000030517578125*epsilon, 5, 1);
+      //PeriodicOrbitFind(X_old);
       //X_old_init(X_old);
-      //UnaveragedSABAn(0.0078125, 4000., 1, X_old, 4);
+      UnaveragedSABAn(0.0019225422087269983, 200., 1, X_old, 4);
+      
+      X_old_init(X_old);
+      typ mu, a, e, vp, M, nu;
+      
+      for (i = 1; i <= how_many_planet; i ++){
+            mu = G*(m0 + masses[i]);
+            a  = X_old[4*i - 1]*X_old[4*i - 1]*(m0 + masses[i])/(G*m0*m0*masses[i]*masses[i]);
+            e  = sqrt(1. - (1. - X_old[4*i]/X_old[4*i - 1])*(1. - X_old[4*i]/X_old[4*i - 1]));
+            vp = -X_old[4*i - 2];
+            M  =  X_old[4*i - 3] - vp;
+            nu = mean2true(M, mu, a, e);
+            ell2cart(a, e, 0., nu, vp, 0., mu, X_cart + 4*i - 4);
+      }
+      
+      for (i = 1; i <= how_many_planet; i ++){
+            printf("(x_%d, y_%d, vx_%d, vy_%d) = (%.14lf, %.14lf, %.14lf, %.14lf)\n", i, i, i, i, X_cart[4*i - 3], X_cart[4*i - 2], X_cart[4*i - 1], X_cart[4*i]);
+      }
       
       /*int i;
       typ a, e, sig, vp, M, mu, nu, beta, H;

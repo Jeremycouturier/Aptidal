@@ -102,6 +102,9 @@ struct rational int2rat(int a);
 typ rat2real(struct rational r1);
 
 
+struct rational real2rat(typ r, int maxDenom);
+
+
 struct rational ratabs(struct rational r1);
 
 
@@ -112,6 +115,4 @@ typ rdm(typ min, typ max);
 
 
 typ continuousAngle(typ newAngle, typ oldAngle);
-
-
 #endif

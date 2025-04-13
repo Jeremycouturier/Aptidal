@@ -341,10 +341,10 @@ struct pairOfReal b_k2(typ alpha, struct pairOfReal b_km12, int k){
             coef1 = 0.5;  coef2 = -1.0;  coef3 = -0.5; coef4 = 1.0;
       }
       else if (k == 5){
-            coef1 = 1.5;  coef2 = 1.0;  coef3 = 0.5;  coef4 = 3.0;
+            coef1 = 1.5;  coef2 = 1.0;   coef3 = 0.5;  coef4 = 3.0;
       }
       else if (k == 7){
-            coef1 = 2.5;  coef2 = 3.0;  coef3 = 1.5;  coef4 = 5.0;
+            coef1 = 2.5;  coef2 = 3.0;   coef3 = 1.5;  coef4 = 5.0;
       }
       else{
             fprintf(stderr, "\nError: The argument k must be 3, 5 or 7 in function b_k2.\n");
@@ -522,6 +522,37 @@ typ rat2real(struct rational r1){
       int denom = r1.denominator;
       r = (typ) (((typ) num)/((typ) denom));
       return r;
+}
+
+
+struct rational real2rat(typ r, int targetDenom){
+
+      /******** Converts the real number r to a rational approximation whose denominator is close to targetDenom in order of magnitude ********/
+
+      typ a, a0, R;
+      struct rational output;
+      
+      if (r < 0.){
+            return ratopp(real2rat(-r, targetDenom));
+      }
+      if (targetDenom <= 1){
+            return int2rat((int) floor(r));
+      }
+      a0     = floor(r);
+      R      = 1./(r - a0);
+      a      = floor(R);
+      output = ratadd(int2rat((int) a0), ratinv(int2rat((int) a)));
+      if (output.denominator >= targetDenom/2){
+            return output;
+      }
+      else{
+            if (r >= rat2real(output)){
+                  return ratadd(output, real2rat(r - rat2real(output), targetDenom));
+            }
+            else{
+                  return ratdiff(output, real2rat(rat2real(output) - r, targetDenom));
+            }
+      }
 }
 
 

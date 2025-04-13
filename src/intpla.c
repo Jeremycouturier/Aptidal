@@ -14,13 +14,15 @@
 #include "calculus.h"
 #include "intpla.h"
 
+typ nu_fast = 0.;
+typ nu_reso = 0.;
 
 
 void ell2cart(typ a, typ e, typ i, typ nu, typ varpi, typ Omega, typ mu, typ * cart){
 
-      /******** Updates the array [X,Y,Z,vX,vY,vZ] of the cartesian coordinates. mu is G*M                    ********/
-      /******** a is the semi-major axis, e is the eccentricity, i is the inclination, nu is the true anomaly,********/
-      /******** omega is the longitude of periapsis and Omega is the longitude of the ascending node          ********/
+      /******** Updates the array [X,Y,vX,vY] of the cartesian coordinates. mu is G*M, a is the       ********/
+      /******** semi-major axis, e is the eccentricity, i is the inclination, nu is the true anomaly, ********/
+      /******** omega is the longitude of periapsis and Omega is the longitude of the ascending node. ********/
       
       typ X,Y,vX,vY;                     //Cartesian coordinates
       typ X_buff,Y_buff,vX_buff,vY_buff; //Buffer for cartesian coordinates
@@ -181,6 +183,7 @@ typ mean2true(typ M, typ mu, typ a, typ e){
       else if (M > M_PI){
             M -= 2.*M_PI;
       }
+      
       int j, N_step;
       typ K1, K2, K3, K4;
       typ period, t, dt, n_step, partial_tra, num;
@@ -326,7 +329,7 @@ void newt(typ DM, typ A, typ B, typ * const p_X, typ * const p_C, typ * const p_
       typ B0, B1, F, F1, X, C, S, D1, DIFF, ATEMP;
       int i, NMAX, niter;
       typ EPS = DBL_EPSILON;
-      NMAX = 15;
+      NMAX = 25;
 
       F  = DM;
       F1 = 1. - A;
@@ -352,7 +355,7 @@ void newt(typ DM, typ A, typ B, typ * const p_X, typ * const p_C, typ * const p_
             typ BQ  = B;
             typ DMQ = DM;
             typ DIFFQ;
-            typ EPSQ = 1.5*EPS;
+            typ EPSQ = 2.5*EPS; //Modified from EPSQ = 1.5*EPS
             i = 1;
             do{
                   typ CQ  = cos(XQ);
@@ -435,7 +438,7 @@ void kepsaut(typ * cart, typ mu, typ dt){
       ce  = R*V2 - 1.;
       se  = XV/sqa;
       dm  = dt*smu/(sqa*a);
-      newt(dm, ce, se, &delta, &c, &s, &e, &cm1, &smx, 1);
+      newt(dm, ce, se, &delta, &c, &s, &e, &cm1, &smx, 0);
 
       a1  = cm1/(2. - R*V2); 
       a2  = dt + smx*sqa*a/smu; 
@@ -507,12 +510,13 @@ void UnaveragedSABAn(typ tau, typ T, int output_step, typ * X_old, int n){
       FILE * file;
       int N_step, iter, i;
       typ X_cart[4*how_many_planet + 1];
+      typ X_init[4*how_many_planet + 1];
       typ X_buff[4*how_many_planet + 1];
       typ X_new [4*how_many_planet + 1];
       typ X_uv  [4*how_many_planet + 1];
       typ lbdOld[  how_many_planet + 1];
       typ   gOld[  how_many_planet + 1];
-      typ a, e, vp, M, mu, nu, beta, H, lbd, g;
+      typ a, e, vp, M, mu, nu, beta, H, lbd, g, dist2init;
       typ c1, c2, c3, c4, d1, d2, d3;
       typ alkhqp[6];
       
@@ -526,6 +530,15 @@ void UnaveragedSABAn(typ tau, typ T, int output_step, typ * X_old, int n){
             sprintf(nn, "%d", p_i[i]);
             strcat(file_path, nn);
       }
+      
+      /******** To be removed ********/
+      /*time_t t;
+      time(&t);
+      char tt[20];
+      sprintf(tt, "%d", ((int) t) - 1744291130);
+      strcat(file_path, "_");
+      strcat(file_path, tt);*/
+      
       strcat(file_path, ".txt");
       file = fopen(file_path, "w");
       if (file == NULL){
@@ -533,7 +546,7 @@ void UnaveragedSABAn(typ tau, typ T, int output_step, typ * X_old, int n){
             abort();
       }
       
-      /******** Initializing constants ********/
+      /******** Initializing constants (Laskar & Robutel, 2001) ********/
       c1 = 0.;  c2 = 0.;  c3 = 0.;  c4 = 0.;  d1 = 0.;  d2 = 0.;  d3 = 0.;
       if      (n == 1){c1 = 0.5;                   d1 = 1.;}
       else if (n == 2){c1 = 0.5 - sqrt(3.)/6.;     d1 = 0.5;                   c2 = sqrt(3.)/3.;}
@@ -561,6 +574,9 @@ void UnaveragedSABAn(typ tau, typ T, int output_step, typ * X_old, int n){
             ell2cart(a, e, 0., nu, vp, 0., mu, X_cart + 4*i - 4);
             lbdOld[i] = X_old[4*i - 3];  gOld[i] = X_old[4*i - 2];
       }
+      for (i = 1; i <= 4*how_many_planet; i ++){ //X_init remembers the initial position in order to compute the distance with respect to it in the phase space
+            X_init[i] = X_cart[i];
+      }
 
       /******** Integrating ********/
       N_step = (int) ceil(T/tau);
@@ -582,8 +598,8 @@ void UnaveragedSABAn(typ tau, typ T, int output_step, typ * X_old, int n){
                         fprintf(file, "The Keplerian part A is integrated exactly using function kepsaut. The perturbative part B is not integrable but can be\n");
                         fprintf(file, "written B = B1 + B2 with B1 and B2 both integrable. Therefore, B is integrated approximately but symplectically with a SABA1.\n");
                         fprintf(file, "\n");
-                        fprintf(file, "This file has %d columns that are (for 1 <= j <= %d):\n", 2 + 7*how_many_planet, how_many_planet);
-                        fprintf(file, "Time, Hamiltonian, phi_j, v_j, Phi_j, u_j, a_j, e_j, sig_j.\n");
+                        fprintf(file, "This file has %d columns that are (for 1 <= j <= %d):\n", 3 + 7*how_many_planet, how_many_planet);
+                        fprintf(file, "Time, Hamiltonian, phi_j, v_j, Phi_j, u_j, a_j, e_j, sig_j, distance to initial point in the phase space\n");
                         fprintf(file, "\n");
                   }
                   for (i = 1; i <= how_many_planet; i ++){ // (x, y; vx, vy) -> (lbd_j, -vrp_j; Lbd_j, D_j)
@@ -599,6 +615,11 @@ void UnaveragedSABAn(typ tau, typ T, int output_step, typ * X_old, int n){
                         X_old[4*i]     = X_old[4*i - 1]*(1. - sqrt(1. - e*e));
                         lbdOld[i]      = lbd;  gOld[i] = g;
                   }
+                  dist2init = 0.;
+                  for (i = 1; i <= 4*how_many_planet; i ++){
+                        dist2init += (X_buff[i] - X_init[i])*(X_buff[i] - X_init[i]);
+                  }
+                  dist2init = sqrt(dist2init);
                   old2new(X_old, X_new, X_uv);             // (lbd_j, -vrp_j; Lbd_j, D_j) -> (phi_j, v_j; Phi_j, u_j)
                   H = 0;
                   fprintf(file, "%.9lf %.1lf", tau*(typ) iter, H);
@@ -607,7 +628,7 @@ void UnaveragedSABAn(typ tau, typ T, int output_step, typ * X_old, int n){
                         a   = X_old[4*i - 1]*X_old[4*i - 1]*(m0 + masses[i])/(G*m0*m0*masses[i]*masses[i]);
                         fprintf(file, " %.14lf %.14lf %.14lf %.14lf %.14lf %.14lf %.14lf", X_uv[4*i - 3], X_uv[4*i - 2], X_uv[4*i - 1], X_uv[4*i], a, e, X_new[4*i - 2]);
                   }
-                  fprintf(file, "\n");
+                  fprintf(file, " %.14lf\n", dist2init);
             }
             
             /******** Step exp(c1*tau*L_A). For the first iteration only ********/
@@ -687,28 +708,29 @@ void UnaveragedSABAn(typ tau, typ T, int output_step, typ * X_old, int n){
 }
 
 
-void get_fast_frequency(typ tau, typ T, int Hanning_order, typ * X_old, int n, typ * nu_2){
+void get_frequencies(typ tau, typ T, typ * X_old, int n){
 
-      /******** Same as above but calculates the fast frequency nu_2 with a NAFF ********/
-      /******** method (Laskar, Froeschlé, Celletti, 1992). If *nu_2 is given at ********/
-      /******** zero, a first approximation of it is found and a Newtow-Raphson  ********/
+      /******** Same as above but calculates the fast frequencies with a NAFF    ********/
+      /******** method (Laskar, Froeschlé, Celletti, 1992). If nu_fast is zero,  ********/
+      /******** then a first approximation of it is found and a Newtow-Raphson   ********/
       /******** method is applied on d< f(t), e^i*nu*t >/dnu in order to obtain  ********/
       /******** the exact value. Otherwise, a Newton-Raphson is applied directly ********/
       /******** I consider f(t) = sqrt(u_1**2 + v_1**1 + ... + u_N**2 + v_N**2)  ********/
       
       /* To be generalized to more complicated chains later */
       
-      int N_step, iter, i, p, q, q_, the_gcd, tildeT, p1;
-      typ X_cart[4*how_many_planet + 1];
-      typ X_buff[4*how_many_planet + 1];
-      typ X_new [4*how_many_planet + 1];
-      typ X_uv  [4*how_many_planet + 1];
-      typ lbdOld[  how_many_planet + 1];
-      typ   gOld[  how_many_planet + 1];
-      typ a, e, vp, M, mu, nu, beta, lbd, g, TT, T1, beta_1, mu_1, Lbd_1, beta_j, mu_j, Lbd_j, T_j, num, denom, delta;
-      typ facto   [11] = {1., 1., 2., 6., 24., 120., 720., 5040., 40320., 362880., 3628800.};
-      typ two_to_p[6]  = {1., 2., 4., 8., 16., 32.};
-      typ Cp, Hanning0, Hanning1, Hanning2, t0, t1, t2;
+      int N_step, iter, i, p;
+      typ X_cart  [4*how_many_planet + 1];
+      typ X_buff  [4*how_many_planet + 1];
+      typ X_new   [4*how_many_planet + 1];
+      typ X_uv    [4*how_many_planet + 1];
+      typ dH_old  [4*how_many_planet + 1];
+      typ dH_rect [4*how_many_planet + 1];
+      typ dH_polar[4*how_many_planet + 1];
+      typ lbdOld[    how_many_planet + 1];
+      typ   gOld[    how_many_planet + 1];
+      typ a, e, vp, M, mu, nu, beta, lbd, g, delta;
+      typ ak_fast, bk_fast, ak_reso, bk_reso, t, S, dSda, dSdb, par, learning_rate, oldS, N;
       typ c1, c2, c3, c4, d1, d2, d3;
       typ alkhqp[6];
       
@@ -721,14 +743,7 @@ void get_fast_frequency(typ tau, typ T, int Hanning_order, typ * X_old, int n, t
       else if (n == 5){c1 = 0.0469100770306680036; d1 = 0.1184634425280945438; c2 = 0.1838552679164904509; d2 = 0.2393143352496832340; c3 = 0.2692346550528415455; d3 = 64./225.;}
       else if (n == 6){c1 = 0.0337652428984239861; d1 = 0.0856622461895851725; c2 = 0.1356300638684437571; d2 = 0.1803807865240693038; c3 = 0.2112951001915338025;
                        d3 = 0.2339569672863455237; c4 = 0.2386191860831969086;}
-      else{fprintf(stderr, "\nError: n must be between 1 and 6 in function get_fast_frequency.\n");  abort();}
-      
-      /******** Initializing constant of Hanning filter ********/
-      if (Hanning_order > 5){
-            fprintf(stderr, "\nError: The order of the Hanning filter cannot exceed 5.\n");
-            abort();
-      }
-      Cp = two_to_p[Hanning_order]*facto[Hanning_order]*facto[Hanning_order]/facto[2*Hanning_order];
+      else{fprintf(stderr, "\nError: n must be between 1 and 6 in function get_frequencies.\n");  abort();}
       
       /******** Initializing the cartesian coordinates ********/
       for (i = 1; i <= how_many_planet; i ++){
@@ -743,26 +758,24 @@ void get_fast_frequency(typ tau, typ T, int Hanning_order, typ * X_old, int n, t
       }
       
       /******** Integrating ********/
-      tau    /= 2.;
-      N_step  = (int) ceil(T/tau);
-      N_step += N_step % 2 == 0 ? 0 : 1;
-      tau     = T/ (typ) N_step;
-      typ * f = (typ *)malloc((2*N_step + 1)*sizeof(typ));
-      if (f == NULL){
-            fprintf(stderr, "\nError: Could not allocate memory for f in function get_fast_frequency.\n");
+      tau       /= 2.;
+      N_step     = (int) ceil(T/tau);
+      N_step    += N_step % 2 == 0 ? 0 : 1;
+      tau        = T/ (typ) N_step;
+      typ * phi2 = (typ *)malloc((2*N_step + 1)*sizeof(typ));
+      typ * phi3 = (typ *)malloc((2*N_step + 1)*sizeof(typ));
+      if (phi2 == NULL || phi3 == NULL){
+            fprintf(stderr, "\nError: Could not allocate memory for arrays in function get_frequencies.\n");
             abort();
       }
       for (iter = -N_step + 1; iter <= N_step; iter ++){
             
             /******** For the first iteration only ********/
             if (iter == -N_step + 1){
-                  /******** Initializing f(-T) ********/
+                  /******** Initializing phi2(-T) and phi3(-T) ********/
                   old2new(X_old, X_new, X_uv);
-                  f[0] = 0.;
-                  for (i = 1; i <= how_many_planet; i ++){
-                        f[0] += X_uv[4*i - 2]*X_uv[4*i - 2] + X_uv[4*i]*X_uv[4*i];
-                  }
-                  f[0] = sqrt(f[0]);
+                  phi2[0] = X_uv[4*subchain[how_many_resonant - 1] - 3];
+                  phi3[0] = X_uv[4*subchain[how_many_resonant]     - 3];
                   /******** Step exp(c1*tau*L_A) ********/
                   for (i = 1; i <= how_many_planet; i ++){
                         mu = G*(m0 + masses[i]);
@@ -835,7 +848,7 @@ void get_fast_frequency(typ tau, typ T, int Hanning_order, typ * X_old, int n, t
             
             /******** Step exp(-c1*tau*L_A) on buffer ********/
             for (i = 1; i <= how_many_planet; i ++){
-                  X_buff[4*i - 3] = X_cart[4*i - 3]; X_buff[4*i - 2] = X_cart[4*i - 2]; X_buff[4*i - 1] = X_cart[4*i - 1]; X_buff[4*i] = X_cart[4*i];
+                  X_buff[4*i - 3] = X_cart[4*i - 3];  X_buff[4*i - 2] = X_cart[4*i - 2];  X_buff[4*i - 1] = X_cart[4*i - 1];  X_buff[4*i] = X_cart[4*i];
             }
             for (i = 1; i <= how_many_planet; i ++){
                   mu = G*(m0 + masses[i]);
@@ -858,52 +871,91 @@ void get_fast_frequency(typ tau, typ T, int Hanning_order, typ * X_old, int n, t
             }
             old2new(X_old, X_new, X_uv);
             
-            /******** Computing f(t) ********/
-            f[iter + N_step] = 0.;
-            for (i = 1; i <= how_many_planet; i ++){
-                  f[iter + N_step] += X_uv[4*i - 2]*X_uv[4*i - 2] + X_uv[4*i]*X_uv[4*i];
+            /******** Computing phi2(t) and phi3(t) ********/
+            phi2[iter + N_step] = X_uv[4*subchain[how_many_resonant - 1] - 3];
+            phi3[iter + N_step] = X_uv[4*subchain[how_many_resonant]     - 3];
+      }
+
+      
+      /******** Determination of nu_fast and nu_reso via a linear fit phi = a*t + b ********/
+      if (how_many_resonant >= 2){
+            /******** I obtain a first determination of a by computing dHK/dPhi2 and of b by computing the value at the origin ********/
+            dHdold(dH_old, X_old, 0);
+            old2new(X_old, X_new, X_uv);
+            dHdnew(dH_polar, dH_rect, dH_old, X_new, X_uv);
+            ak_fast = dH_rect[4*subchain[how_many_resonant - 1] - 1];
+            bk_fast = phi2[N_step];
+            ak_reso = dH_rect[4*subchain[how_many_resonant]     - 1];
+            bk_reso = phi3[N_step];
+            //printf("ak_fast = %.13lf, bk_fast = %.13lf\n", ak_fast, bk_fast); //To be removed
+            //printf("ak_reso = %.13lf, bk_reso = %.13lf\n", ak_reso, bk_reso); //To be removed
+            /******** I now refine a and b for the fast frequency by minimizing S(a,b) = sum_{all points} (a*t + b - phi2(t))^2 via a gradient descent ********/
+            delta  = 1.;  p = 0;  learning_rate = 0.0000000298023223876953125;  oldS = 1.e300;  N = (typ) (2*N_step + 1);
+            while(delta > 1.e-10 && p < 512){
+                  S = 0.;  dSda = 0.; dSdb = 0.;
+                  for (iter = -N_step; iter <= N_step; iter ++){
+                        t     = tau* (typ) iter;
+                        par   = ak_fast*t + bk_fast - phi2[iter + N_step];
+                        S    += par*par/N;
+                        dSda += 2.*par*t/N;
+                        dSdb += 2.*par/N;
+                  }
+                  //printf("p = %d, S = %.13lf\n", p, S); //To be removed
+                  if (S > oldS){
+                        learning_rate /= 2.;
+                  }
+                  delta    = fabs(S - oldS);
+                  oldS     = S;
+                  ak_fast -= learning_rate*dSda; //Gradient descent
+                  bk_fast -= learning_rate*dSdb;
+                  p ++;
+                  if (p > 256 && delta > 1.e-8){
+                        learning_rate /= 2.;
+                  }
+                  if (p == 512 && delta > 1.e-8){
+                        fprintf(stderr, "\nError: The gradient descent does not seem to converge in function get_frequencies. The learning rate is probably ill-chosen.\n");
+                        abort();
+                  }
             }
-            f[iter + N_step] = sqrt(f[iter + N_step]);
+            /******** I now refine a and b for the slow frequency by minimizing S(a,b) = sum_{all points} (a*t + b - phi3(t))^2 via a gradient descent ********/
+            delta  = 1.;  p = 0;  learning_rate = 0.0000000298023223876953125;  oldS = 1.e300;  N = (typ) (2*N_step + 1);
+            while(delta > 1.e-10 && p < 512){
+                  S = 0.;  dSda = 0.; dSdb = 0.;
+                  for (iter = -N_step; iter <= N_step; iter ++){
+                        t     = tau* (typ) iter;
+                        par   = ak_reso*t + bk_reso - phi3[iter + N_step];
+                        S    += par*par/N;
+                        dSda += 2.*par*t/N;
+                        dSdb += 2.*par/N;
+                  }
+                  //printf("p = %d, S = %.13lf\n", p, S); //To be removed
+                  if (S > oldS){
+                        learning_rate /= 2.;
+                  }
+                  delta    = fabs(S - oldS);
+                  oldS     = S;
+                  ak_reso -= learning_rate*dSda; //Gradient descent
+                  bk_reso -= learning_rate*dSdb;
+                  p ++;
+                  if (p > 256 && delta > 1.e-8){
+                        learning_rate /= 2.;
+                  }
+                  if (p == 512 && delta > 1.e-8){
+                        fprintf(stderr, "\nError: The gradient descent does not seem to converge in function get_frequencies. The learning rate is probably ill-chosen.\n");
+                        abort();
+                  }
+            }
+            nu_fast = ak_fast;
+            nu_reso = ak_reso;
+            //printf("nu_fast = %.13lf,  nu_reso = %.13lf\n", nu_fast, nu_reso); //To be removed
       }
       
-      /******** Getting an approximation of nu_2 as initial condition for a Newton-Raphson method ********/
-      if (*nu_2 == 0. && how_many_resonant >= 2){
-            p1 = p_i[subchain[1]];
-            int qs [how_many_resonant + 1];
-            int qs_[how_many_resonant + 1];
-            for (i = 2; i <= how_many_resonant; i ++){
-                  p       = p_i[subchain[i]];
-                  the_gcd = gcd(p1, p);
-                  q       = p /the_gcd;
-                  q_      = p1/the_gcd;
-                  qs [i]  = q;
-                  qs_[i]  = q_;
-            }
-            tildeT = LCM(qs + 2, how_many_resonant - 1); //Rough estimate of the short period in units of the inner period (e.g. tildeT = 4 for the chain 3:4:6)
-            TT     = 0.;
-            beta_1 = m0*masses[subchain[1]]/(m0 + masses[subchain[1]]);
-            mu_1   = G*(m0 + masses[subchain[1]]);
-            Lbd_1  = X_old[4*subchain[1] - 1];
-            T1     = 2.*M_PI*Lbd_1*Lbd_1*Lbd_1/(beta_1*beta_1*beta_1*mu_1*mu_1);
-            for (i = 2; i <= how_many_resonant; i ++){
-                  beta_j = m0*masses[subchain[i]]/(m0 + masses[subchain[i]]);
-                  mu_j   = G*(m0 + masses[subchain[i]]);
-                  Lbd_j  = X_old[4*subchain[i] - 1];
-                  T_j    = beta_1*beta_1*beta_1*mu_1*mu_1*Lbd_j*Lbd_j*Lbd_j/(beta_j*beta_j*beta_j*mu_j*mu_j*Lbd_1*Lbd_1*Lbd_1);
-                  TT    += ((typ) tildeT)*(1. - ((typ) qs_[i])/((typ) qs[i]))/(1. - 1./T_j);
-            }
-            TT   /= (typ) (how_many_resonant - 1); //TT is now an approximation of the short period good enough for a Newton-Raphson
-            TT   *= T1;                            //Currently given in units of the inner period, converting.
-            *nu_2 = 2.*M_PI/TT;
-            printf("nu_20 = %.13lf,  T0 = %.13lf\n", *nu_2, TT); //To be removed
-      }
-      
-      /******** Newton-Raphson on d<f(t), e^i*nu*t>/dnu ********/
-      delta = 1.; nu = *nu_2; p = 0;
-      while (delta > 1.e-8){
-            num = 0.;  denom = 0.;
+      /******** Newton-Raphson on d<f(t), e^i*nu*t>/dnu ********/  //Probably useless. Will decide later
+      /*delta = 1.; nu = nu_fast; p = 0;
+      while (delta > 1.e-9){
+            num = 0.;  denom = 0.;*/
             /******** Computing relevant integrals ********/
-            for (iter = -N_step + 2; iter <= N_step; iter += 2){
+            /*for (iter = -N_step + 2; iter <= N_step; iter += 2){
                   t0       = tau* (typ) (iter - 2);
                   t1       = tau* (typ) (iter - 1);
                   t2       = tau* (typ) iter;
@@ -915,29 +967,29 @@ void get_fast_frequency(typ tau, typ T, int Hanning_order, typ * X_old, int n, t
             }
             num  *= tau/(6.*T);  denom *= tau/(6.*T);
             nu   -= num/denom;
-            printf("nu_2 = %.13lf,  T = %.13lf\n", nu, 2.*M_PI/nu); //To be removed
+            printf("nu_fast  = %.13lf,  T  = %.13lf\n", nu, 2.*M_PI/nu); //To be removed
             delta = fabs(num/denom);
             p ++;
-            if (p > 20 && delta > 1.e-8){
-                  fprintf(stderr, "\nError: Newton-Raphson method does not seem to converge in function get_fast_frequency.\n");
+            if (p > 20 && delta > 1.e-9){
+                  fprintf(stderr, "\nError: Newton-Raphson method does not seem to converge in function get_frequencies.\n");
                   abort();
             }
       }
+      nu_fast = nu;*/
       
-      free(f);
-      f     = NULL;
-      *nu_2 = nu;
+      free(phi2); phi2 = NULL;
+      free(phi3); phi3 = NULL;
 }
 
 
-void UnaveragedSABAn_NAFF(typ tau, typ T, int Hanning_order, typ * X_uv, typ * X_old, int n, int how_many_harmonics){
+typ UnaveragedSABAn_NAFF(typ tau, typ T, int Hanning_order, typ * X_uv, typ * X_old, int n, int how_many_harmonics){
 
       /******** Same as above but computes and stores the average and the ********/
       /******** amplitude of the fast terms instead of writing to file.   ********/
       /******** A Hanning filter of order Hanning_order is used. The time ********/
       /******** step is tau/2 to use a Simpson 3pt method to compute      ********/
       /******** integrals. Fills X_uv with (phi_j, v_j; Phi_j, u_j) eva-  ********/
-      /******** luated at -T with fast terms and average only             ********/
+      /******** luated at t = 0 with fast terms and average only          ********/
 
       /* To be generalized to more complicated chains later */
 
@@ -950,11 +1002,11 @@ void UnaveragedSABAn_NAFF(typ tau, typ T, int Hanning_order, typ * X_uv, typ * X
       typ X_uv_2[4*how_many_planet + 1]; //Right  of the segment
       typ lbdOld[  how_many_planet + 1];
       typ   gOld[  how_many_planet + 1];
-      typ *As, *Bs;
-      typ a, e, vp, M, mu, nu, beta, lbd, g;
+      typ *As, *as;
+      typ a, e, vp, M, mu, nu, beta, lbd, g, toBeReturnedNum, toBeReturnedNom;
       typ facto   [11] = {1., 1., 2., 6., 24., 120., 720., 5040., 40320., 362880., 3628800.};
       typ two_to_p[6]  = {1., 2., 4., 8., 16., 32.};
-      typ Cp, H0, H1, H2, t0, t1, t2, nu_2;
+      typ Cp, H0, H1, H2, t0, t1, t2;
       typ c1, c2, c3, c4, d1, d2, d3;
       typ alkhqp[6];
       
@@ -963,19 +1015,26 @@ void UnaveragedSABAn_NAFF(typ tau, typ T, int Hanning_order, typ * X_uv, typ * X
       N_step  = (int) ceil(T/tau);
       N_step += N_step % 2 == 0 ? 0 : 1;
       tau     = T/(typ) N_step;
-      nu_2 = 0.;
-      get_fast_frequency(2.*tau, T, Hanning_order, X_old, n, &nu_2);
+      if (how_many_harmonics){
+            for (i = 1; i <= how_many_planet; i ++){
+                  X_buff[4*i - 3] = X_old[4*i - 3];  X_buff[4*i - 2] = X_old[4*i - 2];  X_buff[4*i - 1] = X_old[4*i - 1];  X_buff[4*i] = X_old[4*i];
+            }
+            get_frequencies(2.*tau, T, X_buff, n);
+      }
       
-      /******** Allocating memory for arrays As and Bs *********/
+      /******** Allocating memory for array As *********/
       N  = how_many_planet;
       As = (typ *)malloc((1 + how_many_harmonics)*(1 + 4*N)*sizeof(typ)); //Index j*(1 + 4*N) + 4*i - 3 (resp. -2, -1, -0) contains amplitude A_j of phi_i (resp. v_i, Phi_i, u_i)
-      Bs = (typ *)malloc((1 + how_many_harmonics)*(1 + 4*N)*sizeof(typ)); //Index j*(1 + 4*N) + 4*i - 3 (resp. -2, -1, -0) contains amplitude B_j of phi_i (resp. v_i, Phi_i, u_i)
-      if (As == NULL || Bs == NULL){                                      //f(t) = A_0 + \sum_j (A_j*cos(nu_2*t)) + \sum_j (B_j*sin(nu_2*t))
-            fprintf(stderr, "\nError: Could not allocate memory for arrays As and Bs in function UnaveragedSABAn_NAFF.\n");
+      as = (typ *)malloc((1 + 4*N)*sizeof(typ));                          //Index 4*i - 3 (resp. -2, -1, -0) contains amplitude A_j of phi_i (resp. v_i, Phi_i, u_i) for slow term
+      if (As == NULL || as == NULL){                                      //f(t) = A_0 + \sum_j (A_j*cos(nu_fast*t)) + \sum_j (B_j*sin(nu_fast*t))
+            fprintf(stderr, "\nError: Could not allocate memory for arrays in function UnaveragedSABAn_NAFF.\n");
             abort();
       }
       for (i = 0; i < (1 + how_many_harmonics)*(1 + 4*N); i ++){
-            As[i] = 0.;  Bs[i] = 0.; //Initializing
+            As[i] = 0.; //Initializing As
+      }
+      for (i = 0; i < 1 + 4*N; i ++){
+            as[i] = 0.; //Initializing as
       }
       
       /******** Initializing constants ********/
@@ -1092,7 +1151,7 @@ void UnaveragedSABAn_NAFF(typ tau, typ T, int Hanning_order, typ * X_uv, typ * X
             
             /******** Averaging ********/
             for (i = 1; i <= N; i ++){
-                  X_buff[4*i - 3] = X_cart[4*i - 3]; X_buff[4*i - 2] = X_cart[4*i - 2]; X_buff[4*i - 1] = X_cart[4*i - 1]; X_buff[4*i] = X_cart[4*i];
+                  X_buff[4*i - 3] = X_cart[4*i - 3];  X_buff[4*i - 2] = X_cart[4*i - 2];  X_buff[4*i - 1] = X_cart[4*i - 1];  X_buff[4*i] = X_cart[4*i];
             }
             for (i = 1; i <= N; i ++){
                   mu = G*(m0 + masses[i]);
@@ -1120,20 +1179,23 @@ void UnaveragedSABAn_NAFF(typ tau, typ T, int Hanning_order, typ * X_uv, typ * X
                   H0 = Cp*fast_pow(1. + cos(M_PI*t0/T), Hanning_order);
                   H1 = Cp*fast_pow(1. + cos(M_PI*t1/T), Hanning_order);
                   H2 = Cp*fast_pow(1. + cos(M_PI*t2/T), Hanning_order);
+                  /******** Getting the amplitude of the fast terms ********/
                   for (j = 0; j <= how_many_harmonics; j ++){
-                        nu = nu_2 * (typ) j;
+                        nu = nu_fast * (typ) j;
                         for (i = 1; i <= N; i ++){
                               As[j*(1 + 4*N) + 4*i - 3] += tau*(H0*X_uv_0[4*i - 3]*cos(nu*t0) + 4.*H1*X_uv_1[4*i - 3]*cos(nu*t1) + H2*X_uv_2[4*i - 3]*cos(nu*t2))/(6.*T);
                               As[j*(1 + 4*N) + 4*i - 2] += tau*(H0*X_uv_0[4*i - 2]*cos(nu*t0) + 4.*H1*X_uv_1[4*i - 2]*cos(nu*t1) + H2*X_uv_2[4*i - 2]*cos(nu*t2))/(6.*T);
                               As[j*(1 + 4*N) + 4*i - 1] += tau*(H0*X_uv_0[4*i - 1]*cos(nu*t0) + 4.*H1*X_uv_1[4*i - 1]*cos(nu*t1) + H2*X_uv_2[4*i - 1]*cos(nu*t2))/(6.*T);
                               As[j*(1 + 4*N) + 4*i]     += tau*(H0*X_uv_0[4*i]    *cos(nu*t0) + 4.*H1*X_uv_1[4*i]    *cos(nu*t1) + H2*X_uv_2[4*i]    *cos(nu*t2))/(6.*T);
-                              if (j){
-                                    Bs[j*(1 + 4*N) + 4*i - 3] += tau*(H0*X_uv_0[4*i - 3]*sin(nu*t0) + 4.*H1*X_uv_1[4*i - 3]*sin(nu*t1) + H2*X_uv_2[4*i - 3]*sin(nu*t2))/(6.*T);
-                                    Bs[j*(1 + 4*N) + 4*i - 2] += tau*(H0*X_uv_0[4*i - 2]*sin(nu*t0) + 4.*H1*X_uv_1[4*i - 2]*sin(nu*t1) + H2*X_uv_2[4*i - 2]*sin(nu*t2))/(6.*T);
-                                    Bs[j*(1 + 4*N) + 4*i - 1] += tau*(H0*X_uv_0[4*i - 1]*sin(nu*t0) + 4.*H1*X_uv_1[4*i - 1]*sin(nu*t1) + H2*X_uv_2[4*i - 1]*sin(nu*t2))/(6.*T);
-                                    Bs[j*(1 + 4*N) + 4*i]     += tau*(H0*X_uv_0[4*i]    *sin(nu*t0) + 4.*H1*X_uv_1[4*i]    *sin(nu*t1) + H2*X_uv_2[4*i]    *sin(nu*t2))/(6.*T);
-                              }
                         }
+                  }
+                  /******** Getting the amplitude of the slow term ********/
+                  nu = nu_reso;
+                  for (i = 1; i <= N; i ++){
+                        as[4*i - 3] += tau*(H0*X_uv_0[4*i - 3]*cos(nu*t0) + 4.*H1*X_uv_1[4*i - 3]*cos(nu*t1) + H2*X_uv_2[4*i - 3]*cos(nu*t2))/(6.*T);
+                        as[4*i - 2] += tau*(H0*X_uv_0[4*i - 2]*cos(nu*t0) + 4.*H1*X_uv_1[4*i - 2]*cos(nu*t1) + H2*X_uv_2[4*i - 2]*cos(nu*t2))/(6.*T);
+                        as[4*i - 1] += tau*(H0*X_uv_0[4*i - 1]*cos(nu*t0) + 4.*H1*X_uv_1[4*i - 1]*cos(nu*t1) + H2*X_uv_2[4*i - 1]*cos(nu*t2))/(6.*T);
+                        as[4*i]     += tau*(H0*X_uv_0[4*i]    *cos(nu*t0) + 4.*H1*X_uv_1[4*i]    *cos(nu*t1) + H2*X_uv_2[4*i]    *cos(nu*t2))/(6.*T);
                   }
                   for (i = 1; i <= 4*N; i ++){
                         X_uv_0[i] = X_uv_2[i];
@@ -1144,73 +1206,30 @@ void UnaveragedSABAn_NAFF(typ tau, typ T, int Hanning_order, typ * X_uv, typ * X
             }
       }
       
-      /******** Evaluating at t = -T ********/
+      /******** Evaluating at t = 0 ********/
       for (i = 1; i <= 4*N; i ++){
             As[i] /= 2.;
       }
-      T = 0.; //To be removed
       for (j = 0; j <= how_many_harmonics; j ++){
-            nu = nu_2 * (typ) j;
             for (i = 1; i <= N; i ++){
-                  X_uv[4*i - 3] += 2.*As[j*(1 + 4*N) + 4*i - 3]*cos(-nu*T) + 2.*Bs[j*(1 + 4*N) + 4*i - 3]*sin(-nu*T);
-                  X_uv[4*i - 2] += 2.*As[j*(1 + 4*N) + 4*i - 2]*cos(-nu*T) + 2.*Bs[j*(1 + 4*N) + 4*i - 2]*sin(-nu*T);
-                  X_uv[4*i - 1] += 2.*As[j*(1 + 4*N) + 4*i - 1]*cos(-nu*T) + 2.*Bs[j*(1 + 4*N) + 4*i - 1]*sin(-nu*T);
-                  X_uv[4*i]     += 2.*As[j*(1 + 4*N) + 4*i]    *cos(-nu*T) + 2.*Bs[j*(1 + 4*N) + 4*i]    *sin(-nu*T);
+                  X_uv[4*i - 3] += 2.*As[j*(1 + 4*N) + 4*i - 3];
+                  X_uv[4*i - 2] += 2.*As[j*(1 + 4*N) + 4*i - 2];
+                  X_uv[4*i - 1] += 2.*As[j*(1 + 4*N) + 4*i - 1];
+                  X_uv[4*i]     += 2.*As[j*(1 + 4*N) + 4*i];
             }
       }
       
-      /******** To be removed ********/
-      /*char file_path[800];
-      char nn[12];
-      FILE * file;
-      strcpy(file_path, pth);
-      strcat(file_path, "NAFF_");
-      sprintf(nn, "%d", how_many_harmonics);
-      strcat(file_path, nn);
-      strcat(file_path, "_");
-      for (i = 1; i <= how_many_planet; i ++){
-            sprintf(nn, "%d", p_i[i]);
-            strcat(file_path, nn);
+      /******** Evaluating ratio between slow and fast amplitude. Using first harmonic of f(t) = sqrt(sum_j (u_j^2 + v_j^2)) ********/
+      toBeReturnedNum = 0.;  toBeReturnedNom = 0.;
+      for (i = 1; i <= N; i ++){
+            toBeReturnedNum += as[4*i - 2]*as[4*i - 2] + as[4*i]*as[4*i];
+            toBeReturnedNom += As[1 + 4*N + 4*i - 2]*As[1 + 4*N + 4*i - 2] + As[1 + 4*N + 4*i]*As[1 + 4*N + 4*i];
       }
-      strcat(file_path, ".txt");
-      file = fopen(file_path, "w");
-      if (file == NULL){
-            fprintf(stderr, "\nError: Cannot create or open file NAFF_SABAn_chain.txt in function UnaveragedSABAn_NAFF.\n");
-            abort();
-      }
-      fprintf(file, "Only terms of the Fourier decomposition depending on the fast frequency are retained here.\n");
-      fprintf(file, "This file has %d columns that are (for 1 <= j <= %d):\n", 2 + 7*how_many_planet, how_many_planet);
-      fprintf(file, "Time, Hamiltonian, phi_j, v_j, Phi_j, u_j, a_j, e_j, sig_j.\n");
-      fprintf(file, "\n");
-      typ phi_i, v_i, Phi_i, u_i, t;
-      typ xold[1 + 4*N];
-      typ xnew[1 + 4*N];
-      typ xuv [1 + 4*N];
-      for (iter = -N_step + 1; iter <= -3*N_step/4; iter ++){
-            t = tau*((typ) iter - 1);
-            fprintf(file, "%.9lf %.1lf", t + T, 0.);
-            for (i = 1; i <= N; i ++){
-                  phi_i = 0.; v_i = 0.; Phi_i = 0.; u_i = 0.;
-                  for (j = 0; j <= how_many_harmonics; j ++){
-                        nu = nu_2 * (typ) j;
-                        phi_i += 2.*As[j*(1 + 4*N) + 4*i - 3]*cos(nu*t) + 2.*Bs[j*(1 + 4*N) + 4*i - 3]*sin(nu*t);
-                        v_i   += 2.*As[j*(1 + 4*N) + 4*i - 2]*cos(nu*t) + 2.*Bs[j*(1 + 4*N) + 4*i - 2]*sin(nu*t);
-                        Phi_i += 2.*As[j*(1 + 4*N) + 4*i - 1]*cos(nu*t) + 2.*Bs[j*(1 + 4*N) + 4*i - 1]*sin(nu*t);
-                        u_i   += 2.*As[j*(1 + 4*N) + 4*i]    *cos(nu*t) + 2.*Bs[j*(1 + 4*N) + 4*i]    *sin(nu*t);
-                  }
-                  xuv[4*i - 3] = phi_i; xuv[4*i - 2] = v_i; xuv[4*i - 1] = Phi_i; xuv[4*i] = u_i;
-            }
-            new2old(xold, xnew, xuv);
-            for (i = 1; i <= how_many_planet; i ++){
-                  e   = sqrt(1. - (1. - xold[4*i]/xold[4*i - 1])*(1. - xold[4*i]/xold[4*i - 1]));
-                  a   = xold[4*i - 1]*xold[4*i - 1]*(m0 + masses[i])/(G*m0*m0*masses[i]*masses[i]);
-                  fprintf(file, " %.14lf %.14lf %.14lf %.14lf %.14lf %.14lf %.14lf", xuv[4*i - 3], xuv[4*i - 2], xuv[4*i - 1], xuv[4*i], a, e, xnew[4*i - 2]);
-            }
-            fprintf(file, "\n");
-      }*/
-      
-      free(As); As = NULL;
-      free(Bs); Bs = NULL;
+      toBeReturnedNum = sqrt(toBeReturnedNum);
+      toBeReturnedNom = sqrt(toBeReturnedNom);
+      free(As);  As = NULL;
+      free(as);  as = NULL;
+      return toBeReturnedNum/toBeReturnedNom;
 }
 
 
@@ -1251,91 +1270,35 @@ void ConstantParameter(typ * X_new, typ * X_uv){
 }
 
 
-void LibrationCenterFind(typ * X_old, int verbose){
+//void LibrationCenterFind(typ * X_old, int verbose){
 
       /******** Finds a libration center of the complete Hamiltonian by iteratively ********/
       /******** integrating and keeping only the average and fast frequency.        ********/
       /******** verbose is a boolean that specifies if the function should talk     ********/
 
-      int n_iter = 1;
-      int i;
-      typ precision = 1.;
+      /*int i, j;
+      int fast = subchain[how_many_resonant - 1];
+      int slow = subchain[how_many_resonant];
+      typ amplitudeRatio;
       typ X_new[4*how_many_planet + 1];
       typ X_uv [4*how_many_planet + 1];
       typ xvXu [4*how_many_planet + 1];
-      typ T   = 8000.;
       typ tau = 0.0078125;
+      typ dt[4] = {2., 1., 0.5, 0.5};            //Timestep in units of tau
+      typ T [4] = {3000., 4500., 4500., 5500.};  //Integration time
+      int Hf[4] = {2, 2, 5, 5};                  //order of Hanning filter
+      int Hr[4] = {15, 25, 50, 80};              //Number of harmonics
+      int Sn[4] = {1, 1, 1, 1};                  //Order of the SABA integrator
       
       if (verbose){
             printf("-------------------------------------------------------------------------------------------\n\n");
             printf("Starting the search for a libration center.\n\n");
             PointPrint(X_old, 0);
-      }
-      
-      /******** I first try to converge with a low precision using a small integration time and a large timestep ********/
-      /*while(precision > 1.e-2 && n_iter <= 10){
-            UnaveragedSABAn_average(2.*tau, T/2., 1, xvXu, X_old, 1);
-            nonDofReinit(X_new, xvXu);
-            precision = 0.;
-            for (i = 1; i <= how_many_planet; i ++){
-                  precision += fabs(xvXu[4*i - 3] - X_uv[4*i - 3]) + fabs(xvXu[4*i - 2] - X_uv[4*i - 2]) + fabs(xvXu[4*i - 1] - X_uv[4*i - 1]) + fabs(xvXu[4*i] - X_uv[4*i]);
-            }
-            precision /= (typ) how_many_planet;   
-            for (i = 1; i <= how_many_planet; i ++){
-                  X_uv[4*i - 3] = xvXu[4*i - 3];
-                  X_uv[4*i - 2] = xvXu[4*i - 2];
-                  X_uv[4*i - 1] = xvXu[4*i - 1];
-                  X_uv[4*i]     = xvXu[4*i];
-            } 
-            new2old(X_old, X_new, X_uv);
-            if (verbose){
-                  PointPrint(X_old, n_iter);
-            }
-            n_iter ++;
-      }
-      
-      if (n_iter > 10 && precision > 1.e-2){ //This initial condition is hopeless
-            if (verbose){
-                  printf("This initial condition is hopeless.\n");
-            }
-            return;
-      }
-      if (verbose){
-            printf("A precision of 10^-2 was reached.\n\n");
       }*/
-      
-      /******** I now refine to a moderate precision using a moderate integration time and a moderate timestep ********/
-      /*while(precision > 1.e-6){
-            UnaveragedSABAn_NAFF(2.*tau, T/2., 3, xvXu, X_old, 1, 10);
-            ConstantParameter(X_new, xvXu);
-            precision = 0.;
-            for (i = 1; i <= how_many_planet; i ++){
-                  precision += fabs(xvXu[4*i - 3] - X_uv[4*i - 3]) + fabs(xvXu[4*i - 2] - X_uv[4*i - 2]) + fabs(xvXu[4*i - 1] - X_uv[4*i - 1]) + fabs(xvXu[4*i] - X_uv[4*i]);
-            }
-            precision /= (typ) how_many_planet;   
-            for (i = 1; i <= how_many_planet; i ++){
-                  X_uv[4*i - 3] = xvXu[4*i - 3];
-                  X_uv[4*i - 2] = xvXu[4*i - 2];
-                  X_uv[4*i - 1] = xvXu[4*i - 1];
-                  X_uv[4*i]     = xvXu[4*i];
-            } 
-            new2old(X_old, X_new, X_uv);
-            if (verbose){
-                  PointPrint(X_old, n_iter);
-            }
-            n_iter ++;
-            if (n_iter > 16 && precision > 1.e-6){
-                  fprintf(stderr, "\nError : In function LibrationCenterFind, the precision cannot reach 10^-6 even though it reached 10^-2. Try adding harmonics.\n");
-                  abort();
-            }
-      }
-      if (verbose){
-            printf("A precision of 10^-6 was reached.\n\n");
-      }*/
-      
-      /******** I now refine to a higher precision using a larger integration time, a smaller timestep and more harmonics ********/
-      for (n_iter = 1; n_iter <= 6; n_iter ++){
-            UnaveragedSABAn_NAFF(tau, T, 5, xvXu, X_old, 1, 30);
+
+      /******** Converging towards a libration center via the NAFF method ********/
+      /*for (j = 0; j < 4; j ++){
+            amplitudeRatio = UnaveragedSABAn_NAFF(tau*dt[j], T[j], Hf[j], xvXu, X_old, Sn[j], Hr[j]);
             ConstantParameter(X_new, xvXu);
             for (i = 1; i <= how_many_planet; i ++){
                   X_uv[4*i - 3] = xvXu[4*i - 3];
@@ -1345,8 +1308,262 @@ void LibrationCenterFind(typ * X_old, int verbose){
             }
             new2old(X_old, X_new, X_uv);
             if (verbose){
-                  PointPrint(X_old, n_iter);
-                  UnaveragedSABAn(tau, T/2., 1, X_old, n_iter);
+                  PointPrint(X_old, j + 1);
+                  printf("nu_%d = dphi_%d/dt = %.8lf, nu_%d = dphi_%d/dt = %.8lf, nu_%d/nu_%d = %.8lf\n", fast, fast, nu_fast, slow, slow, nu_reso, fast, slow, nu_fast/nu_reso);
+                  printf("Amplitude ratio = %.10lf\n\n", amplitudeRatio);
+                  //UnaveragedSABAn(tau/2., 4000., 2, X_old, 4); //To be removed
+                  //new2old(X_old, X_new, X_uv);                 //To be removed
+            }
+      }
+
+      UnaveragedSABAn(tau/2., 4000., 2, X_old, 5);
+      new2old(X_old, X_new, X_uv);
+}*/
+
+
+void LibrationCenterFind(typ * X_old, int precision){
+
+      /******** Finds a libration center of the complete Hamiltonian by iteratively ********/
+      /******** integrating and keeping only the average and fast frequency.        ********/
+      /******** precision = {0, 1, 2} -> {low, medium, high} precision.             ********/
+
+      int i, j;
+      int fast = subchain[how_many_resonant - 1];
+      int slow = subchain[how_many_resonant];
+      typ amplitudeRatio = 1.;
+      typ X_new[4*how_many_planet + 1];
+      typ X_uv [4*how_many_planet + 1];
+      typ xvXu [4*how_many_planet + 1];
+      typ tau = 0.0078125;
+      
+      typ dt[3] = {2., 0.75, 0.5};        //Timestep in units of tau
+      typ T [3] = {3000., 4500., 4500.};  //Integration time
+      int Hf[3] = {2, 5, 5};              //order of Hanning filter
+      int Hr[3] = {15, 50, 90};           //Number of harmonics
+      int Sn[3] = {1, 1, 4};              //Order of the SABA integrator
+      typ AR[3] = {0.05, 0.0008, 0.00001};//Required value for the amplitude ratio
+      
+      if (precision < 0 || precision > 2){
+            fprintf(stderr, "\nError: The integer precision must be 0, 1 or 2 in function LibrationCenterFind\n");
+            abort();
+      }
+      
+      /******** To be removed ********/
+      /*typ dt[4] = {2., 1., 0.5, 0.5};            //Timestep in units of tau
+      typ T [4] = {3000., 4500., 4500., 5500.};  //Integration time
+      int Hf[4] = {2, 2, 5, 5};                  //order of Hanning filter
+      int Hr[4] = {15, 25, 50, 80};              //Number of harmonics
+      int Sn[4] = {1, 1, 1, 1};                  //Order of the SABA integrator*/
+      
+      
+      printf("-------------------------------------------------------------------------------------------\n\n");
+      printf("Starting the search for a libration center.\n\n");
+      PointPrint(X_old, 0);
+
+      /******** If not enough convergence, a third integration with smaller timestep, larger integration time and more harmonics ********/
+      j = 1;
+      while (amplitudeRatio > AR[precision]){
+            amplitudeRatio = UnaveragedSABAn_NAFF(tau*dt[precision], T[precision], Hf[precision], xvXu, X_old, Sn[precision], Hr[precision]);
+            ConstantParameter(X_new, xvXu);
+            for (i = 1; i <= how_many_planet; i ++){
+                  X_uv[4*i - 3] = xvXu[4*i - 3];
+                  X_uv[4*i - 2] = xvXu[4*i - 2];
+                  X_uv[4*i - 1] = xvXu[4*i - 1];
+                  X_uv[4*i]     = xvXu[4*i];
+            }
+            new2old(X_old, X_new, X_uv);
+            PointPrint(X_old, j);
+            printf("nu_%d = dphi_%d/dt = %.10lf, nu_%d = dphi_%d/dt = %.10lf, nu_%d/nu_%d = %.10lf\n", fast, fast, nu_fast, slow, slow, nu_reso, fast, slow, nu_fast/nu_reso);
+            printf("Amplitude ratio = %.10lf\n\n", amplitudeRatio);
+            j ++;
+      }
+
+      /******** To be removed ********/
+      //UnaveragedSABAn(tau/2., 4000., 2, X_old, 5);
+      //new2old(X_old, X_new, X_uv);
+}
+
+
+void LibrationCenterFollow(typ * X_old, typ dG, int Npoints, int precision){
+
+      /******** Finds a libration center and follows its family by updating the total    ********/
+      /******** angular momentum G by an amount dG before each search. Npoints libration ********/
+      /******** centers are found and stored to the file pth/LibrationCenters_chain.txt  ********/
+      /******** precision = {0, 1, 2} -> {low, medium, high} precision.                  ********/
+
+      int i, j;
+      int fast = subchain[how_many_resonant - 1];
+      int slow = subchain[how_many_resonant];
+      typ a, e, sig;
+      char file_path[800];
+      char nn[10];
+      FILE * file;
+      typ X_new [4*how_many_planet + 1];
+      typ X_uv  [4*how_many_planet + 1];
+      typ sigOld[  how_many_planet + 1];
+
+      /******** Opening output file ********/
+      strcpy(file_path, pth);
+      strcat(file_path, "LibrationCenters");
+      strcat(file_path, "_");
+      for (i = 1; i <= how_many_planet; i ++){
+            sprintf(nn, "%d", p_i[i]);
+            strcat(file_path, nn);
+      }
+      strcat(file_path, ".txt");
+      file = fopen(file_path, "w");
+      if (file == NULL){
+            fprintf(stderr, "\nError: Cannot create or open file LibrationCenters_chain.txt in function UnaveragedSABAn.\n");
+            abort();
+      }
+      
+      /******** Writing to file ********/
+      fprintf(file, "This file contains a family of libration centers of the resonance chain ");
+      for (i = 1; i < how_many_planet; i ++){
+            fprintf(file, "%d:", p_i[i]);
+      }
+      fprintf(file, "%d\n", p_i[how_many_planet]);
+      fprintf(file, "Between two consecutive points, the quantity Phi_%d, or equivalently, the total angular momentum, differs by an amount %.14lf\n", slow, fabs(dG));
+      fprintf(file, "This file has %d columns that are (for 1 <= j <= %d):\n", 3 + 7*how_many_planet, how_many_planet);
+      fprintf(file, "nu_%d = dphi_%d/dt, nu_%d = dphi_%d/dt, phi_j, v_j, Phi_j, u_j, a_j, e_j, sig_j, nu_%d/nu_%d\n", fast, fast, slow, slow, fast, slow);
+      fprintf(file, "\n");
+
+      /******** Finding the first libration center ********/
+      LibrationCenterFind(X_old, precision);
+      /******** Writing to file and initializing sigOld ********/
+      old2new(X_old, X_new, X_uv);
+      fprintf(file, "%.8lf %.8lf ", nu_fast, nu_reso);
+      for (i = 1; i <= how_many_planet; i ++){
+            sigOld[i] = X_new[4*i - 2];
+            sig       = X_new[4*i - 2];
+            e         = sqrt(1. - (1. - X_old[4*i]/X_old[4*i - 1])*(1. - X_old[4*i]/X_old[4*i - 1]));
+            a         = X_old[4*i - 1]*X_old[4*i - 1]*(m0 + masses[i])/(G*m0*m0*masses[i]*masses[i]);
+            fprintf(file, "%.14lf %.14lf %.14lf %.14lf %.14lf %.14lf %.14lf %.8lf", X_uv[4*i - 3], X_uv[4*i - 2], X_uv[4*i - 1], X_uv[4*i], a, e, sig, nu_fast/nu_reso);
+            if (i != how_many_planet){
+                  fprintf(file, " ");
+            }
+      }
+      fprintf(file, "\n");
+      
+      /******** Updating the total angular momentum ********/
+      X_uv    [4*slow - 1] += dG;
+      X_uv_t0 [4*slow - 1]  = X_uv [4*slow - 1];
+      X_new_t0[4*slow - 1]  = X_new[4*slow - 1];
+      new2old(X_old, X_new, X_uv);
+
+      /******** Displaying progress ********/
+      printf("progress = %d/%d\n", 1, Npoints);
+      
+      /******** Following the family of libration centers ********/
+      for (j = 1; j < Npoints; j ++){
+            LibrationCenterFind(X_old, precision);
+            fprintf(file, "%.8lf %.8lf ", nu_fast, nu_reso);
+            for (i = 1; i <= how_many_planet; i ++){
+                  sig = continuousAngle(X_new[4*i - 2], sigOld[i]);
+                  e   = sqrt(1. - (1. - X_old[4*i]/X_old[4*i - 1])*(1. - X_old[4*i]/X_old[4*i - 1]));
+                  a   = X_old[4*i - 1]*X_old[4*i - 1]*(m0 + masses[i])/(G*m0*m0*masses[i]*masses[i]);
+                  fprintf(file, "%.14lf %.14lf %.14lf %.14lf %.14lf %.14lf %.14lf %.8lf", X_uv[4*i - 3], X_uv[4*i - 2], X_uv[4*i - 1], X_uv[4*i], a, e, sig, nu_fast/nu_reso);
+                  if (i != how_many_planet){
+                        fprintf(file, " ");
+                  }
+                  sigOld[i] = sig;
+            }
+            fprintf(file, "\n");
+            /******** Updating the total angular momentum ********/
+            if (j + 1 != Npoints){
+                  X_uv    [4*slow - 1] += dG;
+                  X_uv_t0 [4*slow - 1]  = X_uv [4*slow - 1];
+                  X_new_t0[4*slow - 1]  = X_new[4*slow - 1];
+                  new2old(X_old, X_new, X_uv);
+            }
+            /******** Displaying progress ********/
+            printf("progress = %d/%d\n", j + 1, Npoints);
+      }
+
+      /******** Closing output file ********/
+      fclose(file);
+}
+
+
+void PeriodicOrbitFind(typ * X_old){
+
+      /******** Looks for a periodic orbit of the N-body problem.                               ********/
+      /******** Finds a libration center, that is, a quasi-periodic orbit with two frequencies. ********/
+      /******** Then changes the relevant first integral until the ratio between the two        ********/
+      /******** frequencies is a rational number a/b with b and a - b not too large             ********/
+      
+      int i, j, targetDenom, precision, count;
+      int fast = subchain[how_many_resonant - 1];
+      int slow = subchain[how_many_resonant];
+      typ X_new [4*how_many_planet + 1];
+      typ X_uv  [4*how_many_planet + 1];
+      typ dG, current_ratio, old_ratio, target, t;
+      struct rational target_ratio;
+      typ epsilon = 0.;
+      typ toTarget[3] = {0.01, 0.0001, 0.000001}; //The maximal distance between the current frequency ratio and the target frequency ratio once converged.
+      
+      for (i = 1; i <= how_many_planet; i ++){
+            epsilon += masses[i]/m0;
+      }
+
+      /******** Finding the first libration center ********/
+      LibrationCenterFind(X_old, 0);
+      old2new(X_old, X_new, X_uv);
+      
+      /******** Trying first value for dG ********/
+      dG            = 0.00002*epsilon;
+      current_ratio = nu_fast/nu_reso;
+      old_ratio     = current_ratio;
+      
+      /******** Obtaining the target frequency ratio ********/
+      target_ratio = int2rat(1000.);
+      targetDenom  = 1;
+      while (fabs(rat2real(target_ratio) - current_ratio) > 0.05){
+            target_ratio = real2rat(current_ratio, targetDenom);
+            targetDenom ++;
+      }
+      printf("\nTarget value for nu_%d/nu_%d : ", fast, slow);
+      ratprint(target_ratio);
+      printf("\n");
+      
+      /******** Updating the total angular momentum ********/
+      X_uv    [4*slow - 1] += dG;
+      X_uv_t0 [4*slow - 1]  = X_uv [4*slow - 1];
+      X_new_t0[4*slow - 1]  = X_new[4*slow - 1];
+      new2old(X_old, X_new, X_uv);
+      
+      /******** Following the family of libration centers ********/
+      target = rat2real(target_ratio);
+      for (precision = 0; precision < 3; precision ++){
+            if (precision > 0){
+                  dG /= 2.;
+            }
+            count = 0;
+            while (fabs(current_ratio - target) > toTarget[precision]){ //Obtaining a small precision
+                  LibrationCenterFind(X_old, precision);
+                  current_ratio = nu_fast/nu_reso;
+                  if (fabs(current_ratio - target) > fabs(old_ratio - target) && (current_ratio - target)*(old_ratio - target) > 0. && count){ //Going the wrong direction
+                        dG *= -1.;
+                  }
+                  else if ((current_ratio - target)*(old_ratio - target) < 0.){ //Went too far
+                        t   = (target - old_ratio)/(current_ratio - old_ratio);
+                        dG *= -(1. - t);
+                  }
+                  /******** Updating the total angular momentum ********/
+                  if (fabs(current_ratio - target) > toTarget[precision]){
+                        X_uv    [4*slow - 1] += dG;
+                        X_uv_t0 [4*slow - 1]  = X_uv [4*slow - 1];
+                        X_new_t0[4*slow - 1]  = X_new[4*slow - 1];
+                        new2old(X_old, X_new, X_uv);
+                  }
+                  old_ratio = current_ratio;
+                  count ++;
             }
       }
 }
+
+
+
+
+
+

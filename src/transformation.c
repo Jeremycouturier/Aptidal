@@ -311,14 +311,13 @@ void transformation_display(){
       
       printf("\n-------------------------------------------------------------------------------------------\n\n");
       printf("The resonance chain to be studied is ");
-      for (i = 1; i < how_many_planet; i++){
-            printf("%d", p_i[i]);
-            printf(":");
+      for (i = 1; i < how_many_planet; i ++){
+            printf("%d:", p_i[i]);
       }
       printf("%d\n", p_i[how_many_planet]);
       printf("The system currently has %d degrees of freedom.\n\n", 2*how_many_planet);
-      printf("Aptidal will perform a canonical transformation (lbd, -vrp; Lbd, D) -> (phi, sig; Phi, D)\n");
-      printf("where (lbd, -vrp; Lbd, D) are the traditional Poincaré variables.\n");
+      printf("Aptidal will perform a canonical transformation (lbd, -vrp; Lbd, D) -> (phi, sig; Phi, D) adapted to\n");
+      printf("the resonance where (lbd, -vrp; Lbd, D) are the traditional Poincaré variables.\n");
       printf("lbd (lambda) is the mean longitude, vrp (varpi) is the longitude of the ascending node, Lambda (resp. Phi)\n");
       printf("is the action conjugated to lambda (resp. phi) and D (the AMD) is conjugated to both sigma and -varpi.\n\n");
       printf("The transformation reads\n\n");

@@ -928,13 +928,13 @@ void PointPrint(typ * X_old, int iter){
       typ X_uv [4*how_many_planet + 1];
       
       /******** Verifying conservation of the first integrals. To be removed when the code is robust ********/
-      old2new(X_old, X_new, X_uv);
+      /*old2new(X_old, X_new, X_uv);
       for (i = 1; i <= how_many_nondof; i ++){
             k = nondof[i];
             if (fabs(X_uv[4*k - 1] - X_uv_t0[4*k - 1]) > 1.e-9){
                   fprintf(stderr, "\nError : Phi_%d is not conserved in function PointPrint.\n", k);
             }
-      }
+      }*/
 
       printf("Iteration n° %d : ", iter);
       
@@ -945,9 +945,9 @@ void PointPrint(typ * X_old, int iter){
       }
       printf("lbd_%d) = (", N);
       for (i = 1; i <= N - 1; i ++){
-            printf("%.13f, ", fmod(X_old[4*i - 3], 2.*M_PI)/M_PI);
+            printf("%.14f, ", fmod(X_old[4*i - 3], 2.*M_PI));
       }
-      printf("%.13lf) x pi\n                 ", fmod(X_old[4*N - 3], 2.*M_PI)/M_PI);
+      printf("%.14lf)\n                 ", fmod(X_old[4*N - 3], 2.*M_PI));
       for (i = 0; i < spaces; i ++){printf(" ");}
       
       /******** Printing the vrp_i ********/
@@ -957,9 +957,9 @@ void PointPrint(typ * X_old, int iter){
       }
       printf("vrp_%d) = (", N);
       for (i = 1; i <= N - 1; i ++){
-            printf("%.13lf, ", fmod(-X_old[4*i - 2], 2.*M_PI)/M_PI);
+            printf("%.14lf, ", fmod(-X_old[4*i - 2], 2.*M_PI));
       }
-      printf("%.13lf) x pi\n                 ", fmod(-X_old[4*N - 2], 2.*M_PI)/M_PI);
+      printf("%.14lf)\n                 ", fmod(-X_old[4*N - 2], 2.*M_PI));
       for (i = 0; i < spaces; i ++){printf(" ");}
       
       /******** Printing the a_i ********/
@@ -970,10 +970,10 @@ void PointPrint(typ * X_old, int iter){
       printf("a_%d) ", N); for (i = 1; i <= N; i ++){printf("  ");} printf("= (");
       for (i = 1; i <= N - 1; i ++){
             a = X_old[4*i - 1]*X_old[4*i - 1]*(m0 + masses[i])/(G*m0*m0*masses[i]*masses[i]);
-            printf("%.13lf, ", a);
+            printf("%.14lf, ", a);
       }
       a = X_old[4*N - 1]*X_old[4*N - 1]*(m0 + masses[N])/(G*m0*m0*masses[N]*masses[N]);
-      printf("%.13lf)\n                 ", a);
+      printf("%.14lf)\n                 ", a);
       for (i = 0; i < spaces; i ++){printf(" ");}
       
       /******** Printing the e_i ********/
@@ -985,19 +985,18 @@ void PointPrint(typ * X_old, int iter){
       for (i = 1; i <= N - 1; i ++){
             parenthesis = 1. - X_old[4*i]/X_old[4*i - 1];
             e           = sqrt(1. - parenthesis*parenthesis);
-            printf("%.13lf, ", e);
+            printf("%.14lf, ", e);
       }
       parenthesis = 1. - X_old[4*N]/X_old[4*N - 1];
       e           = sqrt(1. - parenthesis*parenthesis);
-      printf("%.13lf)\n\n", e);
+      printf("%.14lf)\n\n", e);
 }
 
 
-void EquilibriumFind(typ * X_old, int verbose){
+void EquilibriumFind(typ * X_old){
 
       /******** Finds a fixed point of the Hamiltonian by iteratively integrating ********/
       /******** and keeping only the average of the Fourier decomposition.        ********/
-      /******** verbose is a boolean that specifies if the function should talk   ********/
 
       int n_iter = 1;
       int i;
@@ -1008,11 +1007,9 @@ void EquilibriumFind(typ * X_old, int verbose){
       typ T   = 8000.;
       typ tau = 0.25;
       
-      if (verbose){
-            printf("-------------------------------------------------------------------------------------------\n\n");
-            printf("Starting the search for a fixed point.\n\n");
-            PointPrint(X_old, 0);
-      }
+      printf("-------------------------------------------------------------------------------------------\n\n");
+      printf("Starting the search for a fixed point.\n\n");
+      PointPrint(X_old, 0);
       
       /******** I first try to converge with a low precision using a small integration time and a large timestep ********/
       while(precision > 1.e-2 && n_iter <= 10){
@@ -1030,21 +1027,15 @@ void EquilibriumFind(typ * X_old, int verbose){
                   X_uv[4*i]     = xvXu[4*i];
             } 
             new2old(X_old, X_new, X_uv);
-            if (verbose){
-                  PointPrint(X_old, n_iter);
-            }
+            PointPrint(X_old, n_iter);
             n_iter ++;
       }
       
       if (n_iter > 10 && precision > 1.e-2){ //This initial condition is hopeless
-            if (verbose){
-                  printf("This initial condition is hopeless.\n");
-            }
+            printf("This initial condition is hopeless.\n");
             return;
       }
-      if (verbose){
-            printf("A precision of 10^-2 was reached.\n\n");
-      }
+      printf("A precision of 10^-2 was reached.\n\n");
       
       /******** I now refine to a moderate precision using a moderate integration time and a moderate timestep ********/
       while(precision > 1.e-7){
@@ -1062,18 +1053,14 @@ void EquilibriumFind(typ * X_old, int verbose){
                   X_uv[4*i]     = xvXu[4*i];
             } 
             new2old(X_old, X_new, X_uv);
-            if (verbose){
-                  PointPrint(X_old, n_iter);
-            }
+            PointPrint(X_old, n_iter);
             n_iter ++;
             if (n_iter > 16 && precision > 1.e-7){
                   fprintf(stderr, "\nError : In function EquilibriumFind, the precision cannot reach 10^-7 even though it reached 10^-2. Try decreasing tau and increasing T.\n");
                   abort();
             }
       }
-      if (verbose){
-            printf("A precision of 10^-7 was reached.\n\n");
-      }
+      printf("A precision of 10^-7 was reached.\n\n");
       
       /******** I now refine to a higher precision using a larger integration time and a smaller timestep.                        ********/
       /******** No need to use more than a SABA1 due to non-conservative errors. Only one iteration to prevent error accumulation ********/
@@ -1087,17 +1074,15 @@ void EquilibriumFind(typ * X_old, int verbose){
       } 
       new2old(X_old, X_new, X_uv);
       n_iter ++;
-      if (verbose){
-            PointPrint(X_old, n_iter);
-            SABAn(tau, T/2., 1 + (int) (T/2./tau/8192.), X_old, 4);
-            new2old(X_old, X_new, X_uv);
-            UnaveragedSABAn(tau/32., T/2., 1, X_old, 4);
-            new2old(X_old, X_new, X_uv);
-      }
+      PointPrint(X_old, n_iter);
+      SABAn(tau, T/2., 1 + (int) (T/2./tau/8192.), X_old, 4);
+      new2old(X_old, X_new, X_uv);
+      UnaveragedSABAn(tau/32., T/2., 1, X_old, 4);
+      new2old(X_old, X_new, X_uv);
 }
 
 
-void BranchFollow(typ * X_old){
+void EquilibriumFollow(typ * X_old){
 
       /******** First finds a fixed point and then follow the corresponding branch by variation of delta ********/
       
@@ -1105,12 +1090,4 @@ void BranchFollow(typ * X_old){
             fprintf(stderr, "\nError: There is no branch of fixed points to follow when no planet is in resonance.\n");
             abort();
       }
-      
-
 }
-
-
-
-
-
-

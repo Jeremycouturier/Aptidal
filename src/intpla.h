@@ -1,10 +1,11 @@
 #ifndef _INTPLA_H_
 #define _INTPLA_H_
 
-
 #include "parameters.h"
 #include "structure.h"
 
+extern typ nu_fast; //The fast frequency
+extern typ nu_reso; //The frequency of the periapsis
 
 void ell2cart(typ a, typ e, typ i, typ nu, typ varpi, typ Omega, typ mu, typ * cart);
 
@@ -30,15 +31,20 @@ void exp_tau_LB(typ tau, typ * X_cart);
 void UnaveragedSABAn(typ tau, typ T, int output_step, typ * X_old, int n);
 
 
-void get_fast_frequency(typ tau, typ T, int Hanning_order, typ * X_old, int n, typ * nu_2);
+void get_frequencies(typ tau, typ T, typ * X_old, int n);
 
 
-void UnaveragedSABAn_NAFF(typ tau, typ T, int Hanning_order, typ * X_uv, typ * X_old, int n, int how_many_harmonics);
+typ UnaveragedSABAn_NAFF(typ tau, typ T, int Hanning_order, typ * X_uv, typ * X_old, int n, int how_many_harmonics);
 
 
 void ConstantParameter(typ * X_new, typ * X_uv);
 
 
-void LibrationCenterFind(typ * X_old, int verbose);
+void LibrationCenterFind(typ * X_old, int precision);
 
+
+void LibrationCenterFollow(typ * X_old, typ dG, int Npoints, int precision);
+
+
+void PeriodicOrbitFind(typ * X_old);
 #endif

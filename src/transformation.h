@@ -1,10 +1,8 @@
 #ifndef _TRANSFORMATION_H_
 #define _TRANSFORMATION_H_
 
-
 #include "parameters.h"
 #include "structure.h"
-
 
 extern struct rational transformation[2*how_many_planet + 1][2*how_many_planet + 1]; //matrix M such that (phi, sigma) = M(lambda, -varpi)
 extern struct rational transpose_inv [2*how_many_planet + 1][2*how_many_planet + 1]; //tM^-1, that is, (Phi,D) = (tM^-1)(Lambda, D)
@@ -17,7 +15,6 @@ extern int dof                       [  how_many_planet + 1];                   
 extern int how_many_dof;                                                             //The number of degrees of freedom of the form (phi_j; Phi_j)
 extern int nondof                    [  how_many_planet + 1];                        //The indexes j of the non-degrees of freedom (phi_j; Phi_j)
 extern int how_many_nondof;                                                          //The number of non-degrees of freedom of the form (phi_j; Phi_j)
-
 
 
 void l_ij_init();
@@ -51,7 +48,4 @@ int GCD(int * As, int k);
 
 
 int LCM(int * As, int k);
-
-
-
 #endif

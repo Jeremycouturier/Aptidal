@@ -1,10 +1,8 @@
 #ifndef _CALCULUS_H_
 #define _CALCULUS_H_
 
-
 #include "parameters.h"
 #include "structure.h"
-
 
 extern typ X_old_t0[4*how_many_planet + 1]; 
 extern typ X_new_t0[4*how_many_planet + 1];
@@ -50,9 +48,8 @@ typ Hamiltonian(typ * X_old);
 void PointPrint(typ * X_old, int iter);
 
 
-void EquilibriumFind(typ * X_old, int verbose);
+void EquilibriumFind(typ * X_old);
 
 
-void BranchFollow(typ * X_old);
-
+void EquilibriumFollow(typ * X_old);
 #endif

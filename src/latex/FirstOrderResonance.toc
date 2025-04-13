@@ -1,0 +1,10 @@
+\babel@toc {english}{}\relax 
+\contentsline {section}{\numberline {1}Introduction}{1}{section.1}%
+\contentsline {section}{\numberline {2}Hamiltonian of the problem}{2}{section.2}%
+\contentsline {subsection}{\numberline {2.1}Transformation to relevant angle}{3}{subsection.2.1}%
+\contentsline {subsection}{\numberline {2.2}Expression of the perturbative part}{4}{subsection.2.2}%
+\contentsline {subsection}{\numberline {2.3}Expression of the Keplerian part}{5}{subsection.2.3}%
+\contentsline {section}{\numberline {3}Reduction to one degree of freedom}{5}{section.3}%
+\contentsline {section}{\numberline {4}Reduction to one parameter}{6}{section.4}%
+\contentsline {section}{\numberline {5}Explicit expression of the transformations towards one degree of freedom}{8}{section.5}%
+\contentsline {section}{References}{9}{equation.5.42}%
