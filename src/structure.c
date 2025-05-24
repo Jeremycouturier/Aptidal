@@ -595,7 +595,7 @@ typ rdm(typ min, typ max){
 
 typ continuousAngle(typ newAngle, typ oldAngle){
 
-      /******** Maintain continuity of the angle ********/
+      /******** Maintains continuity of the angle ********/
 
       typ dAngle = newAngle - oldAngle;
       typ qtient = round(dAngle/(2.*M_PI));

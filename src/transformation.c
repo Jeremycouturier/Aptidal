@@ -625,7 +625,7 @@ void Hamiltonian_display(){
                         pj      = pj/the_gcd;
                   }
                   
-                  if ((non_resonant_bool && (max_deg + one_more_deg_bool) >= 2) || ((pj - pi) <= max_deg && pj <= max_res)){
+                  if ((non_resonant_bool && (max_deg + one_more_deg_bool) >= 2) || ((pj - pi) <= max_deg && pj <= max_res && p != 0)){
                         printf(" + G*m_%d*m_%d/a_%d * (\n", i, j, j);
                         /******** Printing the secular contribution and the non-co-orbital MMR contribution ********/
                         for (k = 1; k < 32; k ++){

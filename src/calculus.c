@@ -490,8 +490,8 @@ void SABAn(typ tau, typ T, int output_step, typ * X_old, int n){
                               fprintf(file, "where epsilon = (m_1 + ... + m_%d)/m_0. This term remains regardless of the order of the integrator.\n", how_many_planet);
                         }
                         fprintf(file, "\n");
-                        fprintf(file, "This file has %d columns that are (for 1 <= j <= %d):\n", 2 + 7*how_many_planet, how_many_planet);
-                        fprintf(file, "Time, Hamiltonian, phi_j, v_j, Phi_j, u_j, a_j, e_j, sig_j.\n");
+                        fprintf(file, "This file has %d columns that are (for 1 <= j <= %d):\n", 2 + 4*how_many_planet, how_many_planet);
+                        fprintf(file, "Time, Hamiltonian, a_j, e_j, phi_j, sig_j.\n");
                         fprintf(file, "\n");
                   }
                   H = Hamiltonian(old_buff);
@@ -500,7 +500,7 @@ void SABAn(typ tau, typ T, int output_step, typ * X_old, int n){
                         sig = continuousAngle(X_new[4*i - 2], sigOld[i]);
                         e   = sqrt(1. - (1. - old_buff[4*i]/old_buff[4*i - 1])*(1. - old_buff[4*i]/old_buff[4*i - 1]));
                         a   = old_buff[4*i - 1]*old_buff[4*i - 1]*(m0 + masses[i])/(G*m0*m0*masses[i]*masses[i]);
-                        fprintf(file, " %.14lf %.14lf %.14lf %.14lf %.14lf %.14lf %.14lf", X_uv[4*i - 3], X_uv[4*i - 2], X_uv[4*i - 1], X_uv[4*i], a, e, sig);
+                        fprintf(file, " %.14lf %.14lf %.14lf %.14lf", a, e, X_uv[4*i - 3], sig);
                         sigOld[i] = sig;
                   }
                   fprintf(file, "\n");
@@ -985,11 +985,11 @@ void PointPrint(typ * X_old, int iter){
       for (i = 1; i <= N - 1; i ++){
             parenthesis = 1. - X_old[4*i]/X_old[4*i - 1];
             e           = sqrt(1. - parenthesis*parenthesis);
-            printf("%.14lf, ", e);
+            printf("%.18lf, ", e);
       }
       parenthesis = 1. - X_old[4*N]/X_old[4*N - 1];
       e           = sqrt(1. - parenthesis*parenthesis);
-      printf("%.14lf)\n\n", e);
+      printf("%.18lf)\n\n", e);
 }
 
 
@@ -1075,16 +1075,18 @@ void EquilibriumFind(typ * X_old){
       new2old(X_old, X_new, X_uv);
       n_iter ++;
       PointPrint(X_old, n_iter);
-      SABAn(tau, T/2., 1 + (int) (T/2./tau/8192.), X_old, 4);
+      
+      /******** To be removed ********/
+      /*SABAn(tau, T/2., 1 + (int) (T/2./tau/8192.), X_old, 4);
       new2old(X_old, X_new, X_uv);
       UnaveragedSABAn(tau/32., T/2., 1, X_old, 4);
-      new2old(X_old, X_new, X_uv);
+      new2old(X_old, X_new, X_uv);*/
 }
 
 
 void EquilibriumFollow(typ * X_old){
 
-      /******** First finds a fixed point and then follow the corresponding branch by variation of delta ********/
+      /******** First finds a fixed point and then follows the corresponding branch by variation of delta ********/
       
       if (how_many_resonant == 0){
             fprintf(stderr, "\nError: There is no branch of fixed points to follow when no planet is in resonance.\n");

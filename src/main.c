@@ -5,7 +5,7 @@
 #include <errno.h>
 #include <unistd.h>
 #include <stdint.h>
-#include <gsl/gsl_linalg.h>
+//#include <gsl/gsl_linalg.h>
 #include "parameters.h"
 #include "structure.h"
 #include "coefficients.h"
@@ -32,19 +32,70 @@ int main(){
             epsilon += masses[i]/m0;
       }
       
-      
       X_old_init(X_old);
       //SABA1(0.25, 2000., 1, X_old);
       //SABAn(0.25, 4000., 2, X_old, 4);
       //RK2(0.25, 10000., 1);
-      //EquilibriumFind(X_old);
-      //LibrationCenterFind(X_old, 1);
-      //LibrationCenterFollow(X_old, 0.000030517578125*epsilon, 5, 1);
+      EquilibriumFind(X_old);
+      //LibrationCenterFind(X_old, 0);
+      LibrationCenterFollow(X_old, -0.000005*epsilon, 2000, 0);
+      //LibrationCenterFollow(X_old, -0.0000014*epsilon, 1000, 0);
       //PeriodicOrbitFind(X_old);
       //X_old_init(X_old);
-      UnaveragedSABAn(0.0019225422087269983, 200., 1, X_old, 4);
+      //SABAn(0.25, 400000., 20, X_old, 4);
+      //UnaveragedSABAn(0.25/32., 400000., 100, X_old, 4);
       
-      X_old_init(X_old);
+      /*typ a, e, nu, mu, M, vp, l;
+      a = 1.29;
+      e = 0.203;
+      M = 2.091;
+      vp = 1.203;
+      mu = G*(1. + 0.00002033);
+      
+      printf("a, e, M, vp = %.16lf, %.16lf, %.16lf, %.16lf\n", a, e, M, vp);
+      
+      nu = mean2true(M, mu, a, e);
+      
+      typ cart[4];
+      typ alkhqp[6];
+      
+      ell2cart(a, e, 0., nu, vp, 0., mu, cart);
+      cart2ell(cart, alkhqp, mu);
+      
+      a  = alkhqp[0];
+      l  = alkhqp[1];
+      vp = atan2(alkhqp[3],alkhqp[2]);
+      M  = l - vp;
+      e  = sqrt(alkhqp[3]*alkhqp[3] + alkhqp[2]*alkhqp[2]);
+      
+      printf("a, e, M, vp = %.16lf, %.16lf, %.16lf, %.16lf\n", a, e, M + 2.*M_PI, vp);*/
+      
+      /*typ a, e, E, mu, M, vp, l;
+      a = 1.29;
+      e = 0.203;
+      M = 2.091;
+      vp = 1.203;
+      mu = G*(1. + 0.00002033);
+      
+      printf("a, e, M, vp = %.16lf, %.16lf, %.16lf, %.16lf\n", a, e, M, vp);
+      
+      E = mean2eccentric(M + vp, e*cos(vp), e*sin(vp));
+      
+      typ cart[4];
+      typ alkhqp[6];
+      
+      ell2cart(a, e, 0., E, vp, 0., mu, cart);
+      cart2ell(cart, alkhqp, mu);
+      
+      a  = alkhqp[0];
+      l  = alkhqp[1];
+      vp = atan2(alkhqp[3],alkhqp[2]);
+      M  = l - vp;
+      e  = sqrt(alkhqp[3]*alkhqp[3] + alkhqp[2]*alkhqp[2]);
+      
+      printf("a, e, M, vp = %.16lf, %.16lf, %.16lf, %.16lf\n", a, e, M + 2.*M_PI, vp);*/
+      
+      /*X_old_init(X_old);
       typ mu, a, e, vp, M, nu;
       
       for (i = 1; i <= how_many_planet; i ++){
@@ -59,7 +110,7 @@ int main(){
       
       for (i = 1; i <= how_many_planet; i ++){
             printf("(x_%d, y_%d, vx_%d, vy_%d) = (%.14lf, %.14lf, %.14lf, %.14lf)\n", i, i, i, i, X_cart[4*i - 3], X_cart[4*i - 2], X_cart[4*i - 1], X_cart[4*i]);
-      }
+      }*/
       
       /*int i;
       typ a, e, sig, vp, M, mu, nu, beta, H;
