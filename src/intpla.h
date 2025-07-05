@@ -41,6 +41,12 @@ void get_frequencies(typ tau, typ T, typ * X_old, int n);
 typ UnaveragedSABAn_NAFF(typ tau, typ T, int Hanning_order, typ * X_uv, typ * X_old, int n, int how_many_harmonics);
 
 
+void Renormalization(typ * X_old);
+
+
+void get_n(typ * n);
+
+
 void ConstantParameter(typ * X_new, typ * X_uv);
 
 

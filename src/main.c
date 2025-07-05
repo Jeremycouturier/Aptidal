@@ -19,9 +19,11 @@ int main(){
       init();
             
       int i;
+      typ n       [  how_many_planet + 1];
       typ X_old   [4*how_many_planet + 1];
       typ X_new   [4*how_many_planet + 1];
       typ X_uv    [4*how_many_planet + 1];
+      typ xvXu    [4*how_many_planet + 1];
       typ X_cart  [4*how_many_planet + 1];
       typ dH_old  [4*how_many_planet + 1];
       typ dH_polar[4*how_many_planet + 1];
@@ -33,17 +35,35 @@ int main(){
       }
       
       X_old_init(X_old);
+      //old2new(X_old, X_new, X_uv);
+      //printf("Phi3 = %.20lf\n", X_new[4*3 - 1]);
+      //i = EquilibriumFind(X_old, 2);
+      //LibrationCenterFollow(X_old, -0.00000000035, 950, 0);
+      //LibrationCenterFind(X_old, 1);
+      /*UnaveragedSABAn_NAFF(0.0078125, 4500., 5, xvXu, X_old, 4, 55);
+      printf("Phi_3 = %.20lf, <Phi_3> = %.20lf\n", X_uv[4*subchain[how_many_resonant] - 1], avgs[4*subchain[how_many_resonant] - 1]);
+      get_n(n);
+      for (i = 1; i < how_many_planet; i ++){
+            printf("n_%d/n_%d = %.8lf", i, i + 1, n[i]/n[i + 1]);
+            if (i < how_many_planet - 1){printf(", ");} else{printf("\n");}
+      }*/
+      //old2new(X_old, X_new, X_uv);
+      //printf("Phi3 = %.20lf\n", X_new[4*3 - 1]);
+      
       //SABA1(0.25, 2000., 1, X_old);
       //SABAn(0.25, 4000., 2, X_old, 4);
       //RK2(0.25, 10000., 1);
-      EquilibriumFind(X_old);
+      //i = EquilibriumFind(X_old, 1);
+      //EquilibriumFindUntil(X_old, 0);
+      //LibrationCenterFind(X_old, 1);
       //LibrationCenterFind(X_old, 0);
-      LibrationCenterFollow(X_old, -0.000005*epsilon, 2000, 0);
+      //LibrationCenterFollow(X_old, 0.000002*epsilon, 20000, 0);
       //LibrationCenterFollow(X_old, -0.0000014*epsilon, 1000, 0);
       //PeriodicOrbitFind(X_old);
       //X_old_init(X_old);
-      //SABAn(0.25, 400000., 20, X_old, 4);
-      //UnaveragedSABAn(0.25/32., 400000., 100, X_old, 4);
+      //SABAn(0.25, 4000., 1, X_old, 4);
+      //SABAn(0.25, 40000., 1, X_old, 4);
+      //UnaveragedSABAn(0.25/32., 4000., 1, X_old, 4);
       
       /*typ a, e, nu, mu, M, vp, l;
       a = 1.29;

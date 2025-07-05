@@ -1295,6 +1295,43 @@ typ UnaveragedSABAn_NAFF(typ tau, typ T, int Hanning_order, typ * X_uv, typ * X_
 }
 
 
+void Renormalization(typ * X_old){
+
+      /******** Renormalizes a1 to 1 and lbd1 to 0 ********/
+
+      int i;
+      typ a1, lbd1, Lbd_renorm;
+
+      a1 = X_old[4*1 - 1]*X_old[4*1 - 1]*(m0 + masses[1])/(G*m0*m0*masses[1]*masses[1]);
+      Lbd_renorm = sqrt(a1);
+      lbd1 = X_old[1];
+      for (i = 1; i <= how_many_planet; i ++){
+            //X_old[4*i - 3] -= lbd1;
+            //X_old[4*i - 2] += lbd1;
+            X_old[4*i - 1] /= Lbd_renorm;
+            X_old[4*i]     /= Lbd_renorm;
+      }
+}
+
+
+void get_n(typ * n){
+
+      /******** Stores the mean motions in n ********/
+
+      int i;
+      typ mu_i, a_i, n_i;
+      typ X_old[4*how_many_planet + 1];
+      typ X_new[4*how_many_planet + 1];
+      new2old(X_old, X_new, avgs);
+      for (i = 1; i <= how_many_planet; i ++){
+            mu_i = G*(m0 + masses[i]);
+            a_i  = X_old[4*i - 1]*X_old[4*i - 1]*(m0 + masses[i])/(G*m0*m0*masses[i]*masses[i]);
+            n_i  = sqrt(mu_i/(a_i*a_i*a_i));
+            *(n + i) = n_i;
+      }
+}
+
+
 void ConstantParameter(typ * X_new, typ * X_uv){
 
       /******** Similar to function nonDofReinit but for the non-averaged system ********/
@@ -1397,6 +1434,7 @@ void LibrationCenterFind(typ * X_old, int precision){
       typ X_new[4*how_many_planet + 1];
       typ X_uv [4*how_many_planet + 1];
       typ xvXu [4*how_many_planet + 1];
+      typ n    [  how_many_planet + 1];
       typ tau = 0.0078125;
       
       typ dt[3] = {2., 0.75, 0.5};         //Timestep in units of tau
@@ -1450,9 +1488,16 @@ void LibrationCenterFind(typ * X_old, int precision){
                   X_uv[4*i]     = xvXu[4*i];
             }
             new2old(X_old, X_new, X_uv);
-            PointPrint(X_old, j);
-            printf("nu_%d = dphi_%d/dt = %.14lf, nu_%d = dphi_%d/dt = %.14lf, nu_%d/nu_%d = %.14lf\n", fast, fast, nu_fast, slow, slow, nu_reso, fast, slow, nu_fast/nu_reso);
-            printf("Amplitude = %.20lf, required = %.13lf\n\n", amplitude, AR[precision]);
+            if (amplitude > AR[precision]){
+                  PointPrint(X_old, j);
+                  get_n(n);
+                  printf("nu_%d = dphi_%d/dt = %.14lf, nu_%d = dphi_%d/dt = %.14lf, nu_%d/nu_%d = %.14lf\n", fast, fast, nu_fast, slow, slow, nu_reso, fast, slow, nu_fast/nu_reso);
+                  for (i = 1; i < how_many_planet; i ++){
+                        printf("n_%d/n_%d = %.8lf", i, i + 1, n[i]/n[i + 1]);
+                        if (i < how_many_planet - 1){printf(", ");} else{printf("\n");}
+                  }
+                  printf("Amplitude = %.20lf, required = %.13lf\n\n", amplitude, AR[precision]);
+            }
             j ++;
             if (amplitude > 0.9*oldAmplitude && amplitude < 1.4*oldAmplitude){
                   if (noProgress < 3){
@@ -1466,7 +1511,7 @@ void LibrationCenterFind(typ * X_old, int precision){
             }
             if (j > 32 && !went2fixedPoint ){
                   printf("Cannot converge. Starting back from a fixed point.\n");
-                  EquilibriumFind(X_old);
+                  EquilibriumFind(X_old, precision);
                   went2fixedPoint = 1;
             }
             if (j > 64){
@@ -1475,7 +1520,15 @@ void LibrationCenterFind(typ * X_old, int precision){
             }
             oldAmplitude = amplitude;
       }
-
+      Renormalization(X_old);
+      PointPrint(X_old, j - 1);
+      get_n(n);
+      printf("nu_%d = dphi_%d/dt = %.14lf, nu_%d = dphi_%d/dt = %.14lf, nu_%d/nu_%d = %.14lf\n", fast, fast, nu_fast, slow, slow, nu_reso, fast, slow, nu_fast/nu_reso);
+      for (i = 1; i < how_many_planet; i ++){
+            printf("n_%d/n_%d = %.8lf", i, i + 1, n[i]/n[i + 1]);
+            if (i < how_many_planet - 1){printf(", ");} else{printf("\n");}
+      }
+      printf("Amplitude = %.20lf, required = %.13lf\n\n", amplitude, AR[precision]);
       /******** To be removed ********/
       //UnaveragedSABAn(tau/2., 4000., 2, X_old, 5);
       //new2old(X_old, X_new, X_uv);
@@ -1524,17 +1577,18 @@ void LibrationCenterFollow(typ * X_old, typ dG, int Npoints, int precision){
       }
       fprintf(file, "%d", p_i[how_many_planet]);
       fprintf(file, " in the unaveraged problem.\n");
-      fprintf(file, "Between two consecutive points, the quantity Phi_%d, or equivalently, the total angular momentum, differs by an amount %.17lf\n", slow, fabs(dG));
-      fprintf(file, "This file has %d columns that are (for 1 <= j <= %d):\n", 2 + 8*how_many_planet, how_many_planet);
-      fprintf(file, "nu_%d = dphi_%d/dt, nu_%d = dphi_%d/dt, a_j, e_j, phi_j, sig_j, <a_j>, <e_j>, <phi_j>, <sig_j>\n", fast, fast, slow, slow);
+      fprintf(file, "The family is parameterized by Phi_%d.\n", slow);
+      fprintf(file, "This file has %d columns that are (for 1 <= j <= %d):\n", 4 + 8*how_many_planet, how_many_planet);
+      fprintf(file, "nu_%d = dphi_%d/dt, nu_%d = dphi_%d/dt, Phi_%d, <Phi_%d>, a_j, e_j, phi_j, sig_j, <a_j>, <e_j>, <phi_j>, <sig_j>\n", fast, fast, slow, slow, slow, slow);
       fprintf(file, "\n");
 
       /******** Finding the first libration center ********/
       LibrationCenterFind(X_old, precision);
       /******** Writing to file and initializing sigOld ********/
       old2new(X_old,    X_new,    X_uv);
+      printf("Phi_%d = %.20lf, <Phi_%d> = %.20lf\n", slow, X_uv[4*slow - 1], slow, avgs[4*slow - 1]);
       new2old(X_old_av, X_new_av, avgs);
-      fprintf(file, "%.8lf %.8lf", nu_fast, nu_reso);
+      fprintf(file, "%.8lf %.8lf %.20lf %.20lf", nu_fast, nu_reso, X_uv[4*slow - 1], avgs[4*slow - 1]);
       for (i = 1; i <= how_many_planet; i ++){
             sigOld[i] = X_new[4*i - 2];
             sig       = X_new[4*i - 2];
@@ -1560,6 +1614,7 @@ void LibrationCenterFollow(typ * X_old, typ dG, int Npoints, int precision){
       for (j = 1; j < Npoints; j ++){
             LibrationCenterFind(X_old, precision);
             old2new(X_old,    X_new,    X_uv);
+            printf("Phi_%d = %.20lf, <Phi_%d> = %.20lf\n", slow, X_uv[4*slow - 1], slow, avgs[4*slow - 1]);
             new2old(X_old_av, X_new_av, avgs);
             /******** Increasing dG if travelling too slowly. Decreasing it if travelling too fast ********/
             newRatio = nu_fast/nu_reso;
@@ -1575,7 +1630,7 @@ void LibrationCenterFollow(typ * X_old, typ dG, int Npoints, int precision){
             }*/
             oldRatio = newRatio;
             /******** Writing to file ********/
-            fprintf(file, "%.8lf %.8lf", nu_fast, nu_reso);
+            fprintf(file, "%.8lf %.8lf %.20lf %.20lf", nu_fast, nu_reso, X_uv[4*slow - 1], avgs[4*slow - 1]);
             for (i = 1; i <= how_many_planet; i ++){
                   sig  = continuousAngle(X_new[4*i - 2], sigOld[i]);
                   e    = sqrt(1. - (1. - X_old[4*i]/X_old[4*i - 1])*(1. - X_old[4*i]/X_old[4*i - 1]));

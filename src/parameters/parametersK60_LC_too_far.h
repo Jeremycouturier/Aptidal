@@ -4,7 +4,7 @@
 /*********************************************************************/
 /******** Defining the output path. Must end with / and exist ********/
 /*********************************************************************/
-#define pth "/home/atipique/Documents/Aptidal_simulation/test/"
+#define pth "/home/atipique/Documents/Aptidal_simulation/K60/"
 
 
 /*******************************************************************************************/
@@ -13,7 +13,7 @@
 /******** Two or more consecutive p_i can be equal (coorbital planets) and p_i = 0  ********/
 /******** indicates that planet n° i is not in resonance with other planets         ********/
 /*******************************************************************************************/
-#define resonance_chain {2, 3, 5}
+#define resonance_chain {12, 15, 20}
 
 
 
@@ -34,11 +34,11 @@
 /**********************************************************************************************************************************/
 #define how_many_planet 3                                                           //Number of planets in the system. Must match the length of the resonance chain. Minimum is 2
 #define G 39.478417604357434475337964                                               //Gravitational constant is set to 4*pi^2, so the orbital period of the innermost planet is 1
-#define body_masses {1., 0.000043247,      0.000046391,      0.00002951}            //Masses of the bodies of the system, beginning with the star.
-#define body_sma        {1.,               1.12615051434759, 1.40680124093453}      //Initial and nominal semi-major axes of the planets. Used to computed the Hamiltonian's coef
-#define body_ecc        {0.012794643400397028, 0.038716203924502193, 0.009519654278343458}      //Initial eccentricities              of the planets.
-#define body_lambda     {4.18251998313565, 5.91291771890044, 2.14194538430991}      //Initial mean longitudes             of the planets.
-#define body_varpi      {0.27867734064646, 3.41453758795922, 0.26297617518378}      //Initial longitudes of the periapses of the planets.
+#define body_masses {1., 0.00001396343247, 0.00001018846391, 0.00001168182951}      //Masses of the bodies of the system, beginning with the star.
+#define body_sma        {1.00206155833447, 1.16283335575526, 1.40891455152853}      //Initial and nominal semi-major axes of the planets. Used to computed the Hamiltonian's coef
+#define body_ecc        {0.030094567626907778, 0.073589107632785075, 0.028008219388922465}      //Initial eccentricities              of the planets.
+#define body_lambda     {3.15776172118147, 0.06096016923004, 4.03616252923669}      //Initial mean longitudes             of the planets.
+#define body_varpi      {0.22416367899119, 3.38677438298080, 0.27611959330751}      //Initial longitudes of the periapses of the planets.
 
 
 

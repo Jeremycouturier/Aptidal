@@ -48,8 +48,11 @@ typ Hamiltonian(typ * X_old);
 void PointPrint(typ * X_old, int iter);
 
 
-void EquilibriumFind(typ * X_old);
+int EquilibriumFind(typ * X_old, int precision);
 
 
 void EquilibriumFollow(typ * X_old);
+
+
+void EquilibriumFindUntil(typ * X_old, int precision);
 #endif

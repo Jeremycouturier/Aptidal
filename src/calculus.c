@@ -993,12 +993,13 @@ void PointPrint(typ * X_old, int iter){
 }
 
 
-void EquilibriumFind(typ * X_old){
+//int EquilibriumFind(typ * X_old){
 
       /******** Finds a fixed point of the Hamiltonian by iteratively integrating ********/
       /******** and keeping only the average of the Fourier decomposition.        ********/
+      /******** Returns 1 on success and 0 on failure.                            ********/
 
-      int n_iter = 1;
+      /*int n_iter = 1;
       int i;
       typ precision = 1.;
       typ X_new[4*how_many_planet + 1];
@@ -1009,17 +1010,18 @@ void EquilibriumFind(typ * X_old){
       
       printf("-------------------------------------------------------------------------------------------\n\n");
       printf("Starting the search for a fixed point.\n\n");
-      PointPrint(X_old, 0);
+      PointPrint(X_old, 0);*/
       
       /******** I first try to converge with a low precision using a small integration time and a large timestep ********/
-      while(precision > 1.e-2 && n_iter <= 10){
+      /*while(precision > 1.e-2 && n_iter <= 10){
             SABAn_average(2.*tau, T/2., 1, xvXu, X_old, 1);
             nonDofReinit(X_new, xvXu);
             precision = 0.;
             for (i = 1; i <= how_many_planet; i ++){
                   precision += fabs(xvXu[4*i - 3] - X_uv[4*i - 3]) + fabs(xvXu[4*i - 2] - X_uv[4*i - 2]) + fabs(xvXu[4*i - 1] - X_uv[4*i - 1]) + fabs(xvXu[4*i] - X_uv[4*i]);
             }
-            precision /= (typ) how_many_planet;   
+            precision /= (typ) how_many_planet;
+            printf("precision = %.13lf\n", precision);
             for (i = 1; i <= how_many_planet; i ++){
                   X_uv[4*i - 3] = xvXu[4*i - 3];
                   X_uv[4*i - 2] = xvXu[4*i - 2];
@@ -1033,12 +1035,12 @@ void EquilibriumFind(typ * X_old){
       
       if (n_iter > 10 && precision > 1.e-2){ //This initial condition is hopeless
             printf("This initial condition is hopeless.\n");
-            return;
+            return 0;
       }
-      printf("A precision of 10^-2 was reached.\n\n");
+      printf("A precision of 10^-2 was reached.\n\n");*/
       
       /******** I now refine to a moderate precision using a moderate integration time and a moderate timestep ********/
-      while(precision > 1.e-7){
+      /*while(precision > 1.e-8){
             SABAn_average(tau, T, 5, xvXu, X_old, 1);
             nonDofReinit(X_new, xvXu);
             precision = 0.;
@@ -1055,16 +1057,17 @@ void EquilibriumFind(typ * X_old){
             new2old(X_old, X_new, X_uv);
             PointPrint(X_old, n_iter);
             n_iter ++;
-            if (n_iter > 16 && precision > 1.e-7){
-                  fprintf(stderr, "\nError : In function EquilibriumFind, the precision cannot reach 10^-7 even though it reached 10^-2. Try decreasing tau and increasing T.\n");
-                  abort();
+            if (n_iter > 16 && precision > 1.e-8){
+                  printf("In function EquilibriumFind, the precision cannot reach 10^-8 even though it reached 10^-2. Try decreasing tau and increasing T.\n");
+                  return 0;
             }
       }
-      printf("A precision of 10^-7 was reached.\n\n");
+      printf("A precision of 10^-8 was reached.\n\n");
+      return 1;*/
       
       /******** I now refine to a higher precision using a larger integration time and a smaller timestep.                        ********/
       /******** No need to use more than a SABA1 due to non-conservative errors. Only one iteration to prevent error accumulation ********/
-      SABAn_average(tau/4., 2.*T, 5, xvXu, X_old, 1);
+      /*SABAn_average(tau/4., 2.*T, 5, xvXu, X_old, 1);
       nonDofReinit(X_new, xvXu);
       for (i = 1; i <= how_many_planet; i ++){
             X_uv[4*i - 3] = xvXu[4*i - 3];
@@ -1074,13 +1077,65 @@ void EquilibriumFind(typ * X_old){
       } 
       new2old(X_old, X_new, X_uv);
       n_iter ++;
-      PointPrint(X_old, n_iter);
+      PointPrint(X_old, n_iter);*/
       
       /******** To be removed ********/
       /*SABAn(tau, T/2., 1 + (int) (T/2./tau/8192.), X_old, 4);
       new2old(X_old, X_new, X_uv);
       UnaveragedSABAn(tau/32., T/2., 1, X_old, 4);
       new2old(X_old, X_new, X_uv);*/
+//}
+
+
+int EquilibriumFind(typ * X_old, int precision){
+
+      /******** Finds a fixed point of the Hamiltonian by iteratively integrating ********/
+      /******** and keeping only the average of the Fourier decomposition.        ********/
+      /******** Returns 1 on success and 0 on failure.                            ********/
+
+      int n_iter = 1;
+      int i;
+      typ prec = 1.;
+      typ X_new[4*how_many_planet + 1];
+      typ X_uv [4*how_many_planet + 1];
+      typ xvXu [4*how_many_planet + 1];
+      typ tau = 0.25;
+      typ dt[3] = {2., 0.75, 0.5};         //Timestep in units of tau
+      typ T [3] = {4000., 8000., 16000.};  //Integration time
+      int Hf[3] = {2, 5, 5};               //order of Hanning filter
+      int Sn[3] = {1, 1, 4};               //Order of the SABA integrator
+      typ AR[3] = {1.e-4, 1.e-7, 1.e-10};  //Required value for the precision
+      
+      printf("-------------------------------------------------------------------------------------------\n\n");
+      printf("Starting the search for a fixed point.\n\n");
+      PointPrint(X_old, 0);
+      
+      /******** I first try to converge with a low precision using a small integration time and a large timestep ********/
+      while(prec > AR[precision] && n_iter <= 16){
+            SABAn_average(tau*dt[precision], T[precision], Hf[precision], xvXu, X_old, Sn[precision]);
+            nonDofReinit(X_new, xvXu);
+            prec = 0.;
+            for (i = 1; i <= how_many_planet; i ++){
+                  prec += fabs(xvXu[4*i - 3] - X_uv[4*i - 3]) + fabs(xvXu[4*i - 2] - X_uv[4*i - 2]) + fabs(xvXu[4*i - 1] - X_uv[4*i - 1]) + fabs(xvXu[4*i] - X_uv[4*i]);
+            }
+            prec /= (typ) how_many_planet;
+            printf("precision = %.13lf\n", prec);
+            for (i = 1; i <= how_many_planet; i ++){
+                  X_uv[4*i - 3] = xvXu[4*i - 3];
+                  X_uv[4*i - 2] = xvXu[4*i - 2];
+                  X_uv[4*i - 1] = xvXu[4*i - 1];
+                  X_uv[4*i]     = xvXu[4*i];
+            } 
+            new2old(X_old, X_new, X_uv);
+            PointPrint(X_old, n_iter);
+            n_iter ++;
+      }
+      
+      if (n_iter > 16 && prec > AR[precision]){ //This initial condition is hopeless
+            printf("This initial condition is hopeless.\n");
+            return 0;
+      }
+      return 1;
 }
 
 
@@ -1091,5 +1146,31 @@ void EquilibriumFollow(typ * X_old){
       if (how_many_resonant == 0){
             fprintf(stderr, "\nError: There is no branch of fixed points to follow when no planet is in resonance.\n");
             abort();
+      }
+}
+
+
+void EquilibriumFindUntil(typ * X_old, int precision){
+
+      /******** Tries to find a fixed point. If it fails, picks angles at random and retries ********/
+
+      int i;
+      typ ch;
+      typ X_new[4*how_many_planet + 1];
+      typ X_uv [4*how_many_planet + 1];
+      
+      int success = EquilibriumFind(X_old, precision);
+      while(!success){
+            X_old_init(X_old);
+            for (i = 1; i <= how_many_planet; i ++){
+                  X_old[4*i - 3]  = rdm(0., 2.*M_PI);
+                  X_old[4*i - 2]  = rdm(0., 2.*M_PI);
+                  ch = rdm(0.2, 5.);
+                  X_old[4*i]     *= ch;
+            }
+            old2new(X_old, X_new, X_uv);
+            nonDofReinit(X_new, X_uv);
+            new2old(X_old, X_new, X_uv);
+            success = EquilibriumFind(X_old, precision);
       }
 }
