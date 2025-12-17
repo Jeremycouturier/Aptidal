@@ -6,25 +6,53 @@
 #define min(a, b) ((a) < (b) ? (a) : (b))
 #define max(a, b) ((a) < (b) ? (b) : (a))
 
-struct pairOfReal {                           //Simple data structure defining a pair of real numbers
+struct pairOfReal {                          //Simple data structure defining a pair of real numbers
       typ fst;
       typ snd;
 };
 
 
-struct rational {                             //Simple data structure representing a rational number
+struct rational {                            //Simple data structure representing a rational number
       int numerator;
       int denominator;
 };
 
 
+#if toInvar_bool
+/******** Defining a quaternion structure to perform rotations from one vector to another ********/
+struct quaternion {
+      typ w;
+      typ x;
+      typ y;
+      typ z;
+};
+#endif
+
+
 /******** Parameters of the system ********/
-extern typ masses[how_many_planet + 1];      //Masses                           of the planets
-extern typ sma   [how_many_planet + 1];      //Semi-major axes                  of the planets
-extern typ ecc   [how_many_planet + 1];      //Eccentricities                   of the planets
-extern typ lbd   [how_many_planet + 1];      //Mean longitudes                  of the planets
-extern typ vrp   [how_many_planet + 1];      //Longitudes of the ascending node of the planets
-extern typ Lbd_0 [how_many_planet + 1];      //Nominal circular angular momenta of the planets
+extern typ masses[how_many_planet + 1];      //Masses                            of the planets
+extern typ sma   [how_many_planet + 1];      //Semi-major axes                   of the planets
+extern typ ecc   [how_many_planet + 1];      //Eccentricities                    of the planets
+extern typ lbd   [how_many_planet + 1];      //Mean longitudes                   of the planets
+extern typ vrp   [how_many_planet + 1];      //Longitudes of the periapses       of the planets
+#if _3D_bool
+extern typ inc   [how_many_planet + 1];      //inclinations                      of the planets
+extern typ Om    [how_many_planet + 1];      //Longitudes of the ascending nodes of the planets
+#endif
+extern typ Lbd_0 [how_many_planet + 1];      //Nominal circular angular momenta  of the planets
+#if tides_bool
+extern typ radii [how_many_planet + 1];      //Radii                             of the planets
+extern typ k2s   [how_many_planet + 1];      //Second Love numbers               of the planets
+extern typ Dts   [how_many_planet + 1];      //Tidal timelags                    of the planets
+extern typ alps  [how_many_planet + 1];      //Dimensionless structure constants of the planets
+#if _3D_bool
+extern typ Omx   [how_many_planet + 1];      //x-coordinate of sideral rotations of the planets
+extern typ Omy   [how_many_planet + 1];      //y-coordinate of sideral rotations of the planets
+extern typ Omz   [how_many_planet + 1];      //z-coordinate of sideral rotations of the planets
+#else
+extern typ Omg   [how_many_planet + 1];      //Sideral rotations                 of the planets
+#endif
+#endif
 extern typ m0;                               //Mass of the star
 
 
@@ -115,4 +143,15 @@ typ rdm(typ min, typ max);
 
 
 typ continuousAngle(typ newAngle, typ oldAngle);
+
+
+#if toInvar_bool
+void quaternion_norm(struct quaternion * q);
+
+
+struct quaternion get_quaternion(typ ux, typ uy, typ uz, typ vx, typ vy, typ vz);
+
+
+void rotate_with_quaternion(typ x, typ y, typ z, struct quaternion q, typ * xr, typ * yr, typ * zr);
+#endif
 #endif

@@ -21,6 +21,10 @@ void (*resonances[10][10])(typ alp, typ mi);
 
 typ  Cppq[how_many_planet + 1][how_many_planet + 1][32];
 
+#if second_mass_bool
+int all2pla[16][2] = {{1,2},{2,3},{3,4},{4,5},{5,6},{6,7},{7,8},{8,9},{1,3},{3,5},{5,7},{7,9},{1,4},{2,5},{4,7},{5,8}};
+#endif
+
 void resonance_init(){
 
       /******** Initializes the array resonances containing pointers towards the functions resonance_pq defined in this file ********/

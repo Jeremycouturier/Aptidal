@@ -24,6 +24,19 @@ void old2new(typ * X_old, typ * X_new, typ * X_uv);
 void new2old(typ * X_old, typ * X_new, typ * X_uv);
 
 
+#if !canonical_bool
+void canonical2nonCanonical(typ * X_cart);
+
+
+void nonCanonical2canonical(typ * X_cart);
+#endif
+
+
+#if (toInvar_bool && _3D_bool)
+void toInvar(typ * X_cart);
+#endif
+
+
 void X_old_init(typ * X_old);
 
 
@@ -51,7 +64,7 @@ void PointPrint(typ * X_old, int iter);
 int EquilibriumFind(typ * X_old, int precision);
 
 
-void EquilibriumFollow(typ * X_old);
+void EquilibriumFollow(typ * X_old, typ dG, int Npoints, int precision);
 
 
 void EquilibriumFindUntil(typ * X_old, int precision);

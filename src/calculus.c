@@ -187,6 +187,33 @@ void dHdold(typ * dH, typ * X_old, int KP){
                   }
             }
       }
+      
+      #if second_mass_bool
+      /******** Second order in mass. Temporary. For chain 469 only. To be removed ********/
+      if (KP == 1 || KP == 2){
+            typ a3    = sma[3];
+            typ m1    = masses[1];
+            typ m2    = masses[2];
+            typ m3    = masses[3];
+            typ mu_3  = G*(m0 + m3);
+            typ n3    = sqrt(mu_3/(a3*a3*a3));
+            typ lbd_1 = X_old[4*1 - 3];
+            typ lbd_2 = X_old[4*2 - 3];
+            typ lbd_3 = X_old[4*3 - 3];
+            typ Lbd_1 = Lbd_0[1];       // Using nominal value since the perturbation is expanded at order 0 in semi-major axes
+            typ Lbd_2 = Lbd_0[2];
+            typ Lbd_3 = Lbd_0[3];
+            factor    = m1*m2/(m0*m0)*n3*Lbd_3;
+            typ Xi1   = 8.171720526314093;
+            typ Xi2   = -0.8922188353685203; // H2 = m1*m2/m0^2*n3*Lbd3*(Xi1 cos(phi) + Xi2 cos(2*phi) + Xi3 cos(3*phi))
+            typ Xi3   = -0.09881675613930538;
+            typ phi   = 2.*lbd_1 - 5.*lbd_2 + 3.*lbd_3;
+            typ dH2dphi = -factor*(Xi1*sin(phi) + 2.*Xi2*sin(2.*phi) + 3.*Xi3*sin(3.*phi));
+            *(dH + 4*1 - 3) += 2.*dH2dphi;
+            *(dH + 4*2 - 3) -= 5.*dH2dphi;
+            *(dH + 4*3 - 3) += 3.*dH2dphi;
+      }
+      #endif
 }
 
 
@@ -256,26 +283,34 @@ void old2new(typ * X_old, typ * X_new, typ * X_uv){
       
       /******** Computing X_new ********/
       for (k = 1; k <= N; k ++){
-            X_new[4*k - 3] = 0.;  X_new[4*k - 2] = 0.;  X_new[4*k - 1] = 0.;  X_new[4*k] = 0.;  D = 0.;
+            X_new[Nd*k - 3] = 0.;  X_new[Nd*k - 2] = 0.;  X_new[Nd*k - 1] = 0.;  X_new[Nd*k] = 0.;  D = 0.;
             for (i = 1; i <= N; i ++){
-                  X_new[4*k - 3] += Transformation[k]    [i]*X_old[4*i - 3] + Transformation[k]    [i + N]*X_old[4*i - 2];
-                  X_new[4*k - 2] += Transformation[k + N][i]*X_old[4*i - 3] + Transformation[k + N][i + N]*X_old[4*i - 2];
-                  X_new[4*k - 1] += Transpose_inv [k]    [i]*X_old[4*i - 1] + Transpose_inv [k]    [i + N]*X_old[4*i];
-                  D              += Transpose_inv [k + N][i]*X_old[4*i - 1] + Transpose_inv [k + N][i + N]*X_old[4*i];
+                  X_new[Nd*k - 3] += Transformation[k]    [i]*X_old[Nd*i - 3] + Transformation[k]    [i + N]*X_old[Nd*i - 2];
+                  X_new[Nd*k - 2] += Transformation[k + N][i]*X_old[Nd*i - 3] + Transformation[k + N][i + N]*X_old[Nd*i - 2];
+                  X_new[Nd*k - 1] += Transpose_inv [k]    [i]*X_old[Nd*i - 1] + Transpose_inv [k]    [i + N]*X_old[Nd*i];
+                  D               += Transpose_inv [k + N][i]*X_old[Nd*i - 1] + Transpose_inv [k + N][i + N]*X_old[Nd*i];
             }
-            if (fabs(D - X_old[4*k]) > 1.e-10){
-                  fprintf(stderr, "\nError: D_new = %.12lf significantly differs from D_old = %.12lf in function old2new.\n", D, X_old[4*k]);
+            if (fabs(D - X_old[Nd*k]) > 1.e-10){
+                  fprintf(stderr, "\nError: D_new = %.12lf significantly differs from D_old = %.12lf in function old2new.\n", D, X_old[Nd*k]);
                   abort();
             }
-            X_new[4*k] = X_old[4*k]; //The D coordinate is unchanged
+            X_new[Nd*k] = X_old[Nd*k]; //The D coordinate is unchanged
+            #if _3D_bool
+            X_new[Nd*k - 5] = X_old[Nd*k - 5];
+            X_new[Nd*k - 4] = X_old[Nd*k - 4];
+            #endif
       }
       
       /******** Computing X_uv ********/
       for (k = 1; k <= N; k ++){
-            X_uv[4*k - 3] = X_new[4*k - 3];
-            X_uv[4*k - 2] = sqrt(2.*X_new[4*k]/Lbd_0[k])*sin(X_new[4*k - 2]);
-            X_uv[4*k - 1] = X_new[4*k - 1];
-            X_uv[4*k]     = sqrt(2.*X_new[4*k]/Lbd_0[k])*cos(X_new[4*k - 2]);
+            #if _3D_bool
+            X_uv[Nd*k - 5] = X_old[Nd*k - 5];
+            X_uv[Nd*k - 4] = X_old[Nd*k - 4];
+            #endif
+            X_uv[Nd*k - 3] = X_new[Nd*k - 3];
+            X_uv[Nd*k - 2] = sqrt(2.*X_new[Nd*k]/Lbd_0[k])*sin(X_new[Nd*k - 2]);
+            X_uv[Nd*k - 1] = X_new[Nd*k - 1];
+            X_uv[Nd*k]     = sqrt(2.*X_new[Nd*k]/Lbd_0[k])*cos(X_new[Nd*k - 2]);
       }
 }
 
@@ -295,28 +330,156 @@ void new2old(typ * X_old, typ * X_new, typ * X_uv){
       
       /******** Computing X_new ********/
       for (k = 1; k <= N; k ++){
-            X_new[4*k - 3] = X_uv[4*k - 3];
-            X_new[4*k - 2] = atan2(X_uv[4*k - 2], X_uv[4*k]);
-            X_new[4*k - 1] = X_uv[4*k - 1];
-            X_new[4*k]     = 0.5*Lbd_0[k]*(X_uv[4*k - 2]*X_uv[4*k - 2] + X_uv[4*k]*X_uv[4*k]);
+            #if _3D_bool
+            X_new[Nd*k - 5] = X_uv[Nd*k - 5];
+            X_new[Nd*k - 4] = X_uv[Nd*k - 4];
+            #endif
+            X_new[Nd*k - 3] = X_uv[Nd*k - 3];
+            X_new[Nd*k - 2] = atan2(X_uv[Nd*k - 2], X_uv[Nd*k]);
+            X_new[Nd*k - 1] = X_uv[Nd*k - 1];
+            X_new[Nd*k]     = 0.5*Lbd_0[k]*(X_uv[Nd*k - 2]*X_uv[Nd*k - 2] + X_uv[Nd*k]*X_uv[Nd*k]);
       }
       
       /******** Computing X_old ********/
       for (k = 1; k <= N; k ++){
-            X_old[4*k - 3] = 0.;  X_old[4*k - 2] = 0.;  X_old[4*k - 1] = 0.;  X_old[4*k] = 0.;  D = 0.;
+            X_old[Nd*k - 3] = 0.;  X_old[Nd*k - 2] = 0.;  X_old[Nd*k - 1] = 0.;  X_old[Nd*k] = 0.;  D = 0.;
             for (i = 1; i <= N; i ++){
-                  X_old[4*k - 3] += Transpose_inv [i][k]    *X_new[4*i - 3] + Transpose_inv [i + N][k]    *X_new[4*i - 2];
-                  X_old[4*k - 2] += Transpose_inv [i][k + N]*X_new[4*i - 3] + Transpose_inv [i + N][k + N]*X_new[4*i - 2];
-                  X_old[4*k - 1] += Transformation[i][k]    *X_new[4*i - 1] + Transformation[i + N][k]    *X_new[4*i];
-                  D              += Transformation[i][k + N]*X_new[4*i - 1] + Transformation[i + N][k + N]*X_new[4*i];
+                  X_old[Nd*k - 3] += Transpose_inv [i][k]    *X_new[Nd*i - 3] + Transpose_inv [i + N][k]    *X_new[Nd*i - 2];
+                  X_old[Nd*k - 2] += Transpose_inv [i][k + N]*X_new[Nd*i - 3] + Transpose_inv [i + N][k + N]*X_new[Nd*i - 2];
+                  X_old[Nd*k - 1] += Transformation[i][k]    *X_new[Nd*i - 1] + Transformation[i + N][k]    *X_new[Nd*i];
+                  D               += Transformation[i][k + N]*X_new[Nd*i - 1] + Transformation[i + N][k + N]*X_new[Nd*i];
             }
-            if (fabs(D - X_new[4*k]) > 1.e-10){
-                  fprintf(stderr, "\nError: D_old = %.12lf significantly differs from D_new = %.12lf in function new2old.\n", D, X_new[4*k]);
+            if (fabs(D - X_new[Nd*k]) > 1.e-10){
+                  fprintf(stderr, "\nError: D_old = %.12lf significantly differs from D_new = %.12lf in function new2old.\n", D, X_new[Nd*k]);
                   abort();
             }
-            X_old[4*k] = X_new[4*k]; //The D coordinate is unchanged
+            X_old[Nd*k] = X_new[Nd*k]; //The D coordinate is unchanged
+            #if _3D_bool
+            X_old[Nd*k - 5] = X_new[Nd*k - 5];
+            X_old[Nd*k - 4] = X_new[Nd*k - 4];
+            #endif
       }
 }
+
+
+#if !canonical_bool
+void canonical2nonCanonical(typ * X_cart){
+
+      /******** Converts the canonical heliocentric cartesian coordinates X_cart ********/
+      /******** into non-canonical heliocentric coordinates                      ********/
+      
+      int j;
+      typ momentum_x = 0.;
+      typ momentum_y = 0.;
+      typ v0_x, v0_y;
+      #if _3D_bool
+      typ v0_z;
+      typ momentum_z = 0.;
+      #endif
+      for (j = 1; j <= how_many_planet; j ++){
+            momentum_x += masses[j]*X_cart[Nd*j - 1 - _3D_bool];
+            momentum_y += masses[j]*X_cart[Nd*j     - _3D_bool];
+            #if _3D_bool
+            momentum_z += masses[j]*X_cart[Nd*j];
+            #endif
+      }
+      v0_x = -momentum_x/m0;
+      v0_y = -momentum_y/m0;
+      #if _3D_bool
+      v0_z = -momentum_z/m0;
+      #endif     
+      for (j = 1; j <= how_many_planet; j ++){
+            X_cart[Nd*j - 1 - _3D_bool] -= v0_x;
+            X_cart[Nd*j     - _3D_bool] -= v0_y;
+            #if _3D_bool
+            X_cart[Nd*j] -= v0_z;
+            #endif
+      }
+}
+
+
+void nonCanonical2canonical(typ * X_cart){
+
+      /******** Converts the non-canonical heliocentric cartesian coordinates ********/
+      /******** X_cart into canonical heliocentric coordinates                ********/
+      
+      int j;
+      typ momentum_x = 0.;
+      typ momentum_y = 0.;
+      typ v0_x, v0_y, mass;
+      #if _3D_bool
+      typ v0_z;
+      typ momentum_z = 0.;
+      #endif
+      mass = m0;
+      for (j = 1; j <= how_many_planet; j ++){
+            mass += masses[j];
+            momentum_x += masses[j]*X_cart[Nd*j - 1 - _3D_bool];
+            momentum_y += masses[j]*X_cart[Nd*j     - _3D_bool];
+            #if _3D_bool
+            momentum_z += masses[j]*X_cart[Nd*j];
+            #endif
+      }
+      v0_x = -momentum_x/mass;
+      v0_y = -momentum_y/mass;
+      #if _3D_bool
+      v0_z = -momentum_z/mass;
+      #endif     
+      for (j = 1; j <= how_many_planet; j ++){
+            X_cart[Nd*j - 1 - _3D_bool] += v0_x;
+            X_cart[Nd*j     - _3D_bool] += v0_y;
+            #if _3D_bool
+            X_cart[Nd*j] += v0_z;
+            #endif
+      }
+}
+#endif
+
+
+#if (toInvar_bool && _3D_bool)
+void toInvar(typ * X_cart){
+
+      /******** Rotates the system so that the total angular momentum points in the z-direction ********/
+
+      int i;
+      typ gx, gy, gz;
+      typ x, y, z, vx, vy, vz, xr, yr, zr, vxr, vyr, vzr;
+      struct quaternion q;
+      
+      /******** Computing the total angular momentum ********/
+      gx = 0.;  gy = 0.;  gz = 0.;
+      for (i = 1; i <= how_many_planet; i ++){
+            x  = X_cart[Nd*i - 5];
+            y  = X_cart[Nd*i - 4];
+            z  = X_cart[Nd*i - 3];
+            vx = X_cart[Nd*i - 2];
+            vy = X_cart[Nd*i - 1];
+            vz = X_cart[Nd*i];
+            gx += masses[i]*(y*vz - z*vy);
+            gy += masses[i]*(z*vx - x*vz);
+            gz += masses[i]*(x*vy - y*vx);
+      }
+      q = get_quaternion(gx, gy, gz, 0., 0., 1.);
+      
+      /******** Rotating ********/
+      for (i = 1; i <= how_many_planet; i ++){
+            x  = X_cart[Nd*i - 5];
+            y  = X_cart[Nd*i - 4];
+            z  = X_cart[Nd*i - 3];
+            vx = X_cart[Nd*i - 2];
+            vy = X_cart[Nd*i - 1];
+            vz = X_cart[Nd*i];
+            rotate_with_quaternion( x,  y,  z, q,  &xr,  &yr,  &zr);
+            rotate_with_quaternion(vx, vy, vz, q, &vxr, &vyr, &vzr);
+            X_cart[Nd*i - 5] = xr;
+            X_cart[Nd*i - 4] = yr;
+            X_cart[Nd*i - 3] = zr;
+            X_cart[Nd*i - 2] = vxr;
+            X_cart[Nd*i - 1] = vyr;
+            X_cart[Nd*i]     = vzr;
+      }
+}
+#endif
 
 
 void X_old_init(typ * X_old){
@@ -324,19 +487,60 @@ void X_old_init(typ * X_old){
       /******** Initializes the array X_old of the old variables such that indexes ********/
       /******** 4i-3 to 4i contains lbd_i, -vrp_i, Lbd_i and D_i, respectively     ********/
 
-      int j;
+      int i;
       typ m, beta, mu, Lbd;
 
-      for (j = 1; j <= how_many_planet; j ++){
-            m    = masses[j];
+      for (i = 1; i <= how_many_planet; i ++){
+            m    = masses[i];
             beta = m0*m/(m0 + m);
             mu   = G*(m0 + m);
-            Lbd  = beta*sqrt(mu*sma[j]);
-            X_old[4*j - 3] = lbd[j];
-            X_old[4*j - 2] = -vrp[j];
-            X_old[4*j - 1] = Lbd;
-            X_old[4*j]     = max(Lbd*(1. - sqrt(1. - ecc[j]*ecc[j])), 1.e-17);
+            Lbd  = beta*sqrt(mu*sma[i]);
+            #if _3D_bool
+            X_old[Nd*i - 5] = inc[i];
+            X_old[Nd*i - 4] = Om[i];
+            #endif
+            X_old[Nd*i - 3] = lbd[i];
+            X_old[Nd*i - 2] = -vrp[i];
+            X_old[Nd*i - 1] = Lbd;
+            X_old[Nd*i]     = max(Lbd*(1. - sqrt(1. - ecc[i]*ecc[i])), 1.e-17);
       }
+      
+      #if !canonical_bool
+      typ X_cart[Nd*how_many_planet + 1];
+      typ alkhqp[7];
+      typ vp, M, E, a, e;
+      for (i = 1; i <= how_many_planet; i ++){ //Converting from elliptic to cartesian
+            mu = G*(m0 + masses[i]);
+            a = X_old[Nd*i - 1]*X_old[Nd*i - 1]*(m0 + masses[i])/(G*m0*m0*masses[i]*masses[i]);
+            e = sqrt(1. - (1. - X_old[Nd*i]/X_old[Nd*i - 1])*(1. - X_old[Nd*i]/X_old[Nd*i - 1]));
+            vp = -X_old[Nd*i - 2];
+            M =  X_old[Nd*i - 3] - vp;
+            E = mean2eccentric(M + vp, e*cos(vp), e*sin(vp)) - vp;
+            #if _3D_bool
+            ell2cart(a, e, X_old[Nd*i - 5], E, vp, X_old[Nd*i - 4], mu, X_cart + Nd*i - Nd);
+            #else
+            ell2cart(a, e, 0., E, vp, 0., mu, X_cart + Nd*i - Nd);
+            #endif
+      }
+      nonCanonical2canonical(X_cart); //Converting from non-canonical to canonical
+      for (i = 1; i <= how_many_planet; i ++){ //Converting from cartesian to elliptic
+            mu = G*(m0 + masses[i]);
+            cart2ell(X_cart + Nd*i - Nd, alkhqp, mu);
+            a = alkhqp[1];
+            vp = atan2(alkhqp[4],alkhqp[3]);
+            e = sqrt(alkhqp[3]*alkhqp[3] + alkhqp[4]*alkhqp[4]);
+            beta = m0*masses[i]/(m0 + masses[i]);
+            Lbd  = beta*sqrt(mu*a);
+            #if _3D_bool
+            X_old[Nd*i - 5] = 2.*asin(sqrt(alkhqp[5]*alkhqp[5] + alkhqp[6]*alkhqp[6]));
+            X_old[Nd*i - 4] = atan2(alkhqp[6],alkhqp[5]);
+            #endif
+            X_old[Nd*i - 3] = alkhqp[2];
+            X_old[Nd*i - 2] = -vp;
+            X_old[Nd*i - 1] = Lbd;
+            X_old[Nd*i]     = max(Lbd*(1. - sqrt(1. - e*e)), 1.e-17);
+      }
+      #endif
 }
 
 
@@ -401,10 +605,15 @@ void SABAn(typ tau, typ T, int output_step, typ * X_old, int n){
       /******** The Keplerian part A is integrated exactly, but the    ********/
       /******** perturbation B is integrated with a Ralston method     ********/
       
+      #if _3D_bool
+      fprintf(stderr, "\nError: _3D_bool must be 0 when calling function SABAn.\n");  abort();
+      #endif
+      
       char file_path[800];
       char nn[10];
       FILE * file;
-      int N_step, iter, i;
+      long int N_step, iter;
+      int i;
       typ e, a, sig, H;
       typ dH_old  [4*how_many_planet + 1];
       typ X_new   [4*how_many_planet + 1];
@@ -454,7 +663,7 @@ void SABAn(typ tau, typ T, int output_step, typ * X_old, int n){
       }
 
       /******** Integrating ********/
-      N_step = (int) ceil(T/tau);
+      N_step = (long int) ceil(T/tau);
       for (iter = 0; iter < N_step; iter ++){
       
             /******** Writing to file ********/
@@ -490,6 +699,7 @@ void SABAn(typ tau, typ T, int output_step, typ * X_old, int n){
                               fprintf(file, "where epsilon = (m_1 + ... + m_%d)/m_0. This term remains regardless of the order of the integrator.\n", how_many_planet);
                         }
                         fprintf(file, "\n");
+                        fprintf(file, "The output coordinates are canonical heliocentric\n");
                         fprintf(file, "This file has %d columns that are (for 1 <= j <= %d):\n", 2 + 4*how_many_planet, how_many_planet);
                         fprintf(file, "Time, Hamiltonian, a_j, e_j, phi_j, sig_j.\n");
                         fprintf(file, "\n");
@@ -926,6 +1136,7 @@ void PointPrint(typ * X_old, int iter){
       typ a, e, parenthesis;
       typ X_new[4*how_many_planet + 1];
       typ X_uv [4*how_many_planet + 1];
+      typ X_buf[4*how_many_planet + 1];
       
       /******** Verifying conservation of the first integrals. To be removed when the code is robust ********/
       /*old2new(X_old, X_new, X_uv);
@@ -935,7 +1146,41 @@ void PointPrint(typ * X_old, int iter){
                   fprintf(stderr, "\nError : Phi_%d is not conserved in function PointPrint.\n", k);
             }
       }*/
-
+      
+      #if canonical_bool
+      for (i = 1; i <= 4*N; i ++){
+            X_buf[i] = X_old[i];
+      }
+      #else
+      typ X_cart[4*how_many_planet + 1];
+      typ alkhqp[7];
+      typ mu, vp, M, E, beta, Lbd;
+      for (i = 1; i <= N; i ++){ //Converting from elliptic to cartesian
+            mu = G*(m0 + masses[i]);
+            a = X_old[4*i - 1]*X_old[4*i - 1]*(m0 + masses[i])/(G*m0*m0*masses[i]*masses[i]);
+            parenthesis = 1. - X_old[4*i]/X_old[4*i - 1];
+            e = sqrt(1. - parenthesis*parenthesis);
+            vp = -X_old[4*i - 2];
+            M =  X_old[4*i - 3] - vp;
+            E = mean2eccentric(M + vp, e*cos(vp), e*sin(vp)) - vp;
+            ell2cart(a, e, 0., E, vp, 0., mu, X_cart + 4*i - 4);
+      }
+      canonical2nonCanonical(X_cart); //Converting from canonical to non-canonical
+      for (i = 1; i <= N; i ++){ //Converting from cartesian to elliptic
+            mu = G*(m0 + masses[i]);
+            cart2ell(X_cart + 4*i - 4, alkhqp, mu);
+            a = alkhqp[1];
+            vp = atan2(alkhqp[4],alkhqp[3]);
+            e = sqrt(alkhqp[3]*alkhqp[3] + alkhqp[4]*alkhqp[4]);
+            beta = m0*masses[i]/(m0 + masses[i]);
+            Lbd  = beta*sqrt(mu*a);
+            X_buf[4*i - 3] = alkhqp[2];
+            X_buf[4*i - 2] = -vp;
+            X_buf[4*i - 1] = Lbd;
+            X_buf[4*i]     = max(Lbd*(1. - sqrt(1. - e*e)), 1.e-17);
+      }
+      #endif
+      
       printf("Iteration n° %d : ", iter);
       
       /******** Printing the lbd_i ********/
@@ -945,9 +1190,9 @@ void PointPrint(typ * X_old, int iter){
       }
       printf("lbd_%d) = (", N);
       for (i = 1; i <= N - 1; i ++){
-            printf("%.14f, ", fmod(X_old[4*i - 3], 2.*M_PI));
+            printf("%.14f, ", fmod(X_buf[4*i - 3], 2.*M_PI));
       }
-      printf("%.14lf)\n                 ", fmod(X_old[4*N - 3], 2.*M_PI));
+      printf("%.14lf)\n                 ", fmod(X_buf[4*N - 3], 2.*M_PI));
       for (i = 0; i < spaces; i ++){printf(" ");}
       
       /******** Printing the vrp_i ********/
@@ -957,9 +1202,9 @@ void PointPrint(typ * X_old, int iter){
       }
       printf("vrp_%d) = (", N);
       for (i = 1; i <= N - 1; i ++){
-            printf("%.14lf, ", fmod(-X_old[4*i - 2], 2.*M_PI));
+            printf("%.14lf, ", fmod(-X_buf[4*i - 2], 2.*M_PI));
       }
-      printf("%.14lf)\n                 ", fmod(-X_old[4*N - 2], 2.*M_PI));
+      printf("%.14lf)\n                 ", fmod(-X_buf[4*N - 2], 2.*M_PI));
       for (i = 0; i < spaces; i ++){printf(" ");}
       
       /******** Printing the a_i ********/
@@ -969,10 +1214,10 @@ void PointPrint(typ * X_old, int iter){
       }
       printf("a_%d) ", N); for (i = 1; i <= N; i ++){printf("  ");} printf("= (");
       for (i = 1; i <= N - 1; i ++){
-            a = X_old[4*i - 1]*X_old[4*i - 1]*(m0 + masses[i])/(G*m0*m0*masses[i]*masses[i]);
+            a = X_buf[4*i - 1]*X_buf[4*i - 1]*(m0 + masses[i])/(G*m0*m0*masses[i]*masses[i]);
             printf("%.14lf, ", a);
       }
-      a = X_old[4*N - 1]*X_old[4*N - 1]*(m0 + masses[N])/(G*m0*m0*masses[N]*masses[N]);
+      a = X_buf[4*N - 1]*X_buf[4*N - 1]*(m0 + masses[N])/(G*m0*m0*masses[N]*masses[N]);
       printf("%.14lf)\n                 ", a);
       for (i = 0; i < spaces; i ++){printf(" ");}
       
@@ -983,11 +1228,11 @@ void PointPrint(typ * X_old, int iter){
       }
       printf("e_%d) ", N); for (i = 1; i <= N; i ++){printf("  ");} printf("= (");
       for (i = 1; i <= N - 1; i ++){
-            parenthesis = 1. - X_old[4*i]/X_old[4*i - 1];
+            parenthesis = 1. - X_buf[4*i]/X_buf[4*i - 1];
             e           = sqrt(1. - parenthesis*parenthesis);
             printf("%.18lf, ", e);
       }
-      parenthesis = 1. - X_old[4*N]/X_old[4*N - 1];
+      parenthesis = 1. - X_buf[4*N]/X_buf[4*N - 1];
       e           = sqrt(1. - parenthesis*parenthesis);
       printf("%.18lf)\n\n", e);
 }
@@ -1092,6 +1337,10 @@ int EquilibriumFind(typ * X_old, int precision){
       /******** Finds a fixed point of the Hamiltonian by iteratively integrating ********/
       /******** and keeping only the average of the Fourier decomposition.        ********/
       /******** Returns 1 on success and 0 on failure.                            ********/
+      
+      #if _3D_bool
+      fprintf(stderr, "\nError: _3D_bool must be 0 when calling function EquilibriumFind.\n");  abort();
+      #endif
 
       int n_iter = 1;
       int i;
@@ -1125,9 +1374,11 @@ int EquilibriumFind(typ * X_old, int precision){
                   X_uv[4*i - 2] = xvXu[4*i - 2];
                   X_uv[4*i - 1] = xvXu[4*i - 1];
                   X_uv[4*i]     = xvXu[4*i];
-            } 
+            }
             new2old(X_old, X_new, X_uv);
-            PointPrint(X_old, n_iter);
+            if (prec > AR[precision]){
+                  PointPrint(X_old, n_iter);
+            }
             n_iter ++;
       }
       
@@ -1135,24 +1386,128 @@ int EquilibriumFind(typ * X_old, int precision){
             printf("This initial condition is hopeless.\n");
             return 0;
       }
+      else{
+            //Renormalization(X_old);
+            PointPrint(X_old, n_iter - 1);
+      }
       return 1;
 }
 
 
-void EquilibriumFollow(typ * X_old){
+void EquilibriumFollow(typ * X_old, typ dG, int Npoints, int precision){
 
-      /******** First finds a fixed point and then follows the corresponding branch by variation of delta ********/
+      /******** Finds a fixed point and follows its family by updating the total     ********/
+      /******** angular momentum G by an amount dG before each search. Npoints fixed ********/
+      /******** points are found and stored to the file pth/FixedPoints_chain.txt    ********/
+      /******** precision = {0, 1, 2} -> {low, medium, high} precision.              ********/
       
-      if (how_many_resonant == 0){
-            fprintf(stderr, "\nError: There is no branch of fixed points to follow when no planet is in resonance.\n");
+      #if _3D_bool
+      fprintf(stderr, "\nError: _3D_bool must be 0 when calling function EquilibriumFollow.\n");  abort();
+      #endif
+
+      int i, j, success;
+      int fast = subchain[how_many_resonant - 1];
+      int slow = subchain[how_many_resonant];
+      typ a, e, sig, lbd;
+      char file_path[800];
+      char nn[10];
+      FILE * file;
+      typ X_new    [4*how_many_planet + 1];
+      typ X_uv     [4*how_many_planet + 1];
+      typ X_old_av [4*how_many_planet + 1];
+      typ X_new_av [4*how_many_planet + 1];
+      typ sigOld   [  how_many_planet + 1];
+
+      /******** Opening output file ********/
+      strcpy(file_path, pth);
+      strcat(file_path, "FixedPoints");
+      strcat(file_path, "_");
+      for (i = 1; i <= how_many_planet; i ++){
+            sprintf(nn, "%d", p_i[i]);
+            strcat(file_path, nn);
+      }
+      strcat(file_path, ".txt");
+      file = fopen(file_path, "w");
+      if (file == NULL){
+            fprintf(stderr, "\nError: Cannot create or open file FixedPoints_chain.txt in function EquilibriumFollow.\n");
             abort();
       }
+      
+      /******** Writing to file ********/
+      fprintf(file, "This file contains a family of equilibria of the resonance chain ");
+      for (i = 1; i < how_many_planet; i ++){
+            fprintf(file, "%d:", p_i[i]);
+      }
+      fprintf(file, "%d", p_i[how_many_planet]);
+      fprintf(file, " in the averaged problem.\n");
+      fprintf(file, "The coordinates are canonical heliocentric (heliocentric position and barycentric speed).\n");
+      fprintf(file, "The family is parameterized by Phi_%d.\n", slow);
+      fprintf(file, "This file has %d columns that are (for 1 <= j <= %d):\n", 1 + 4*how_many_planet, how_many_planet);
+      fprintf(file, "Phi_%d, a_j, e_j, phi_j, sig_j\n", slow);
+      fprintf(file, "\n");
+
+      /******** Finding the first fixed point ********/
+      success = EquilibriumFind(X_old, precision);
+      /******** Writing to file and initializing sigOld ********/
+      old2new(X_old, X_new, X_uv);
+      printf("Phi_%d = %.20lf\n", slow, X_uv[4*slow - 1]);
+      fprintf(file, "%.20lf", X_uv[4*slow - 1]);
+      for (i = 1; i <= how_many_planet; i ++){
+            sigOld[i] = X_new[4*i - 2];
+            sig       = X_new[4*i - 2];
+            e         = sqrt(1. - (1. - X_old[4*i]/X_old[4*i - 1])*(1. - X_old[4*i]/X_old[4*i - 1]));
+            a         = X_old[4*i - 1]*X_old[4*i - 1]*(m0 + masses[i])/(G*m0*m0*masses[i]*masses[i]);
+            fprintf(file, " %.14lf %.14lf %.14lf %.14lf", a, e, X_uv[4*i - 3], sig);
+      }
+      fprintf(file, "\n");
+      
+      /******** Updating the total angular momentum ********/
+      X_uv    [4*slow - 1] += dG;
+      X_uv_t0 [4*slow - 1]  = X_uv [4*slow - 1];
+      X_new_t0[4*slow - 1]  = X_new[4*slow - 1];
+      new2old(X_old, X_new, X_uv);
+
+      /******** Displaying progress ********/
+      printf("progress = %d/%d\n", 1, Npoints);
+      
+      /******** Following the family of equilibria ********/
+      for (j = 1; j < Npoints; j ++){
+            success = EquilibriumFind(X_old, precision);
+            old2new(X_old, X_new, X_uv);
+            printf("Phi_%d = %.20lf\n", slow, X_uv[4*slow - 1]);
+            /******** Writing to file ********/
+            fprintf(file, "%.20lf", X_uv[4*slow - 1]);
+            for (i = 1; i <= how_many_planet; i ++){
+                  sig  = continuousAngle(X_new[4*i - 2], sigOld[i]);
+                  e    = sqrt(1. - (1. - X_old[4*i]/X_old[4*i - 1])*(1. - X_old[4*i]/X_old[4*i - 1]));
+                  a    = X_old[4*i - 1]*X_old[4*i - 1]*(m0 + masses[i])/(G*m0*m0*masses[i]*masses[i]);
+                  fprintf(file, " %.14lf %.14lf %.14lf %.14lf", a, e, X_uv[4*i - 3], sig);
+                  sigOld[i] = sig;
+            }
+            fprintf(file, "\n");
+            /******** Updating the total angular momentum ********/
+            if (j + 1 != Npoints){
+                  X_uv    [4*slow - 1] += dG;
+                  X_uv_t0 [4*slow - 1]  = X_uv [4*slow - 1];
+                  X_new_t0[4*slow - 1]  = X_new[4*slow - 1];
+                  new2old(X_old, X_new, X_uv);
+            }
+            /******** Displaying progress ********/
+            printf("progress = %d/%d\n", j + 1, Npoints);
+      }
+
+      /******** Closing output file ********/
+      fclose(file);
 }
 
 
 void EquilibriumFindUntil(typ * X_old, int precision){
 
       /******** Tries to find a fixed point. If it fails, picks angles at random and retries ********/
+      
+      #if _3D_bool
+      fprintf(stderr, "\nError: _3D_bool must be 0 when calling function EquilibriumFindUntil.\n");  abort();
+      #endif
 
       int i;
       typ ch;

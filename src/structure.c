@@ -10,6 +10,7 @@
 #include "coefficients.h"
 #include "structure.h"
 #include "calculus.h"
+#include "intpla.h"
 
 
 /******** Defining some global variables ********/
@@ -18,6 +19,23 @@ typ sma     [how_many_planet + 1];
 typ ecc     [how_many_planet + 1];
 typ lbd     [how_many_planet + 1];
 typ vrp     [how_many_planet + 1];
+#if _3D_bool
+typ inc     [how_many_planet + 1];
+typ Om      [how_many_planet + 1];
+#endif
+#if tides_bool
+typ radii   [how_many_planet + 1];
+typ k2s     [how_many_planet + 1];
+typ Dts     [how_many_planet + 1];
+typ alps    [how_many_planet + 1];
+#if _3D_bool
+typ Omx   [how_many_planet + 1];
+typ Omy   [how_many_planet + 1];
+typ Omz   [how_many_planet + 1];
+#else
+typ Omg   [how_many_planet + 1];
+#endif
+#endif
 typ Lbd_0   [how_many_planet + 1];
 int p_i     [how_many_planet + 1];
 int k_ij    [how_many_planet + 1][how_many_planet + 1];
@@ -121,13 +139,47 @@ void initialization(){
       typ buffer_ecc   [how_many_planet]     = body_ecc;
       typ buffer_lbd   [how_many_planet]     = body_lambda;
       typ buffer_vrp   [how_many_planet]     = body_varpi;
+      #if _3D_bool
+      typ buffer_inc   [how_many_planet]     = body_inc;
+      typ buffer_Om    [how_many_planet]     = body_Omeg;
+      #endif
       typ buffer_chain [how_many_planet]     = resonance_chain;
+      #if tides_bool
+      typ buffer_radii [how_many_planet]     = body_radii;
+      typ buffer_k2s   [how_many_planet]     = body_k2;
+      typ buffer_Dts   [how_many_planet]     = body_Dt;
+      typ buffer_alps  [how_many_planet]     = body_alpha;
+      #if _3D_bool
+      typ buffer_Omx   [how_many_planet]     = body_Omegx;
+      typ buffer_Omy   [how_many_planet]     = body_Omegy;
+      typ buffer_Omz   [how_many_planet]     = body_Omegz;
+      #else
+      typ buffer_Omg   [how_many_planet]     = body_Omega;
+      #endif
+      #endif
       for (i = 1; i < how_many_planet + 1; i ++){
             p_i[i] = buffer_chain[i - 1];
             sma[i] = buffer_sma  [i - 1];
             ecc[i] = buffer_ecc  [i - 1];
             lbd[i] = buffer_lbd  [i - 1];
             vrp[i] = buffer_vrp  [i - 1];
+            #if _3D_bool
+            inc[i] = buffer_inc[i - 1];
+            Om [i] = buffer_Om [i - 1];
+            #endif
+            #if tides_bool
+            radii[i] = buffer_radii[i - 1];
+            k2s[i]   = buffer_k2s  [i - 1];
+            Dts[i]   = buffer_Dts  [i - 1];
+            alps[i]  = buffer_alps [i - 1];
+            #if _3D_bool
+            Omx[i]   = buffer_Omx  [i - 1];
+            Omy[i]   = buffer_Omy  [i - 1];
+            Omz[i]   = buffer_Omz  [i - 1];
+            #else
+            Omg[i]   = buffer_Omg  [i - 1];
+            #endif
+            #endif
       }
       for (i = 0; i < how_many_planet + 1; i ++){
             masses[i] = buffer_mass[i];
@@ -601,3 +653,50 @@ typ continuousAngle(typ newAngle, typ oldAngle){
       typ qtient = round(dAngle/(2.*M_PI));
       return newAngle - qtient*2.*M_PI;
 }
+
+
+#if toInvar_bool
+void quaternion_norm(struct quaternion * q){
+
+      /******** Normalizes the quaternion q ********/
+
+      typ w = q -> w;  typ x = q -> x;  typ y = q -> y;  typ z = q -> z;  
+      typ u = sqrt(w*w + x*x + y*y + z*z);
+      if (u == 0.){
+            return;
+      }
+      q -> w /= u;
+      q -> x /= u;
+      q -> y /= u;
+      q -> z /= u;
+}
+
+
+struct quaternion get_quaternion(typ ux, typ uy, typ uz, typ vx, typ vy, typ vz){
+
+      /******** Returns a quaternion that describes the shortest arc rotation between vectors u and v                               ********/
+      /******** https://stackoverflow.com/questions/1171849/finding-quaternion-representing-the-rotation-from-one-vector-to-another ********/
+      /******** Does not manage the exception u x v = 0, in which case any vector orthogonal to u must be put in (q.x, q.y, q.z)    ********/
+
+      typ udotv = ux*vx + uy*vy + uz*vz;
+      typ u2    = ux*ux + uy*uy + uz*uz;
+      typ v2    = vx*vx + vy*vy + vz*vz;
+      struct quaternion q;
+      q.w = udotv + sqrt(u2*v2);
+      q.x = uy*vz - uz*vy; //u cross v
+      q.y = uz*vx - ux*vz;
+      q.z = ux*vy - uy*vx;
+      quaternion_norm(&q);
+      return q;
+}
+
+
+void rotate_with_quaternion(typ x, typ y, typ z, struct quaternion q, typ * xr, typ * yr, typ * zr){
+   
+      /******** Stores into (xr, yr, zr) the coordinates of the vector (x, y, z) once rotated by the quaternion q ********/
+   
+      *xr = (1.0 - 2.0*q.y*q.y - 2.0*q.z*q.z)*x +       (2.0*q.x*q.y - 2.0*q.z*q.w)*y +       (2.0*q.x*q.z + 2.0*q.y*q.w)*z;
+      *yr =       (2.0*q.x*q.y + 2.0*q.z*q.w)*x + (1.0 - 2.0*q.x*q.x - 2.0*q.z*q.z)*y +       (2.0*q.y*q.z - 2.0*q.x*q.w)*z;
+      *zr =       (2.0*q.x*q.z - 2.0*q.y*q.w)*x +       (2.0*q.y*q.z + 2.0*q.x*q.w)*y + (1.0 - 2.0*q.x*q.x - 2.0*q.y*q.y)*z;
+}
+#endif

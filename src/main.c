@@ -19,15 +19,15 @@ int main(){
       init();
             
       int i;
-      typ n       [  how_many_planet + 1];
-      typ X_old   [4*how_many_planet + 1];
-      typ X_new   [4*how_many_planet + 1];
-      typ X_uv    [4*how_many_planet + 1];
-      typ xvXu    [4*how_many_planet + 1];
-      typ X_cart  [4*how_many_planet + 1];
-      typ dH_old  [4*how_many_planet + 1];
-      typ dH_polar[4*how_many_planet + 1];
-      typ dH_rect [4*how_many_planet + 1];
+      typ n       [   how_many_planet + 1];
+      typ X_old   [Nd*how_many_planet + 1];
+      typ X_new   [Nd*how_many_planet + 1];
+      typ X_uv    [Nd*how_many_planet + 1];
+      typ xvXu    [Nd*how_many_planet + 1];
+      typ X_cart  [Nd*how_many_planet + 1];
+      typ dH_old  [Nd*how_many_planet + 1];
+      typ dH_polar[Nd*how_many_planet + 1];
+      typ dH_rect [Nd*how_many_planet + 1];
       typ epsilon = 0.;
       
       for (i = 1; i <= how_many_planet; i ++){
@@ -35,6 +35,9 @@ int main(){
       }
       
       X_old_init(X_old);
+      //UnaveragedSABAn(0.4, 140883855., 17610, X_old, 6);
+      UnaveragedSABAn(0.4, 6158004., 769, X_old, 6);
+      //UnaveragedSABAn(0.03125, 15000., 1, X_old, 6);
       //old2new(X_old, X_new, X_uv);
       //printf("Phi3 = %.20lf\n", X_new[4*3 - 1]);
       //i = EquilibriumFind(X_old, 2);
@@ -55,17 +58,59 @@ int main(){
       //RK2(0.25, 10000., 1);
       //i = EquilibriumFind(X_old, 1);
       //EquilibriumFindUntil(X_old, 0);
-      //LibrationCenterFind(X_old, 1);
+      //UnaveragedSABAn(0.03125, 4000., 1, X_old, 4);
       //LibrationCenterFind(X_old, 0);
+      //LibrationCenterFind(X_old, 1);
       //LibrationCenterFollow(X_old, 0.000002*epsilon, 20000, 0);
       //LibrationCenterFollow(X_old, -0.0000014*epsilon, 1000, 0);
       //PeriodicOrbitFind(X_old);
       //X_old_init(X_old);
       //SABAn(0.25, 4000., 1, X_old, 4);
       //SABAn(0.25, 40000., 1, X_old, 4);
-      //UnaveragedSABAn(0.25/32., 4000., 1, X_old, 4);
+      //typ period = 725.3646233629693;
+      //i = EquilibriumFind(X_old, 1);
+      //UnaveragedSABAn(0.03125, 4000., 1, X_old, 4);
+      //get_frequencies(0.75*0.0078125, 4500, X_old, 4);
+      //int fast = subchain[how_many_resonant - 1];
+      //int slow = subchain[how_many_resonant];
+      //printf("nu_%d = dphi_%d/dt = %.14lf, nu_%d = dphi_%d/dt = %.14lf, nu_%d/nu_%d = %.14lf\n", fast, fast, nu_fast, slow, slow, nu_reso, fast, slow, nu_fast/nu_reso);
+      //LibrationCenterFind(X_old, 0);
+      /*typ ns[4];
+      typ mu_i, a_i, n_i;
+      for (i = 1; i <= how_many_planet; i ++){
+            mu_i = G*(m0 + masses[i]);
+            a_i  = X_old[4*i - 1]*X_old[4*i - 1]*(m0 + masses[i])/(G*m0*m0*masses[i]*masses[i]);
+            n_i  = sqrt(mu_i/(a_i*a_i*a_i));
+            *(ns + i) = n_i;
+      }
+      printf("(n1, n2, n3) = (%.13lf, %.13lf, %.13lf)\n", ns[1], ns[2], ns[3]);
+      printf("n1 - 2n2 + n3 = %.13lf\n", ns[1] - 2.*ns[2] + ns[3]);*/
+      //SABAn(0.125, 4000., 1, X_old, 4);
+      //UnaveragedSABAn(0.0625, 500000000., 10000, X_old, 4);
+      //UnaveragedSABAn(0.0078125, 30000., 2, X_old, 4);
+      //TowardsLibrationCenter(X_old, 0.0078125, 100000., 2, 2, 70);
+      //UnaveragedSABAn(0.0078125, 5000., 1, X_old, 5);
+      //TowardsLibrationCenter(X_old, 0.0078125, 100000., 2, 2, 70);
+      //UnaveragedSABAn(0.0078125, 5000., 1, X_old, 6);
+      //LibrationCenterFind(X_old, 0);
+      //LibrationCenterFollow(X_old, -0.0000014*epsilon, 500, 0);
+      //EquilibriumFollow(X_old, -0.000030*epsilon, 1600, 0);
+      //i = EquilibriumFind(X_old, 1);
+      //SABAn(0.125, 5000., 1, X_old, 4);
+      //Renormalization(X_old);
+      //PointPrint(X_old, 1);
+      //UnaveragedSABAn(0.03125, 7500., 2, X_old, 4);
+      //TowardsLibrationCenter(X_old, 0.0078125, 300000., 2, 1, 0);
+      //i = EquilibriumFind(X_old, 1);
+      //UnaveragedSABAn(0.0078125, 15000., 2, X_old, 5);
+      //TowardsLibrationCenter(X_old, 0.00390625, 435000., 2, 2, 90);
+      //UnaveragedSABAn(0.0078125, 15000., 2, X_old, 6);
+      //UnaveragedSABAn(0.0078125, 15000., 1, X_old, 5);
       
-      /*typ a, e, nu, mu, M, vp, l;
+      
+      
+      /*
+      typ a, e, nu, E, mu, M, vp, l;
       a = 1.29;
       e = 0.203;
       M = 2.091;
@@ -75,11 +120,31 @@ int main(){
       printf("a, e, M, vp = %.16lf, %.16lf, %.16lf, %.16lf\n", a, e, M, vp);
       
       nu = mean2true(M, mu, a, e);
+      E  = mean2eccentric(M + vp, e*cos(vp), e*sin(vp)) - vp;
+      printf("nu, E = %.13lf, %.13lf\n", nu, E);
       
-      typ cart[4];
+      typ cart[5];
       typ alkhqp[6];
       
       ell2cart(a, e, 0., nu, vp, 0., mu, cart);
+      printf("X, Y, vX, vY = %.13lf, %.13lf, %.13lf, %.13lf\n", *(cart+1), *(cart+2), *(cart+3), *(cart+4));
+      cart2ell(cart, alkhqp, mu);
+      
+      a  = alkhqp[0];
+      l  = alkhqp[1];
+      vp = atan2(alkhqp[3],alkhqp[2]);
+      M  = l - vp;
+      e  = sqrt(alkhqp[3]*alkhqp[3] + alkhqp[2]*alkhqp[2]);
+      
+      printf("a, e, M, vp = %.16lf, %.16lf, %.16lf, %.16lf\n", a, e, M + 2.*M_PI, vp);
+      
+      a = 1.29;
+      e = 0.203;
+      M = 2.091;
+      vp = 1.203;
+      
+      ell2cartE(a, e, 0., E, vp, 0., mu, cart);
+      printf("X, Y, vX, vY = %.13lf, %.13lf, %.13lf, %.13lf\n", *(cart+1), *(cart+2), *(cart+3), *(cart+4));
       cart2ell(cart, alkhqp, mu);
       
       a  = alkhqp[0];

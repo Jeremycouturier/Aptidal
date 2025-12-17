@@ -1,10 +1,10 @@
 FF = gcc
-OPTF = -O2 -g
+OPTF = -O2
 
 all: aptidal
 
 
-structure.o: structure.c structure.h parameters.h transformation.h coefficients.h calculus.h
+structure.o: structure.c structure.h parameters.h transformation.h coefficients.h calculus.h intpla.h
 	$(FF) $(OPTF) -c structure.c
 	
 coefficients.o: coefficients.c coefficients.h structure.o parameters.h

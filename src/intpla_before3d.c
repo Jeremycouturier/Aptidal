@@ -68,14 +68,11 @@ void ell2cart(typ a, typ e, typ i, typ nu, typ varpi, typ Omega, typ mu, typ * c
 
 void ell2cart(typ a, typ e, typ i, typ E, typ varpi, typ Omega, typ mu, typ * cart){
 
-      /******** Updates the array cart of the cartesian coordinates. mu is G*M, a is the semi-major   ********/
-      /******** axis, e is the eccentricity, i is the inclination, E is the eccentric anomaly         ********/
-      /******** omega is the longitude of periapsis and Omega is the longitude of the ascending node. ********/
+      /******** Updates the array [X,Y,vX,vY] of the cartesian coordinates. mu is G*M, a is the          ********/
+      /******** semi-major axis, e is the eccentricity, i is the inclination, E is the eccentric anomaly ********/
+      /******** omega is the longitude of periapsis and Omega is the longitude of the ascending node.    ********/
       
       typ X,Y,vX,vY;                     //Cartesian coordinates
-      #if _3D_bool
-      typ Z,vZ;
-      #endif
       typ X_buff,Y_buff,vX_buff,vY_buff; //Buffer for cartesian coordinates
       typ r, n;
       typ cosE    = cos(E);
@@ -84,12 +81,10 @@ void ell2cart(typ a, typ e, typ i, typ E, typ varpi, typ Omega, typ mu, typ * ca
       typ sinvarpi = sin(varpi);
       typ q        = sin(i/2.)*cos(Omega);
       typ p        = sin(i/2.)*sin(Omega);
+      typ chi      = cos(i/2.);
       typ pp       = 1. - 2.*p*p;
       typ qq       = 1. - 2.*q*q;
       typ dpq      = 2.*p*q;
-      #if _3D_bool
-      typ chi      = cos(i/2.);
-      #endif
 
       /******** In the orbital plane (see e.g. Laskar & Robutel 1995) ********/
       r = a*(1. - e*cosE);
@@ -104,23 +99,12 @@ void ell2cart(typ a, typ e, typ i, typ E, typ varpi, typ Omega, typ mu, typ * ca
       vX = vX_buff*(pp*cosvarpi + dpq*sinvarpi) + vY_buff*(dpq*cosvarpi - pp* sinvarpi);
       Y  =  X_buff*(qq*sinvarpi + dpq*cosvarpi) +  Y_buff*(qq*cosvarpi  - dpq*sinvarpi);
       vY = vX_buff*(qq*sinvarpi + dpq*cosvarpi) + vY_buff*(qq*cosvarpi  - dpq*sinvarpi);
-      #if _3D_bool
-      Z  =  X_buff*(2.*q*chi*sinvarpi - 2.*p*chi*cosvarpi) +  Y_buff*(2.*p*chi*sinvarpi + 2.*q*chi*cosvarpi);
-      vZ = vX_buff*(2.*q*chi*sinvarpi - 2.*p*chi*cosvarpi) + vY_buff*(2.*p*chi*sinvarpi + 2.*q*chi*cosvarpi);
-      #endif
       
       /******** Writing the cartesian coordinates ********/
       *(cart + 1) = X;
       *(cart + 2) = Y;
-      #if _3D_bool
-      *(cart + 3) = Z;
-      *(cart + 4) = vX;
-      *(cart + 5) = vY;
-      *(cart + 6) = vZ;
-      #else
       *(cart + 3) = vX;
       *(cart + 4) = vY;
-      #endif
 }
 
 
@@ -142,23 +126,16 @@ void cart2ell(typ * cart, typ * alkhqp, typ mu){
       /******** Getting the cartesian coordinates ********/
       X  = cart[1];
       Y  = cart[2];
-      #if _3D_bool
-      Z  = cart[3];
-      vX = cart[4];
-      vY = cart[5];
-      vZ = cart[6];
-      #else
       Z  = 0.;
       vX = cart[3];
       vY = cart[4];
       vZ = 0.;
-      #endif
 
       /******** Computing the semi-major axis ********/
       R   = sqrt(X*X + Y*Y + Z*Z);
       V2  = vX*vX + vY*vY + vZ*vZ;
       AA  = R*mu/(2.0*mu - R*V2); //Division by zero if the trajectory is perfectly parabolic.
-      *(alkhqp + 1) = AA;
+      *alkhqp = AA;
 
       /******** Normalizing the velocities (Adopting the convention of J. Laskar's 2004 lectures notes) ********/
       SMU = sqrt(mu);
@@ -177,8 +154,8 @@ void cart2ell(typ * cart, typ * alkhqp, typ mu){
 
       /******** Computing (q, p) ********/
       aux0          = sqrt(2.0*(CC + DC*C3));
-      *(alkhqp + 5) = (aux0 == 0. ? 0. : -C2/aux0);
-      *(alkhqp + 6) = (aux0 == 0. ? 0. :  C1/aux0);
+      *(alkhqp + 4) = (aux0 == 0. ? 0. : -C2/aux0);
+      *(alkhqp + 5) = (aux0 == 0. ? 0. :  C1/aux0);
 
       if (R == 0. || V2 == 0.){
             K = 0.;
@@ -208,11 +185,11 @@ void cart2ell(typ * cart, typ * alkhqp, typ mu){
             K    =  0.5*(K1 + K2);
             H    =  0.5*(H1 + H2);
       }
-      *(alkhqp + 3) = K;
-      *(alkhqp + 4) = H;
+      *(alkhqp + 2) = K;
+      *(alkhqp + 3) = H;
 
       if (R == 0. || V2 == 0.){
-            *(alkhqp + 2) = 0.;
+            *(alkhqp + 1) = 0.;
       }
       else{
             /******** Computing the mean longitude l = M + varpi ********/
@@ -224,13 +201,13 @@ void cart2ell(typ * cart, typ * alkhqp, typ mu){
                   sinF = -b12*R*USQA + H*aux1;
                   cosF =  b22*R*USQA + K*aux1;
                   F    =  atan2(sinF, cosF);
-                  *(alkhqp + 2) = F - RV*USQA;
+                  *(alkhqp + 1) = F - RV*USQA;
             }
             else{ //Hyperbolic case
                   USQA  = sqrt(-(2.0/R - V2));
                   typ E = atanh(RV*USQA/(R*V2 - 1.0));
                   typ M = sqrt(K*K + H*H) * sinh(E) - E;
-                  *(alkhqp + 2) = M + atan2(H, K);
+                  *(alkhqp + 1) = M + atan2(H, K);
             }
       }
 }
@@ -302,7 +279,7 @@ typ mean2eccentric(typ l, typ k, typ h){
       int imax = 20;
       typ eps, a, ca, sa, se, ce, fa, f1a, f2a, f3a, f4a, f5a, d1, d2, d3, d4, d5;
 
-      eps  = 2.*DBL_EPSILON;
+      eps  = 2.*2.26e-16;
       //Order 3 method
       a   = l;
       ca  = cos(a);
@@ -462,7 +439,7 @@ void newt(typ DM, typ A, typ B, typ * const p_X, typ * const p_C, typ * const p_
       typ B0, B1, F, F1, X, C, S, D1, DIFF, ATEMP;
       int i, NMAX, niter;
       typ EPS = DBL_EPSILON;
-      NMAX = 15;
+      NMAX = 25;
 
       F  = DM;
       F1 = 1. - A;
@@ -481,26 +458,26 @@ void newt(typ DM, typ A, typ B, typ * const p_X, typ * const p_C, typ * const p_
             X   -= DIFF;
             i ++;
       } while (i <= NMAX && fabs(DIFF)/max(1., fabs(X)) >= 1.5*EPS);
-      niter = i - 1;
-      if (i > NMAX){
-            long typ XQ  = X;
-            long typ AQ  = A;
-            long typ BQ  = B;
-            long typ DMQ = DM;
-            long typ DIFFQ;
-            long typ EPSQ = 1.5*EPS;
+      niter = i-1;
+      if (i>NMAX){
+            typ XQ  = X;
+            typ AQ  = A;
+            typ BQ  = B;
+            typ DMQ = DM;
+            typ DIFFQ;
+            typ EPSQ = 2.5*EPS; //Modified from EPSQ = 1.5*EPS
             i = 1;
             do{
-                  long typ CQ  = cosl(XQ);
-                  long typ SQ  = sinl(XQ);
-                  long typ B0Q = AQ*SQ + BQ*CQ;
-                  long typ B1Q = AQ*CQ - BQ*SQ;
-                  long typ FQ  = BQ - DMQ + XQ - B0Q;
-                  long typ F1Q = 1. - B1Q;
+                  typ CQ  = cos(XQ);
+                  typ SQ  = sin(XQ);
+                  typ B0Q = AQ*SQ + BQ*CQ;
+                  typ B1Q = AQ*CQ - BQ*SQ;
+                  typ FQ  = BQ - DMQ + XQ - B0Q;
+                  typ F1Q = 1. - B1Q;
                   DIFFQ   = FQ/F1Q;
                   XQ     -= DIFFQ;
                   i ++;
-            } while (i <= NMAX && fabsl(DIFFQ)/max(1., fabsl(XQ)) >= EPSQ);
+            } while (i <= NMAX && fabs(DIFFQ)/max(1., fabs(XQ)) >= EPSQ);
             niter += i;
         
             if (i > NMAX){
@@ -553,14 +530,9 @@ void kepsaut(typ * cart, typ mu, typ dt){
       /******** Updates the cartesian coordinates cart = (x, y, z, vx, vy, vz) along ********/
       /******** a Keplerian arc for a time dt. mu is the gravitational parameter.    ********/
       /******** This function was provided by Mickaël Gastineau (IMCCE, ASD team)    ********/
-      
-      #if _3D_bool
-      typ X [3] = {cart[1], cart[2], cart[3]};
-      typ XD[3] = {cart[4], cart[5], cart[6]};
-      #else
+
       typ X [3] = {cart[1], cart[2], 0.};
       typ XD[3] = {cart[3], cart[4], 0.};
-      #endif
       typ smu;
       typ R, V2, XV, a, ce, se, dm, c, s, e;
       typ a1, a2, a3, a4, Xn[3], Xdn[3], delta, sqa;    
@@ -584,9 +556,9 @@ void kepsaut(typ * cart, typ mu, typ dt){
       a4  = cm1/e;
       prods(a1, a3, X, a2, a4, XD, Xn, Xdn);
 
-      for(j = 0; j < 2 + _3D_bool; j ++){
-            cart[j + 1]            = Xn [j];
-            cart[j + 3 + _3D_bool] = Xdn[j];
+      for(j = 0; j < 2; j ++){
+            cart[j + 1] = Xn [j];
+            cart[j + 3] = Xdn[j];
       }
 }
 
@@ -598,47 +570,21 @@ void exp_tau_LB(typ tau, typ * X_cart){
       int k, j;
       typ sum_rtilde_x = 0.;  typ sum_rtilde_y = 0.;
       typ norm, norm3, Xk, Xj, Yk, Yj, dX, dY;
-      #if _3D_bool
-      typ sum_rtilde_z = 0.;
-      typ Zj, Zk, dZ;
-      #endif
 
       /******** Computing the sum of the \tilde{r}_k/m_0 ********/
       for (k = 1; k <= how_many_planet; k ++){
-            sum_rtilde_x += masses[k]*X_cart[Nd*k - 1 - _3D_bool]/m0;
-            sum_rtilde_y += masses[k]*X_cart[Nd*k     - _3D_bool]/m0;
-            #if _3D_bool
-            sum_rtilde_z += masses[k]*X_cart[Nd*k]/m0;
-            #endif
+            sum_rtilde_x += masses[k]*X_cart[4*k - 1]/m0;
+            sum_rtilde_y += masses[k]*X_cart[4*k]    /m0;
       }
 
       /******** Step exp(1/2*tau*L_B1) ********/
       for (k = 1; k <= how_many_planet; k ++){
-            #if _3D_bool
-            X_cart[6*k - 5] += tau/2.*(sum_rtilde_x - masses[k]*X_cart[6*k - 2]/m0);
-            X_cart[6*k - 4] += tau/2.*(sum_rtilde_y - masses[k]*X_cart[6*k - 1]/m0);
-            X_cart[6*k - 3] += tau/2.*(sum_rtilde_z - masses[k]*X_cart[6*k]    /m0);
-            #else
             X_cart[4*k - 3] += tau/2.*(sum_rtilde_x - masses[k]*X_cart[4*k - 1]/m0);
             X_cart[4*k - 2] += tau/2.*(sum_rtilde_y - masses[k]*X_cart[4*k]    /m0);
-            #endif
       }
 
       /******** Step exp(tau*L_B2) ********/
       for (k = 1; k <= how_many_planet; k ++){
-            #if _3D_bool
-            Xk = X_cart[6*k - 5];  Yk = X_cart[6*k - 4];  Zk = X_cart[6*k - 3];
-            for (j = 1; j <= how_many_planet; j ++){
-                  if (j != k){
-                        Xj   = X_cart[6*j - 5];  Yj = X_cart[6*j - 4];  Zj = X_cart[6*j - 3];
-                        dX   = Xk - Xj;  dY = Yk - Yj;  dZ = Zk - Zj;
-                        norm = sqrt(dX*dX + dY*dY + dZ*dZ);  norm3 = norm*norm*norm;
-                        X_cart[6*k - 2] -= tau*G*masses[j]*dX/norm3;
-                        X_cart[6*k - 1] -= tau*G*masses[j]*dY/norm3;
-                        X_cart[6*k]     -= tau*G*masses[j]*dZ/norm3;
-                  }
-            }
-            #else
             Xk = X_cart[4*k - 3];  Yk = X_cart[4*k - 2];
             for (j = 1; j <= how_many_planet; j ++){
                   if (j != k){
@@ -649,19 +595,12 @@ void exp_tau_LB(typ tau, typ * X_cart){
                         X_cart[4*k]     -= tau*G*masses[j]*dY/norm3;
                   }
             }
-            #endif
       }
 
       /******** Step exp(1/2*tau*L_B1) ********/
       for (k = 1; k <= how_many_planet; k ++){
-            #if _3D_bool
-            X_cart[6*k - 5] += tau/2.*(sum_rtilde_x - masses[k]*X_cart[6*k - 2]/m0);
-            X_cart[6*k - 4] += tau/2.*(sum_rtilde_y - masses[k]*X_cart[6*k - 1]/m0);
-            X_cart[6*k - 3] += tau/2.*(sum_rtilde_z - masses[k]*X_cart[6*k]    /m0);
-            #else
             X_cart[4*k - 3] += tau/2.*(sum_rtilde_x - masses[k]*X_cart[4*k - 1]/m0);
             X_cart[4*k - 2] += tau/2.*(sum_rtilde_y - masses[k]*X_cart[4*k]    /m0);
-            #endif
       }
 }
 
@@ -676,51 +615,23 @@ void exp_tau_LHt(typ * X_cart, typ tau, int planet, int update_rot){
       typ Dt = Dts[planet];
       typ R  = radii[planet];
       typ m  = masses[planet];
+      typ Om = Omg[planet];
       typ alp= alps[planet];
       typ mu = G*(m0 + m);
       typ r2, rv, A, ax, ay;
-      #if _3D_bool
-      typ Ox = Omx[planet];
-      typ Oy = Omy[planet];
-      typ Oz = Omz[planet];
-      typ az;
-      #else
-      typ Om = Omg[planet];
-      #endif
-      
-      #if _3D_bool
-      r2  = X_cart[1]*X_cart[1] + X_cart[2]*X_cart[2] + X_cart[3]*X_cart[3];
-      rv  = X_cart[1]*X_cart[4] + X_cart[2]*X_cart[5] + X_cart[3]*X_cart[6];
-      #else
       r2  = X_cart[1]*X_cart[1] + X_cart[2]*X_cart[2];
       rv  = X_cart[1]*X_cart[3] + X_cart[2]*X_cart[4];
-      #endif
       A   = 3.*k2*G*m0*m0/m*R*R*R*R*R/(r2*r2*r2*r2*r2);
-      #if _3D_bool
-      ax  = -A*Dt*(2.*rv*X_cart[1] + r2*(X_cart[4] + X_cart[2]*Oz - X_cart[3]*Oy));
-      ay  = -A*Dt*(2.*rv*X_cart[2] + r2*(X_cart[5] + X_cart[3]*Ox - X_cart[1]*Oz));
-      az  = -A*Dt*(2.*rv*X_cart[3] + r2*(X_cart[6] + X_cart[1]*Oy - X_cart[2]*Ox));
-      #else
       ax  = -A*Dt*(2.*rv*X_cart[1] + r2*(X_cart[3] + X_cart[2]*Om));
       ay  = -A*Dt*(2.*rv*X_cart[2] + r2*(X_cart[4] - X_cart[1]*Om));
-      #endif
       
       /******** Updating the speed ********/
-      X_cart[3 + _3D_bool] += tau*ax;
-      X_cart[4 + _3D_bool] += tau*ay;
-      #if _3D_bool
-      X_cart[6] += tau*az;
-      #endif
+      X_cart[3] += tau*ax;
+      X_cart[4] += tau*ay;
       
       /******** Updating the rotation ********/
       if (update_rot){
-            #if _3D_bool
-            Omx[planet] -= tau/(alp*R*R)*(X_cart[2]*az - X_cart[3]*ay);
-            Omy[planet] -= tau/(alp*R*R)*(X_cart[3]*ax - X_cart[1]*az);
-            Omz[planet] -= tau/(alp*R*R)*(X_cart[1]*ay - X_cart[2]*ax);
-            #else
             Omg[planet] -= tau/(alp*R*R)*(X_cart[1]*ay - X_cart[2]*ax);
-            #endif
       }
 }
 #endif
@@ -741,20 +652,16 @@ void UnaveragedSABAn(typ tau, typ T, int output_step, typ * X_old, int n){
       FILE * file;
       long int N_step, iter;
       int i;
-      typ X_cart[Nd*how_many_planet + 1];
-      typ X_init[Nd*how_many_planet + 1];
-      typ X_buff[Nd*how_many_planet + 1];
-      typ X_new [Nd*how_many_planet + 1];
-      typ X_uv  [Nd*how_many_planet + 1];
-      typ lbdOld[   how_many_planet + 1];
-      typ   gOld[   how_many_planet + 1];
+      typ X_cart[4*how_many_planet + 1];
+      typ X_init[4*how_many_planet + 1];
+      typ X_buff[4*how_many_planet + 1];
+      typ X_new [4*how_many_planet + 1];
+      typ X_uv  [4*how_many_planet + 1];
+      typ lbdOld[  how_many_planet + 1];
+      typ   gOld[  how_many_planet + 1];
       typ a, e, vp, M, mu, E, beta, lbd, g, dist2init;
-      #if _3D_bool
-      typ  OmOld[  how_many_planet + 1];
-      typ I, Om;
-      #endif
       typ c1, c2, c3, c4, d1, d2, d3;
-      typ alkhqp[7];
+      typ alkhqp[6];
       int continuous = tau*((typ) output_step) < 0.5 ? 1 : 0;
       
       /******** Opening output file ********/
@@ -807,49 +714,37 @@ void UnaveragedSABAn(typ tau, typ T, int output_step, typ * X_old, int n){
       /******** Initializing the cartesian coordinates ********/
       for (i = 1; i <= how_many_planet; i ++){
             mu = G*(m0 + masses[i]);
-            a  = X_old[Nd*i - 1]*X_old[Nd*i - 1]*(m0 + masses[i])/(G*m0*m0*masses[i]*masses[i]);
-            e  = sqrt(1. - (1. - X_old[Nd*i]/X_old[Nd*i - 1])*(1. - X_old[Nd*i]/X_old[Nd*i - 1]));
-            vp = -X_old[Nd*i - 2];
-            M  =  X_old[Nd*i - 3] - vp;
+            a  = X_old[4*i - 1]*X_old[4*i - 1]*(m0 + masses[i])/(G*m0*m0*masses[i]*masses[i]);
+            e  = sqrt(1. - (1. - X_old[4*i]/X_old[4*i - 1])*(1. - X_old[4*i]/X_old[4*i - 1]));
+            vp = -X_old[4*i - 2];
+            M  =  X_old[4*i - 3] - vp;
+            //nu = mean2true(M, mu, a, e);
             E  = mean2eccentric(M + vp, e*cos(vp), e*sin(vp)) - vp;
-            lbdOld[i] = X_old[Nd*i - 3];  gOld[i] = X_old[Nd*i - 2];
-            #if _3D_bool
-            I  = X_old[Nd*i - 5]; //X_old = (I, Omega, lbd, -vrp, Lbd, D) in 3D case
-            Om = X_old[Nd*i - 4];
-            OmOld[i] = Om;
-            ell2cart(a, e, I, E, vp, Om, mu, X_cart + Nd*i - Nd);
-            #else
-            ell2cart(a, e, 0., E, vp, 0., mu, X_cart + Nd*i - Nd);
-            #endif
+            ell2cart(a, e, 0., E, vp, 0., mu, X_cart + 4*i - 4);
+            lbdOld[i] = X_old[4*i - 3];  gOld[i] = X_old[4*i - 2];
       }
-      
-      #if (toInvar_bool && _3D_bool)
-      /******** Rotating to the invariant plane ********/
-      toInvar(X_cart);
-      #endif
-      
-      for (i = 1; i <= Nd*how_many_planet; i ++){ //X_init remembers the initial position in order to compute the distance with respect to it in the phase space
+      for (i = 1; i <= 4*how_many_planet; i ++){ //X_init remembers the initial position in order to compute the distance with respect to it in the phase space
             X_init[i] = X_cart[i];
       }
 
       /******** Integrating ********/
       N_step = (long int) ceil(T/tau);
-      for (iter = 0; iter < N_step + 1; iter ++){
+      for (iter = 0; iter < N_step; iter ++){
       
             /******** Writing to file ********/
             if (iter%output_step == 0){
-                  for (i = 1; i <= Nd*how_many_planet; i ++){
-                        X_buff[i] = X_cart[i];
+                  for (i = 1; i <= how_many_planet; i ++){
+                        X_buff[4*i - 3] = X_cart[4*i - 3]; X_buff[4*i - 2] = X_cart[4*i - 2]; X_buff[4*i - 1] = X_cart[4*i - 1]; X_buff[4*i] = X_cart[4*i];
                   }
                   if (iter){
                         #if tides_bool
                         for (i = 1; i <= how_many_planet; i ++){ //Need to perform a step exp(-tau/2*S) on the buffer before outputting
-                              exp_tau_LHt(X_buff + Nd*i - Nd, -tau/2., i, 0);
+                              exp_tau_LHt(X_buff + 4*i - 4, -tau/2., i, 0);
                         }
                         #else
                         for (i = 1; i <= how_many_planet; i ++){ //Need to perform a step exp(-c1*tau*L_A) on the buffer before outputting
                               mu = G*(m0 + masses[i]);
-                              kepsaut(X_buff + Nd*i - Nd, mu, -c1*tau);
+                              kepsaut(X_buff + 4*i - 4, mu, -c1*tau);
                         }
                         #endif
                   }
@@ -866,67 +761,40 @@ void UnaveragedSABAn(typ tau, typ T, int output_step, typ * X_old, int n){
                         fprintf(file, "written B = B1 + B2 with B1 and B2 both integrable. Therefore, B is integrated approximately but symplectically with a SABA1.\n");
                         #endif
                         fprintf(file, "\n");
-                        #if canonical_bool
-                        fprintf(file, "The output coordinates are canonical (heliocentric position and barycentric speed).\n");
-                        #else
-                        fprintf(file, "The output coordinates are non-canonical (heliocentric position and heliocentric speed).\n");
-                        #endif
-                        fprintf(file, "This file has %d columns that are (for 1 <= j <= %d):\n", 2 + Nd*how_many_planet, how_many_planet);
-                        #if _3D_bool
-                        fprintf(file, "Time, distance to initial point in the phase space, a_j, e_j, I_j, phi_j, sig_j, Omega_j\n");
-                        #else
+                        fprintf(file, "This file has %d columns that are (for 1 <= j <= %d):\n", 2 + 4*how_many_planet, how_many_planet);
                         fprintf(file, "Time, distance to initial point in the phase space, a_j, e_j, phi_j, sig_j\n");
-                        #endif
                         fprintf(file, "\n");
                   }
-                  #if !canonical_bool
-                  canonical2nonCanonical(X_buff);
-                  #endif
-                  for (i = 1; i <= how_many_planet; i ++){ // (x, y; vx, vy) -> (lbd_j, -vrp_j; Lbd_j, D_j) or (x, y, z; vx, vy, vz) -> (I, Omega, lbd_j, -vrp_j; Lbd_j, D_j)
+                  for (i = 1; i <= how_many_planet; i ++){ // (x, y; vx, vy) -> (lbd_j, -vrp_j; Lbd_j, D_j)
                         beta = m0*masses[i]/(m0 + masses[i]);
                         mu   = G*(m0 + masses[i]);
-                        cart2ell(X_buff + Nd*i - Nd, alkhqp, mu);
-                        e    = sqrt(alkhqp[3]*alkhqp[3] + alkhqp[4]*alkhqp[4]);
+                        cart2ell(X_buff + 4*i - 4, alkhqp, mu);
+                        e    = sqrt(alkhqp[2]*alkhqp[2] + alkhqp[3]*alkhqp[3]);
                         if (continuous){
-                              lbd = continuousAngle(alkhqp[2],                  lbdOld[i]);
-                              g   = continuousAngle(-atan2(alkhqp[4], alkhqp[3]), gOld[i]);
-                              lbdOld[i] = lbd;  gOld[i] = g;
-                              #if _3D_bool
-                              Om  = continuousAngle(atan2(alkhqp[6], alkhqp[5]), OmOld[i]);
-                              OmOld[i] = Om;
-                              #endif
+                              lbd  = continuousAngle(alkhqp[1],                  lbdOld[i]);
+                              g    = continuousAngle(-atan2(alkhqp[3], alkhqp[2]), gOld[i]);
                         }
                         else{
-                              lbd = alkhqp[2];
-                              g   = -atan2(alkhqp[4], alkhqp[3]);
-                              #if _3D_bool
-                              Om  = atan2(alkhqp[6], alkhqp[5]);
-                              #endif
+                              lbd  = alkhqp[1];
+                              g    = -atan2(alkhqp[3], alkhqp[2]);
                         }
-                        #if _3D_bool
-                        X_old[Nd*i - 5] = 2.*asin(sqrt(alkhqp[5]*alkhqp[5] + alkhqp[6]*alkhqp[6]));
-                        X_old[Nd*i - 4] = Om;
-                        #endif
-                        X_old[Nd*i - 3] = lbd;
-                        X_old[Nd*i - 2] = g;
-                        X_old[Nd*i - 1] = beta*sqrt(mu*alkhqp[1]);
-                        X_old[Nd*i]     = X_old[Nd*i - 1]*(1. - sqrt(1. - e*e));
+                        X_old[4*i - 3] = lbd;
+                        X_old[4*i - 2] = g;
+                        X_old[4*i - 1] = beta*sqrt(mu*alkhqp[0]);
+                        X_old[4*i]     = X_old[4*i - 1]*(1. - sqrt(1. - e*e));
+                        lbdOld[i]      = lbd;  gOld[i] = g;
                   }
                   dist2init = 0.;
-                  for (i = 1; i <= Nd*how_many_planet; i ++){
+                  for (i = 1; i <= 4*how_many_planet; i ++){
                         dist2init += (X_buff[i] - X_init[i])*(X_buff[i] - X_init[i]);
                   }
                   dist2init = sqrt(dist2init);
                   old2new(X_old, X_new, X_uv);             // (lbd_j, -vrp_j; Lbd_j, D_j) -> (phi_j, v_j; Phi_j, u_j)
                   fprintf(file, "%.9lf %.14lf", tau*(typ) iter, dist2init);
                   for (i = 1; i <= how_many_planet; i ++){
-                        e   = sqrt(1. - (1. - X_old[Nd*i]/X_old[Nd*i - 1])*(1. - X_old[Nd*i]/X_old[Nd*i - 1]));
-                        a   = X_old[Nd*i - 1]*X_old[Nd*i - 1]*(m0 + masses[i])/(G*m0*m0*masses[i]*masses[i]);
-                        #if _3D_bool
-                        fprintf(file, " %.15lf %.15lf %.15lf %.15lf %.15lf %.15lf", a, e, X_old[Nd*i - 5], X_new[Nd*i - 3], X_new[Nd*i - 2], X_old[Nd*i - 4]);
-                        #else
-                        fprintf(file, " %.15lf %.15lf %.15lf %.15lf", a, e, X_new[Nd*i - 3], X_new[Nd*i - 2]);
-                        #endif
+                        e   = sqrt(1. - (1. - X_old[4*i]/X_old[4*i - 1])*(1. - X_old[4*i]/X_old[4*i - 1]));
+                        a   = X_old[4*i - 1]*X_old[4*i - 1]*(m0 + masses[i])/(G*m0*m0*masses[i]*masses[i]);
+                        fprintf(file, " %.14lf %.14lf %.14lf %.14lf", a, e, X_new[4*i - 3], X_new[4*i - 2]);
                   }
                   fprintf(file, "\n");
             }
@@ -935,21 +803,21 @@ void UnaveragedSABAn(typ tau, typ T, int output_step, typ * X_old, int n){
             /******** Step exp(tau/2*S). For the first iteration only ********/
             if (!iter){
                   for (i = 1; i <= how_many_planet; i ++){
-                        exp_tau_LHt(X_cart + Nd*i - Nd, tau/2., i, 1);
+                        exp_tau_LHt(X_cart + 4*i - 4, tau/2., i, 1);
                   }
             }
             
             /******** Step exp(c1*tau*L_A) ********/
             for (i = 1; i <= how_many_planet; i ++){
                   mu = G*(m0 + masses[i]);
-                  kepsaut(X_cart + Nd*i - Nd, mu, c1*tau);
+                  kepsaut(X_cart + 4*i - 4, mu, c1*tau);
             }
             #else
             /******** Step exp(c1*tau*L_A). For the first iteration only ********/
             if (!iter){
                   for (i = 1; i <= how_many_planet; i ++){
                         mu = G*(m0 + masses[i]);
-                        kepsaut(X_cart + Nd*i - Nd, mu, c1*tau);
+                        kepsaut(X_cart + 4*i - 4, mu, c1*tau);
                   }
             }
             #endif
@@ -961,7 +829,7 @@ void UnaveragedSABAn(typ tau, typ T, int output_step, typ * X_old, int n){
                   /******** Step exp(c2*tau*L_A) ********/
                   for (i = 1; i <= how_many_planet; i ++){
                         mu = G*(m0 + masses[i]);
-                        kepsaut(X_cart + Nd*i - Nd, mu, c2*tau);
+                        kepsaut(X_cart + 4*i - 4, mu, c2*tau);
                   }
 
                   if (n >= 3){
@@ -972,7 +840,7 @@ void UnaveragedSABAn(typ tau, typ T, int output_step, typ * X_old, int n){
                               /******** Step exp(c3*tau*L_A) ********/
                               for (i = 1; i <= how_many_planet; i ++){
                                     mu = G*(m0 + masses[i]);
-                                    kepsaut(X_cart + Nd*i - Nd, mu, c3*tau);
+                                    kepsaut(X_cart + 4*i - 4, mu, c3*tau);
                               }
 
                               if (n >= 5){
@@ -983,7 +851,7 @@ void UnaveragedSABAn(typ tau, typ T, int output_step, typ * X_old, int n){
                                           /******** Step exp(c4*tau*L_A) ********/
                                           for (i = 1; i <= how_many_planet; i ++){
                                                 mu = G*(m0 + masses[i]);
-                                                kepsaut(X_cart + Nd*i - Nd, mu, c4*tau);
+                                                kepsaut(X_cart + 4*i - 4, mu, c4*tau);
                                           }
                                           
                                           /******** Step exp(d3*tau*L_B) ********/
@@ -993,7 +861,7 @@ void UnaveragedSABAn(typ tau, typ T, int output_step, typ * X_old, int n){
                                     /******** Step exp(c3*tau*L_A) ********/
                                     for (i = 1; i <= how_many_planet; i ++){
                                           mu = G*(m0 + masses[i]);
-                                          kepsaut(X_cart + Nd*i - Nd, mu, c3*tau);
+                                          kepsaut(X_cart + 4*i - 4, mu, c3*tau);
                                     }
                               }
                               /******** Step exp(d2*tau*L_B) ********/
@@ -1003,7 +871,7 @@ void UnaveragedSABAn(typ tau, typ T, int output_step, typ * X_old, int n){
                         /******** Step exp(c2*tau*L_A) ********/
                         for (i = 1; i <= how_many_planet; i ++){
                               mu = G*(m0 + masses[i]);
-                              kepsaut(X_cart + Nd*i - Nd, mu, c2*tau);
+                              kepsaut(X_cart + 4*i - 4, mu, c2*tau);
                         }
                   }
                   
@@ -1014,47 +882,20 @@ void UnaveragedSABAn(typ tau, typ T, int output_step, typ * X_old, int n){
             /******** Step exp(c1*tau*L_A) ********/
             for (i = 1; i <= how_many_planet; i ++){
                   mu = G*(m0 + masses[i]);
-                  kepsaut(X_cart + Nd*i - Nd, mu, c1*tau);
+                  kepsaut(X_cart + 4*i - 4, mu, c1*tau);
             }
             
             /******** Step exp(tau*S) ********/
             for (i = 1; i <= how_many_planet; i ++){
-                  exp_tau_LHt(X_cart + Nd*i - Nd, tau, i, 1);
+                  exp_tau_LHt(X_cart + 4*i - 4, tau, i, 1);
             }
             #else
             /******** Step exp(2*c1*tau*L_A) ********/
             for (i = 1; i <= how_many_planet; i ++){
                   mu = G*(m0 + masses[i]);
-                  kepsaut(X_cart + Nd*i - Nd, mu, 2.*c1*tau);
+                  kepsaut(X_cart + 4*i - 4, mu, 2.*c1*tau);
             }
             #endif
-            
-            /******** To be removed potentially. Checking for close encounters ********/
-            int j;
-            typ xi, yi, zi, xj, yj, zj, ri, rj, dx, dy, dz;
-            typ d, RHi, RHj;
-            for (i = 1; i <= how_many_planet; i ++){
-                  xi  = X_cart[Nd*i - 5];
-                  yi  = X_cart[Nd*i - 4];
-                  zi  = X_cart[Nd*i - 3];
-                  ri  = sqrt(xi*xi + yi*yi + zi*zi);
-                  RHi = ri*pow(masses[i]/(3.*m0), 1./3.);
-                  for (j = i + 1; j <= how_many_planet; j ++){
-                        xj  = X_cart[Nd*j - 5];
-                        yj  = X_cart[Nd*j - 4];
-                        zj  = X_cart[Nd*j - 3];
-                        rj  = sqrt(xj*xj + yj*yj + zj*zj);
-                        RHj = rj*pow(masses[j]/(3.*m0), 1./3.);
-                        dx  = xi - xj;
-                        dy  = yi - yj;
-                        dz  = zi - zj;
-                        d   = sqrt(dx*dx + dy*dy + dz*dz);
-                        if (d < max(RHi, RHj)){
-                              fprintf(stderr, "\nError: Close encounter between planet %d and %d.\n", i, j);
-                              abort();
-                        }
-                  }
-            }
       }
 
       /******** Closing output file ********/
@@ -1073,10 +914,6 @@ void get_frequencies(typ tau, typ T, typ * X_old, int n){
       
       /* To be generalized to more complicated chains later */
       
-      #if _3D_bool
-      fprintf(stderr, "\nError: _3D_bool must be 0 when calling function get_frequencies.\n");  abort();
-      #endif
-      
       int i, p;
       long int N_step, iter;
       typ X_cart  [4*how_many_planet + 1];
@@ -1091,7 +928,7 @@ void get_frequencies(typ tau, typ T, typ * X_old, int n){
       typ a, e, vp, M, mu, E, beta, lbd, g, delta;
       typ ak_fast, bk_fast, ak_reso, bk_reso, t, S, dSda, dSdb, par, learning_rate, oldS, N;
       typ c1, c2, c3, c4, d1, d2, d3;
-      typ alkhqp[7];
+      typ alkhqp[6];
       
       /******** Initializing constants ********/
       c1 = 0.;  c2 = 0.;  c3 = 0.;  c4 = 0.;  d1 = 0.;  d2 = 0.;  d3 = 0.;
@@ -1220,12 +1057,12 @@ void get_frequencies(typ tau, typ T, typ * X_old, int n){
                   beta = m0*masses[i]/(m0 + masses[i]);
                   mu   = G*(m0 + masses[i]);
                   cart2ell(X_buff + 4*i - 4, alkhqp, mu);
-                  e    = sqrt(alkhqp[3]*alkhqp[3] + alkhqp[4]*alkhqp[4]);
-                  lbd  = continuousAngle(alkhqp[2],                  lbdOld[i]);
-                  g    = continuousAngle(-atan2(alkhqp[4], alkhqp[3]), gOld[i]);
+                  e    = sqrt(alkhqp[2]*alkhqp[2] + alkhqp[3]*alkhqp[3]);
+                  lbd  = continuousAngle(alkhqp[1],                  lbdOld[i]);
+                  g    = continuousAngle(-atan2(alkhqp[3], alkhqp[2]), gOld[i]);
                   X_old[4*i - 3] = lbd;
                   X_old[4*i - 2] = g;
-                  X_old[4*i - 1] = beta*sqrt(mu*alkhqp[1]);
+                  X_old[4*i - 1] = beta*sqrt(mu*alkhqp[0]);
                   X_old[4*i]     = X_old[4*i - 1]*(1. - sqrt(1. - e*e));
                   lbdOld[i]      = lbd;  gOld[i] = g;
             }
@@ -1354,10 +1191,6 @@ typ UnaveragedSABAn_NAFF(typ tau, typ T, int Hanning_order, typ * X_uv, typ * X_
 
       /* To be generalized to more complicated chains later */
 
-      #if _3D_bool
-      fprintf(stderr, "\nError: _3D_bool must be 0 when calling function UnaveragedSABAn_NAFF.\n");  abort();
-      #endif
-
       int i, j;
       long int N_step, iter;
       int N = how_many_planet;
@@ -1376,7 +1209,7 @@ typ UnaveragedSABAn_NAFF(typ tau, typ T, int Hanning_order, typ * X_uv, typ * X_
       typ two_to_p[6]  = {1., 2., 4., 8., 16., 32.};
       typ Cp, H0, H1, H2, t0, t1, t2;
       typ c1, c2, c3, c4, d1, d2, d3;
-      typ alkhqp[7];
+      typ alkhqp[6];
       
       /******** Getting the fast frequencies ********/
       tau    /= 2.;
@@ -1523,12 +1356,12 @@ typ UnaveragedSABAn_NAFF(typ tau, typ T, int Hanning_order, typ * X_uv, typ * X_
                   beta = m0*masses[i]/(m0 + masses[i]);
                   mu   = G*(m0 + masses[i]);
                   cart2ell(X_buff + 4*i - 4, alkhqp, mu);
-                  e    = sqrt(alkhqp[3]*alkhqp[3] + alkhqp[4]*alkhqp[4]);
-                  lbd  = continuousAngle(alkhqp[2],                  lbdOld[i]);
-                  g    = continuousAngle(-atan2(alkhqp[4], alkhqp[3]), gOld[i]);
+                  e    = sqrt(alkhqp[2]*alkhqp[2] + alkhqp[3]*alkhqp[3]);
+                  lbd  = continuousAngle(alkhqp[1],                  lbdOld[i]);
+                  g    = continuousAngle(-atan2(alkhqp[3], alkhqp[2]), gOld[i]);
                   X_old[4*i - 3] = lbd;
                   X_old[4*i - 2] = g;
-                  X_old[4*i - 1] = beta*sqrt(mu*alkhqp[1]);
+                  X_old[4*i - 1] = beta*sqrt(mu*alkhqp[0]);
                   X_old[4*i]     = X_old[4*i - 1]*(1. - sqrt(1. - e*e));
                   lbdOld[i]      = lbd;  gOld[i] = g;
             }
@@ -1598,10 +1431,6 @@ int UnaveragedSABAn_amplitude(typ tau, typ T, typ * X_new_min, typ * X_new_max, 
       /******** integration of the unaveraged Hamiltonian              ********/
       /******** Returns the number of librating angles                 ********/
 
-      #if _3D_bool
-      fprintf(stderr, "\nError: _3D_bool must be 0 when calling function UnaveragedSABAn_amplitude.\n");  abort();
-      #endif
-
       int i, j;
       long int N_step, iter;
       int N = how_many_planet;
@@ -1613,7 +1442,7 @@ int UnaveragedSABAn_amplitude(typ tau, typ T, typ * X_new_min, typ * X_new_max, 
       typ   gOld[  N + 1];
       typ a, e, vp, M, mu, E, beta, lbd, g, toBeReturnedNum, toBeReturnedNom;
       typ c1, c2, c3, c4, d1, d2, d3;
-      typ alkhqp[7];
+      typ alkhqp[6];
       
       tau    /= 2.;
       N_step  = (long int) ceil(T/tau);
@@ -1738,12 +1567,12 @@ int UnaveragedSABAn_amplitude(typ tau, typ T, typ * X_new_min, typ * X_new_max, 
                   beta = m0*masses[i]/(m0 + masses[i]);
                   mu   = G*(m0 + masses[i]);
                   cart2ell(X_buff + 4*i - 4, alkhqp, mu);
-                  e    = sqrt(alkhqp[3]*alkhqp[3] + alkhqp[4]*alkhqp[4]);
-                  lbd  = continuousAngle(alkhqp[2],                  lbdOld[i]);
-                  g    = continuousAngle(-atan2(alkhqp[4], alkhqp[3]), gOld[i]);
+                  e    = sqrt(alkhqp[2]*alkhqp[2] + alkhqp[3]*alkhqp[3]);
+                  lbd  = continuousAngle(alkhqp[1],                  lbdOld[i]);
+                  g    = continuousAngle(-atan2(alkhqp[3], alkhqp[2]), gOld[i]);
                   X_old[4*i - 3] = lbd;
                   X_old[4*i - 2] = g;
-                  X_old[4*i - 1] = beta*sqrt(mu*alkhqp[1]);
+                  X_old[4*i - 1] = beta*sqrt(mu*alkhqp[0]);
                   X_old[4*i]     = X_old[4*i - 1]*(1. - sqrt(1. - e*e));
                   lbdOld[i]      = lbd;  gOld[i] = g;
             }
@@ -1796,12 +1625,12 @@ void get_n(typ * n){
 
       int i;
       typ mu_i, a_i, n_i;
-      typ X_old[Nd*how_many_planet + 1];
-      typ X_new[Nd*how_many_planet + 1];
+      typ X_old[4*how_many_planet + 1];
+      typ X_new[4*how_many_planet + 1];
       new2old(X_old, X_new, avgs);
       for (i = 1; i <= how_many_planet; i ++){
             mu_i = G*(m0 + masses[i]);
-            a_i  = X_old[Nd*i - 1]*X_old[Nd*i - 1]*(m0 + masses[i])/(G*m0*m0*masses[i]*masses[i]);
+            a_i  = X_old[4*i - 1]*X_old[4*i - 1]*(m0 + masses[i])/(G*m0*m0*masses[i]*masses[i]);
             n_i  = sqrt(mu_i/(a_i*a_i*a_i));
             *(n + i) = n_i;
       }
@@ -1850,10 +1679,6 @@ void LibrationCenterFind(typ * X_old, int precision){
       /******** Finds a libration center of the complete Hamiltonian by iteratively ********/
       /******** integrating and keeping only the average and fast frequency.        ********/
       /******** precision = {0, 1, 2} -> {low, medium, high} precision.             ********/
-      
-      #if _3D_bool
-      fprintf(stderr, "\nError: _3D_bool must be 0 when calling function LibrationCenterFind.\n");  abort();
-      #endif
 
       int i, j, went2fixedPoint, noProgress;
       int fast = subchain[how_many_resonant - 1];
@@ -1980,10 +1805,6 @@ void TowardsLibrationCenter(typ * X_old, typ tau, typ T, int Hf, int N, int Hr){
       /******** closer to the libration center. Updates X_old as to only keep the    ********/
       /******** fundamental and Hr harmonics of the fast terms. tau and T are the    ********/
       /******** timestep and integration time, Hf is the order of the Hanning filter ********/
-      
-      #if _3D_bool
-      fprintf(stderr, "\nError: _3D_bool must be 0 when calling function TowardsLibrationCenter.\n");  abort();
-      #endif
 
       int i;
       int fast = subchain[how_many_resonant - 1];
@@ -2037,10 +1858,6 @@ void LibrationCenterFollow(typ * X_old, typ dG, int Npoints, int precision){
       /******** angular momentum G by an amount dG before each search. Npoints libration ********/
       /******** centers are found and stored to the file pth/LibrationCenters_chain.txt  ********/
       /******** precision = {0, 1, 2} -> {low, medium, high} precision.                  ********/
-      
-      #if _3D_bool
-      fprintf(stderr, "\nError: _3D_bool must be 0 when calling function LibrationCenterFollow.\n");  abort();
-      #endif
 
       int i, j, dG_inc_count, dG_dec_count;
       int fast = subchain[how_many_resonant - 1];
@@ -2077,7 +1894,6 @@ void LibrationCenterFollow(typ * X_old, typ dG, int Npoints, int precision){
       }
       fprintf(file, "%d", p_i[how_many_planet]);
       fprintf(file, " in the unaveraged problem.\n");
-      fprintf(file, "The coordinates are canonical heliocentric (heliocentric position and barycentric speed).\n");
       fprintf(file, "The family is parameterized by Phi_%d.\n", slow);
       fprintf(file, "This file has %d columns that are (for 1 <= j <= %d):\n", 4 + 8*how_many_planet, how_many_planet);
       fprintf(file, "nu_%d = dphi_%d/dt, nu_%d = dphi_%d/dt, Phi_%d, <Phi_%d>, a_j, e_j, phi_j, sig_j, <a_j>, <e_j>, <phi_j>, <sig_j>\n", fast, fast, slow, slow, slow, slow);
@@ -2164,10 +1980,6 @@ void PeriodicOrbitFind(typ * X_old){
       /******** Finds a libration center, that is, a quasi-periodic orbit with two frequencies. ********/
       /******** Then changes the relevant first integral until the ratio between the two        ********/
       /******** frequencies is a rational number a/b with b and a - b not too large             ********/
-      
-      #if _3D_bool
-      fprintf(stderr, "\nError: _3D_bool must be 0 when calling function PeriodicOrbitFind.\n");  abort();
-      #endif
       
       int i, j, targetDenom, precision, count;
       int fast = subchain[how_many_resonant - 1];

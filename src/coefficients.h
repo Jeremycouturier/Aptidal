@@ -11,6 +11,9 @@ extern typ C_00_1, C_00_2, C_00_3, C_00_4, C_00_5, C_00_6, C_00_7, C_00_8, C_00_
 extern void (*resonances[10][10])(typ alp, typ mi);
 extern typ  Cppq[how_many_planet + 1][how_many_planet + 1][32];
 
+#if second_mass_bool
+extern int all2pla[16][2];
+#endif
 
 void resonance_init();
 
