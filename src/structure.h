@@ -18,7 +18,7 @@ struct rational {                            //Simple data structure representin
 };
 
 
-#if toInvar_bool
+#if (toInvar_bool && _3D_bool)
 /******** Defining a quaternion structure to perform rotations from one vector to another ********/
 struct quaternion {
       typ w;
@@ -145,7 +145,7 @@ typ rdm(typ min, typ max);
 typ continuousAngle(typ newAngle, typ oldAngle);
 
 
-#if toInvar_bool
+#if (toInvar_bool && _3D_bool)
 void quaternion_norm(struct quaternion * q);
 
 

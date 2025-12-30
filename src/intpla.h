@@ -38,6 +38,9 @@ void exp_tau_LB(typ tau, typ * X_cart);
 void UnaveragedSABAn(typ tau, typ T, int output_step, typ * X_old, int n);
 
 
+typ UnaveragedHamiltonian(typ * X_cart);
+
+
 #if tides_bool
 void exp_tau_LHt(typ * X_cart, typ tau, int planet, int update_rot);
 #endif
@@ -64,11 +67,14 @@ void ConstantParameter(typ * X_new, typ * X_uv);
 void LibrationCenterFind(typ * X_old, int precision);
 
 
-void TowardsLibrationCenter(typ * X_old, typ tau, typ T, int Hf, int N, int Hr);
+void LibrationCenterNAFF(typ * X_old, typ tau, typ T, int Hf, int N, int Hr);
 
 
 void LibrationCenterFollow(typ * X_old, typ dG, int Npoints, int precision);
 
 
 void PeriodicOrbitFind(typ * X_old);
+
+
+void LibrationCenterGradientDescent(typ * X_old, typ tau, typ T, typ LearningRate, int N, int sigma);
 #endif

@@ -655,7 +655,7 @@ typ continuousAngle(typ newAngle, typ oldAngle){
 }
 
 
-#if toInvar_bool
+#if (toInvar_bool && _3D_bool)
 void quaternion_norm(struct quaternion * q){
 
       /******** Normalizes the quaternion q ********/
@@ -695,8 +695,8 @@ void rotate_with_quaternion(typ x, typ y, typ z, struct quaternion q, typ * xr, 
    
       /******** Stores into (xr, yr, zr) the coordinates of the vector (x, y, z) once rotated by the quaternion q ********/
    
-      *xr = (1.0 - 2.0*q.y*q.y - 2.0*q.z*q.z)*x +       (2.0*q.x*q.y - 2.0*q.z*q.w)*y +       (2.0*q.x*q.z + 2.0*q.y*q.w)*z;
-      *yr =       (2.0*q.x*q.y + 2.0*q.z*q.w)*x + (1.0 - 2.0*q.x*q.x - 2.0*q.z*q.z)*y +       (2.0*q.y*q.z - 2.0*q.x*q.w)*z;
-      *zr =       (2.0*q.x*q.z - 2.0*q.y*q.w)*x +       (2.0*q.y*q.z + 2.0*q.x*q.w)*y + (1.0 - 2.0*q.x*q.x - 2.0*q.y*q.y)*z;
+      *xr = (1. - 2.*q.y*q.y - 2.*q.z*q.z)*x +      (2.*q.x*q.y - 2.*q.z*q.w)*y +      (2.*q.x*q.z + 2.*q.y*q.w)*z;
+      *yr =      (2.*q.x*q.y + 2.*q.z*q.w)*x + (1. - 2.*q.x*q.x - 2.*q.z*q.z)*y +      (2.*q.y*q.z - 2.*q.x*q.w)*z;
+      *zr =      (2.*q.x*q.z - 2.*q.y*q.w)*x +      (2.*q.y*q.z + 2.*q.x*q.w)*y + (1. - 2.*q.x*q.x - 2.*q.y*q.y)*z;
 }
 #endif

@@ -362,7 +362,6 @@ void new2old(typ * X_old, typ * X_new, typ * X_uv){
 }
 
 
-#if !canonical_bool
 void canonical2nonCanonical(typ * X_cart){
 
       /******** Converts the canonical heliocentric cartesian coordinates X_cart ********/
@@ -433,7 +432,6 @@ void nonCanonical2canonical(typ * X_cart){
             #endif
       }
 }
-#endif
 
 
 #if (toInvar_bool && _3D_bool)
@@ -459,6 +457,8 @@ void toInvar(typ * X_cart){
             gy += masses[i]*(z*vx - x*vz);
             gz += masses[i]*(x*vy - y*vx);
       }
+      
+      /******** Getting the quaternion of the rotation ********/
       q = get_quaternion(gx, gy, gz, 0., 0., 1.);
       
       /******** Rotating ********/
@@ -505,7 +505,7 @@ void X_old_init(typ * X_old){
             X_old[Nd*i]     = max(Lbd*(1. - sqrt(1. - ecc[i]*ecc[i])), 1.e-17);
       }
       
-      #if !canonical_bool
+      #if !canon_input_bool
       typ X_cart[Nd*how_many_planet + 1];
       typ alkhqp[7];
       typ vp, M, E, a, e;
@@ -1147,7 +1147,7 @@ void PointPrint(typ * X_old, int iter){
             }
       }*/
       
-      #if canonical_bool
+      #if canon_output_bool
       for (i = 1; i <= 4*N; i ++){
             X_buf[i] = X_old[i];
       }

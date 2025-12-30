@@ -24,12 +24,10 @@ void old2new(typ * X_old, typ * X_new, typ * X_uv);
 void new2old(typ * X_old, typ * X_new, typ * X_uv);
 
 
-#if !canonical_bool
 void canonical2nonCanonical(typ * X_cart);
 
 
 void nonCanonical2canonical(typ * X_cart);
-#endif
 
 
 #if (toInvar_bool && _3D_bool)
