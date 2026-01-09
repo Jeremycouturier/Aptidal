@@ -35,14 +35,20 @@ void kepsaut(typ * cart, typ mu, typ dt);
 void exp_tau_LB(typ tau, typ * X_cart);
 
 
-void UnaveragedSABAn(typ tau, typ T, int output_step, typ * X_old, int n);
+void SABAn(typ tau, typ T, int output_step, typ * X_old, int n);
 
 
-typ UnaveragedHamiltonian(typ * X_cart);
+void SABAH84(typ tau, typ T, int output_step, typ * X_old);
+
+
+void SABAH1064(typ tau, typ T, int output_step, typ * X_old);
+
+
+typ Hamiltonian(typ * X_cart);
 
 
 #if tides_bool
-void exp_tau_LHt(typ * X_cart, typ tau, int planet, int update_rot);
+void exp_tau_LHt(typ * X_cart, typ tau, int planet);
 #endif
 
 

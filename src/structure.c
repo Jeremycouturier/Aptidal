@@ -50,7 +50,6 @@ struct rational rat_k_star_i[how_many_planet];
 struct rational rat_q_i     [how_many_planet];
 int * subchain;
 int * chain_missed;
-typ m0;
 int how_many_resonant;
 int how_many_missed;
 
@@ -134,27 +133,27 @@ void initialization(){
       
       /******** Initializing the planetary masses and the resonance chain ********/
       how_many_resonant = 0;
-      typ buffer_mass  [how_many_planet + 1] = body_masses;
-      typ buffer_sma   [how_many_planet]     = body_sma;
-      typ buffer_ecc   [how_many_planet]     = body_ecc;
-      typ buffer_lbd   [how_many_planet]     = body_lambda;
-      typ buffer_vrp   [how_many_planet]     = body_varpi;
+      typ buffer_mass  [how_many_planet] = body_masses;
+      typ buffer_sma   [how_many_planet] = body_sma;
+      typ buffer_ecc   [how_many_planet] = body_ecc;
+      typ buffer_lbd   [how_many_planet] = body_lambda;
+      typ buffer_vrp   [how_many_planet] = body_varpi;
       #if _3D_bool
-      typ buffer_inc   [how_many_planet]     = body_inc;
-      typ buffer_Om    [how_many_planet]     = body_Omeg;
+      typ buffer_inc   [how_many_planet] = body_inc;
+      typ buffer_Om    [how_many_planet] = body_Omeg;
       #endif
-      typ buffer_chain [how_many_planet]     = resonance_chain;
+      typ buffer_chain [how_many_planet] = resonance_chain;
       #if tides_bool
-      typ buffer_radii [how_many_planet]     = body_radii;
-      typ buffer_k2s   [how_many_planet]     = body_k2;
-      typ buffer_Dts   [how_many_planet]     = body_Dt;
-      typ buffer_alps  [how_many_planet]     = body_alpha;
+      typ buffer_radii [how_many_planet] = body_radii;
+      typ buffer_k2s   [how_many_planet] = body_k2;
+      typ buffer_Dts   [how_many_planet] = body_Dt;
+      typ buffer_alps  [how_many_planet] = body_alpha;
       #if _3D_bool
-      typ buffer_Omx   [how_many_planet]     = body_Omegx;
-      typ buffer_Omy   [how_many_planet]     = body_Omegy;
-      typ buffer_Omz   [how_many_planet]     = body_Omegz;
+      typ buffer_Omx   [how_many_planet] = body_Omegx;
+      typ buffer_Omy   [how_many_planet] = body_Omegy;
+      typ buffer_Omz   [how_many_planet] = body_Omegz;
       #else
-      typ buffer_Omg   [how_many_planet]     = body_Omega;
+      typ buffer_Omg   [how_many_planet] = body_Omega;
       #endif
       #endif
       for (i = 1; i < how_many_planet + 1; i ++){
@@ -181,10 +180,9 @@ void initialization(){
             #endif
             #endif
       }
-      for (i = 0; i < how_many_planet + 1; i ++){
-            masses[i] = buffer_mass[i];
+      for (i = 1; i < how_many_planet + 1; i ++){
+            masses[i] = buffer_mass[i - 1];
       }
-      m0 = *masses;
       for (i = 1; i < how_many_planet + 1; i ++){
             Lbd_0[i] = masses[i]*sqrt(G*m0*sma[i]);
       }

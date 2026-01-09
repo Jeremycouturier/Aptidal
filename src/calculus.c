@@ -438,6 +438,7 @@ void nonCanonical2canonical(typ * X_cart){
 void toInvar(typ * X_cart){
 
       /******** Rotates the system so that the total angular momentum points in the z-direction ********/
+      /******** The barycentric speeds have a factor m/beta that needs cancelling               ********/
 
       int i;
       typ gx, gy, gz;
@@ -453,9 +454,9 @@ void toInvar(typ * X_cart){
             vx = X_cart[Nd*i - 2];
             vy = X_cart[Nd*i - 1];
             vz = X_cart[Nd*i];
-            gx += masses[i]*(y*vz - z*vy);
-            gy += masses[i]*(z*vx - x*vz);
-            gz += masses[i]*(x*vy - y*vx);
+            gx += m0*masses[i]/(m0 + masses[i])*(y*vz - z*vy);
+            gy += m0*masses[i]/(m0 + masses[i])*(z*vx - x*vz);
+            gz += m0*masses[i]/(m0 + masses[i])*(x*vy - y*vx);
       }
       
       /******** Getting the quaternion of the rotation ********/
@@ -597,16 +598,16 @@ void exp_tau_LB_Ralston(typ tau, typ * X_old){
 }
 
 
-void SABAn(typ tau, typ T, int output_step, typ * X_old, int n){
+void AveragedSABAn(typ tau, typ T, int output_step, typ * X_old, int n){
 
-      /******** Integrates the Hamiltonian with a SABAn method where   ********/
-      /******** 1 <= n <= 6 for a time T with a timestep tau. Outputs  ********/
-      /******** every output_step timestep to file pth/SABAn_chain.txt ********/
-      /******** The Keplerian part A is integrated exactly, but the    ********/
-      /******** perturbation B is integrated with a Ralston method     ********/
+      /******** Integrates the averaged Hamiltonian with a SABAn where    ********/
+      /******** 1 <= n <= 6 for a time T with a timestep tau. Outputs     ********/
+      /******** every output_step timestep to pth/AveragedSABAn_chain.txt ********/
+      /******** The Keplerian part A is integrated exactly, but the       ********/
+      /******** perturbation B is integrated with a Ralston method        ********/
       
       #if _3D_bool
-      fprintf(stderr, "\nError: _3D_bool must be 0 when calling function SABAn.\n");  abort();
+      fprintf(stderr, "\nError: _3D_bool must be 0 when calling function AveragedSABAn.\n");  abort();
       #endif
       
       char file_path[800];
@@ -624,7 +625,7 @@ void SABAn(typ tau, typ T, int output_step, typ * X_old, int n){
       
       /******** Opening output file ********/
       strcpy(file_path, pth);
-      strcat(file_path, "SABA");
+      strcat(file_path, "AveragedSABA");
       sprintf(nn, "%d", n);
       strcat(file_path, nn);
       strcat(file_path, "_");
@@ -635,7 +636,7 @@ void SABAn(typ tau, typ T, int output_step, typ * X_old, int n){
       strcat(file_path, ".txt");
       file = fopen(file_path, "w");
       if (file == NULL){
-            fprintf(stderr, "\nError: Cannot create or open file SABA%d_chain.txt in function SABAn.\n", n);
+            fprintf(stderr, "\nError: Cannot create or open file AveragedSABA%d_chain.txt in function AveragedSABAn.\n", n);
             abort();
       }
       
@@ -654,11 +655,11 @@ void SABAn(typ tau, typ T, int output_step, typ * X_old, int n){
       else if (n == 5){c1 = 0.0469100770306680036; d1 = 0.1184634425280945438; c2 = 0.1838552679164904509; d2 = 0.2393143352496832340; c3 = 0.2692346550528415455; d3 = 64./225.;}
       else if (n == 6){c1 = 0.0337652428984239861; d1 = 0.0856622461895851725; c2 = 0.1356300638684437571; d2 = 0.1803807865240693038; c3 = 0.2112951001915338025;
                        d3 = 0.2339569672863455237; c4 = 0.2386191860831969086;}
-      else{fprintf(stderr, "\nError: n must be between 1 and 6 in function SABAn.\n");  abort();}
+      else{fprintf(stderr, "\nError: n must be between 1 and 6 in function AveragedSABAn.\n");  abort();}
 
       /******** Checking validity of coefficients. To be removed when robust ********/
       if (fabs(2.*c1 + (n == 2 ? 1. : 2.)*c2 + (n == 4 ? 1. : 2.)*c3 + c4 - 1.) > 1.e-15 || fabs((n == 1 ? 1. : 2.)*d1 + (n == 3 ? 1. : 2.)*d2 + (n == 5 ? 1. : 2.)*d3 - 1.) > 1.e-15){
-            fprintf(stderr, "\nError: The sum of the coefficients does not seem to be 1 in function SABAn.\n");
+            fprintf(stderr, "\nError: The sum of the coefficients does not seem to be 1 in function AveragedSABAn.\n");
             abort();
       }
 
@@ -704,7 +705,7 @@ void SABAn(typ tau, typ T, int output_step, typ * X_old, int n){
                         fprintf(file, "Time, Hamiltonian, a_j, e_j, phi_j, sig_j.\n");
                         fprintf(file, "\n");
                   }
-                  H = Hamiltonian(old_buff);
+                  H = AveragedHamiltonian(old_buff);
                   fprintf(file, "%.9lf %.18lf", tau*(typ) iter, H);
                   for (i = 1; i <= how_many_planet; i ++){
                         sig = continuousAngle(X_new[4*i - 2], sigOld[i]);
@@ -1004,7 +1005,7 @@ void RK2(typ tau, typ T, int output_step){
                         fprintf(file, "Time, Hamiltonian, phi_j, v_j, Phi_j, u_j, e_j, sig_j.\n");
                         fprintf(file, "\n");
                   }
-                  H = Hamiltonian(X_old);
+                  H = AveragedHamiltonian(X_old);
                   fprintf(file, "%.12lf %.12lf", tau*(typ) iter, H);
                   for (i = 1; i <= how_many_planet; i ++){
                         sig         = atan2(X_uv[4*i - 2], X_uv[4*i]);
@@ -1047,9 +1048,9 @@ void RK2(typ tau, typ T, int output_step){
 }
 
 
-typ Hamiltonian(typ * X_old){
+typ AveragedHamiltonian(typ * X_old){
 
-      /******** Returns the value of the Hamiltonian ********/
+      /******** Returns the value of the averaged Hamiltonian ********/
 
       typ H = 0.;
       int i, j, k, pi, pj, the_gcd, is_coorbital;
@@ -1353,7 +1354,7 @@ int EquilibriumFind(typ * X_old, int precision){
       typ T [3] = {4000., 8000., 16000.};  //Integration time
       int Hf[3] = {2, 5, 5};               //order of Hanning filter
       int Sn[3] = {1, 1, 4};               //Order of the SABA integrator
-      typ AR[3] = {1.e-4, 1.e-7, 1.e-10};  //Required value for the precision
+      typ AR[3] = {1.e-4, 1.e-7, 1.e-8};   //Required value for the precision
       
       printf("-------------------------------------------------------------------------------------------\n\n");
       printf("Starting the search for a fixed point.\n\n");

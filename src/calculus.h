@@ -44,7 +44,7 @@ void nonDofReinit(typ * X_new, typ * X_uv);
 void exp_tau_LB_Ralston(typ tau, typ * X_old);
 
 
-void SABAn(typ tau, typ T, int output_step, typ * X_old, int n);
+void AveragedSABAn(typ tau, typ T, int output_step, typ * X_old, int n);
 
 
 void SABAn_average(typ tau, typ T, int Hanning_order, typ * X_uv_mean, typ * X_old, int n);
@@ -53,7 +53,7 @@ void SABAn_average(typ tau, typ T, int Hanning_order, typ * X_uv_mean, typ * X_o
 void RK2(typ tau, typ T, int output_step);
 
 
-typ Hamiltonian(typ * X_old);
+typ AveragedHamiltonian(typ * X_old);
 
 
 void PointPrint(typ * X_old, int iter);

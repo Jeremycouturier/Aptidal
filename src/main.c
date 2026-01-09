@@ -34,8 +34,14 @@ int main(){
             epsilon += masses[i]/m0;
       }
       
-      X_old_init(X_old);      
-      UnaveragedSABAn(0.0625, 7500., 1, X_old, 4);
+      X_old_init(X_old);
+      //SABAn(0.25, 7000000000., 50000, X_old, 10);
+      //EquilibriumFind(X_old, 2);
+      //AveragedSABAn(0.125, 25000., 4, X_old, 6);
+      SABAn(0.25, 150000000., 1617, X_old, 10);
+      //SABAH1064(.25, 45000., 2, X_old);
+      //SABAH1064(.125, 1600000., 64, X_old);
+      //SABAH84(.0625, 1600000., 128, X_old);
       /*X_old_init(X_old);
       for (int _ = 0; _ < 20; _ ++){
             LibrationCenterGradientDescent(X_old, 0.125, 40000., 0.00000018, 4, 1);

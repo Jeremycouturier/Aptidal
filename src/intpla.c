@@ -317,7 +317,7 @@ typ mean2eccentric(typ l, typ k, typ h){
       d1  = -fa/f1a;
       d2  = -fa/(f1a - d1*f2a);
       d3  = -fa/(f1a + d2*(f2a + d2*f3a));
-      a   = a + d3;
+      a  += d3;
       //Order 6 method
       ca  = cos(a);
       sa  = sin(a);
@@ -334,7 +334,7 @@ typ mean2eccentric(typ l, typ k, typ h){
       d3  = -fa/(f1a + d2*(f2a + d2*f3a));
       d4  = -fa/(f1a + d3*(f2a + d3*(f3a + d3*f4a)));
       d5  = -fa/(f1a + d4*(f2a + d4*(f3a + d4*(f4a + d4*f5a))));
-      a   = a + d5;
+      a  += d5;
       //Checking current precision
       while (1){
             i ++;
@@ -463,7 +463,7 @@ void newt(typ DM, typ A, typ B, typ * const p_X, typ * const p_C, typ * const p_
       typ B0, B1, F, F1, X, C, S, D1, DIFF, ATEMP;
       int i, NMAX, niter;
       typ EPS = DBL_EPSILON;
-      NMAX = 15;
+      NMAX = 16;
 
       F  = DM;
       F1 = 1. - A;
@@ -552,7 +552,7 @@ void newt(typ DM, typ A, typ B, typ * const p_X, typ * const p_C, typ * const p_
 
 void kepsaut(typ * cart, typ mu, typ dt){
 
-      /******** Updates the cartesian coordinates cart = (x, y, z, vx, vy, vz) along ********/
+      /******** Updates the cartesian coordinates cart = [x, y, z, vx, vy, vz] along ********/
       /******** a Keplerian arc for a time dt. mu is the gravitational parameter.    ********/
       /******** This function was provided by Mickaël Gastineau (IMCCE, ASD team)    ********/
       
@@ -574,6 +574,9 @@ void kepsaut(typ * cart, typ mu, typ dt){
       V2  = (XD[0]*XD[0] + XD[1]*XD[1] + XD[2]*XD[2])/mu;
       XV  = (X [0]*XD[0] + X [1]*XD[1] + X [2]*XD[2])/smu;
       a   = R/(2. - R*V2);
+      #if GR_bool
+      dt *= 1. - 1.5*mu/(a*c_light*c_light); //See Saha&Tremaine 1994, Sect. 5
+      #endif
       sqa = sqrt(a);
       ce  = R*V2 - 1.;
       se  = XV/sqa;
@@ -596,6 +599,7 @@ void kepsaut(typ * cart, typ mu, typ dt){
 void exp_tau_LB(typ tau, typ * X_cart){
 
       /******** Performs one step of a SABA1 on the perturbation B = B_1(p) + B_2(q) ********/
+      /******** The barycentric speeds have a factor m/beta that needs cancelling    ********/
 
       int k, j;
       typ sum_rtilde_x = 0.;  typ sum_rtilde_y = 0.;
@@ -604,25 +608,39 @@ void exp_tau_LB(typ tau, typ * X_cart){
       typ sum_rtilde_z = 0.;
       typ Zj, Zk, dZ;
       #endif
+      #if GR_bool
+      typ v2_c2, r4;
+      #endif
 
       /******** Computing the sum of the \tilde{r}_k/m_0 ********/
       for (k = 1; k <= how_many_planet; k ++){
-            sum_rtilde_x += masses[k]*X_cart[Nd*k - 1 - _3D_bool]/m0;
-            sum_rtilde_y += masses[k]*X_cart[Nd*k     - _3D_bool]/m0;
+            sum_rtilde_x += masses[k]*X_cart[Nd*k - 1 - _3D_bool]/(m0 + masses[k]);
+            sum_rtilde_y += masses[k]*X_cart[Nd*k     - _3D_bool]/(m0 + masses[k]);
             #if _3D_bool
-            sum_rtilde_z += masses[k]*X_cart[Nd*k]/m0;
+            sum_rtilde_z += masses[k]*X_cart[Nd*k]/(m0 + masses[k]);
             #endif
       }
 
       /******** Step exp(1/2*tau*L_B1) ********/
       for (k = 1; k <= how_many_planet; k ++){
             #if _3D_bool
-            X_cart[6*k - 5] += tau/2.*(sum_rtilde_x - masses[k]*X_cart[6*k - 2]/m0);
-            X_cart[6*k - 4] += tau/2.*(sum_rtilde_y - masses[k]*X_cart[6*k - 1]/m0);
-            X_cart[6*k - 3] += tau/2.*(sum_rtilde_z - masses[k]*X_cart[6*k]    /m0);
+            X_cart[6*k - 5] += tau/2.*(sum_rtilde_x - masses[k]*X_cart[6*k - 2]/(m0 + masses[k]));
+            X_cart[6*k - 4] += tau/2.*(sum_rtilde_y - masses[k]*X_cart[6*k - 1]/(m0 + masses[k]));
+            X_cart[6*k - 3] += tau/2.*(sum_rtilde_z - masses[k]*X_cart[6*k]    /(m0 + masses[k]));
+            #if GR_bool
+            v2_c2 = (X_cart[6*k - 2]*X_cart[6*k - 2] + X_cart[6*k - 1]*X_cart[6*k - 1] + X_cart[6*k]*X_cart[6*k])/(c_light*c_light);
+            X_cart[6*k - 5] -= tau*v2_c2*X_cart[6*k - 2];
+            X_cart[6*k - 4] -= tau*v2_c2*X_cart[6*k - 1];
+            X_cart[6*k - 3] -= tau*v2_c2*X_cart[6*k];
+            #endif
             #else
-            X_cart[4*k - 3] += tau/2.*(sum_rtilde_x - masses[k]*X_cart[4*k - 1]/m0);
-            X_cart[4*k - 2] += tau/2.*(sum_rtilde_y - masses[k]*X_cart[4*k]    /m0);
+            X_cart[4*k - 3] += tau/2.*(sum_rtilde_x - masses[k]*X_cart[4*k - 1]/(m0 + masses[k]));
+            X_cart[4*k - 2] += tau/2.*(sum_rtilde_y - masses[k]*X_cart[4*k]    /(m0 + masses[k]));
+            #if GR_bool
+            v2_c2 = (X_cart[4*k - 1]*X_cart[4*k - 1] + X_cart[4*k]*X_cart[4*k])/(c_light*c_light);
+            X_cart[4*k - 3] -= tau*v2_c2*X_cart[4*k - 1];
+            X_cart[4*k - 2] -= tau*v2_c2*X_cart[4*k];
+            #endif
             #endif
       }
 
@@ -630,50 +648,88 @@ void exp_tau_LB(typ tau, typ * X_cart){
       for (k = 1; k <= how_many_planet; k ++){
             #if _3D_bool
             Xk = X_cart[6*k - 5];  Yk = X_cart[6*k - 4];  Zk = X_cart[6*k - 3];
+            #if GR_bool
+            r4 = Xk*Xk + Yk*Yk + Zk*Zk;
+            r4 = r4*r4;
+            X_cart[6*k - 2] -= 2.*tau*G*G*m0*m0*Xk/(c_light*c_light*r4);
+            X_cart[6*k - 1] -= 2.*tau*G*G*m0*m0*Yk/(c_light*c_light*r4);
+            X_cart[6*k]     -= 2.*tau*G*G*m0*m0*Zk/(c_light*c_light*r4);
+            #endif
             for (j = 1; j <= how_many_planet; j ++){
                   if (j != k){
                         Xj   = X_cart[6*j - 5];  Yj = X_cart[6*j - 4];  Zj = X_cart[6*j - 3];
                         dX   = Xk - Xj;  dY = Yk - Yj;  dZ = Zk - Zj;
                         norm = sqrt(dX*dX + dY*dY + dZ*dZ);  norm3 = norm*norm*norm;
-                        X_cart[6*k - 2] -= tau*G*masses[j]*dX/norm3;
-                        X_cart[6*k - 1] -= tau*G*masses[j]*dY/norm3;
-                        X_cart[6*k]     -= tau*G*masses[j]*dZ/norm3;
+                        X_cart[6*k - 2] -= tau*G*masses[j]*(m0 + masses[k])*dX/(norm3*m0);
+                        X_cart[6*k - 1] -= tau*G*masses[j]*(m0 + masses[k])*dY/(norm3*m0);
+                        X_cart[6*k]     -= tau*G*masses[j]*(m0 + masses[k])*dZ/(norm3*m0);
                   }
             }
             #else
             Xk = X_cart[4*k - 3];  Yk = X_cart[4*k - 2];
+            #if GR_bool
+            r4 = Xk*Xk + Yk*Yk;
+            r4 = r4*r4;
+            X_cart[4*k - 1] -= 2.*tau*G*G*m0*m0*Xk/(c_light*c_light*r4);
+            X_cart[4*k]     -= 2.*tau*G*G*m0*m0*Yk/(c_light*c_light*r4);
+            #endif
             for (j = 1; j <= how_many_planet; j ++){
                   if (j != k){
                         Xj   = X_cart[4*j - 3];  Yj = X_cart[4*j - 2];
                         dX   = Xk - Xj;  dY = Yk - Yj;
                         norm = sqrt(dX*dX + dY*dY);  norm3 = norm*norm*norm;
-                        X_cart[4*k - 1] -= tau*G*masses[j]*dX/norm3;
-                        X_cart[4*k]     -= tau*G*masses[j]*dY/norm3;
+                        X_cart[4*k - 1] -= tau*G*masses[j]*(m0 + masses[k])*dX/(norm3*m0);
+                        X_cart[4*k]     -= tau*G*masses[j]*(m0 + masses[k])*dY/(norm3*m0);
                   }
             }
+            #endif
+      }
+
+      /******** Computing the sum of the \tilde{r}_k/m_0 ********/
+      sum_rtilde_x = 0.;  sum_rtilde_y = 0.;
+      #if _3D_bool
+      sum_rtilde_z = 0.;
+      #endif
+      for (k = 1; k <= how_many_planet; k ++){
+            sum_rtilde_x += masses[k]*X_cart[Nd*k - 1 - _3D_bool]/(m0 + masses[k]);
+            sum_rtilde_y += masses[k]*X_cart[Nd*k     - _3D_bool]/(m0 + masses[k]);
+            #if _3D_bool
+            sum_rtilde_z += masses[k]*X_cart[Nd*k]/(m0 + masses[k]);
             #endif
       }
 
       /******** Step exp(1/2*tau*L_B1) ********/
       for (k = 1; k <= how_many_planet; k ++){
             #if _3D_bool
-            X_cart[6*k - 5] += tau/2.*(sum_rtilde_x - masses[k]*X_cart[6*k - 2]/m0);
-            X_cart[6*k - 4] += tau/2.*(sum_rtilde_y - masses[k]*X_cart[6*k - 1]/m0);
-            X_cart[6*k - 3] += tau/2.*(sum_rtilde_z - masses[k]*X_cart[6*k]    /m0);
+            X_cart[6*k - 5] += tau/2.*(sum_rtilde_x - masses[k]*X_cart[6*k - 2]/(m0 + masses[k]));
+            X_cart[6*k - 4] += tau/2.*(sum_rtilde_y - masses[k]*X_cart[6*k - 1]/(m0 + masses[k]));
+            X_cart[6*k - 3] += tau/2.*(sum_rtilde_z - masses[k]*X_cart[6*k]    /(m0 + masses[k]));
+            #if GR_bool
+            v2_c2 = (X_cart[6*k - 2]*X_cart[6*k - 2] + X_cart[6*k - 1]*X_cart[6*k - 1] + X_cart[6*k]*X_cart[6*k])/(c_light*c_light);
+            X_cart[6*k - 5] -= tau*v2_c2*X_cart[6*k - 2];
+            X_cart[6*k - 4] -= tau*v2_c2*X_cart[6*k - 1];
+            X_cart[6*k - 3] -= tau*v2_c2*X_cart[6*k];
+            #endif
             #else
-            X_cart[4*k - 3] += tau/2.*(sum_rtilde_x - masses[k]*X_cart[4*k - 1]/m0);
-            X_cart[4*k - 2] += tau/2.*(sum_rtilde_y - masses[k]*X_cart[4*k]    /m0);
+            X_cart[4*k - 3] += tau/2.*(sum_rtilde_x - masses[k]*X_cart[4*k - 1]/(m0 + masses[k]));
+            X_cart[4*k - 2] += tau/2.*(sum_rtilde_y - masses[k]*X_cart[4*k]    /(m0 + masses[k]));
+            #if GR_bool
+            v2_c2 = (X_cart[4*k - 1]*X_cart[4*k - 1] + X_cart[4*k]*X_cart[4*k])/(c_light*c_light);
+            X_cart[4*k - 3] -= tau*v2_c2*X_cart[4*k - 1];
+            X_cart[4*k - 2] -= tau*v2_c2*X_cart[4*k];
+            #endif
             #endif
       }
 }
 
 
 #if tides_bool
-void exp_tau_LHt(typ * X_cart, typ tau, int planet, int update_rot){
+void exp_tau_LHt(typ * X_cart, typ tau, int planet){
 
-      /******** Modifies the speeds and spins due to tides       ********/
-      /******** Tides are dissipative, a RK1 is propably enough  ********/
-      /******** Heliocentric and barycentric speeds are confused ********/
+      /******** Modifies the speeds and spins due to tides          ********/
+      /******** Tides are dissipative, a RK1 is propably enough     ********/
+      /******** Heliocentric and barycentric speeds are confused    ********/
+      /******** The barycentric speed has a neglected factor m/beta ********/
 
       typ k2 = k2s[planet];
       typ Dt = Dts[planet];
@@ -681,7 +737,7 @@ void exp_tau_LHt(typ * X_cart, typ tau, int planet, int update_rot){
       typ m  = masses[planet];
       typ alp= alps[planet];
       typ mu = G*(m0 + m);
-      typ r2, rv, A, ax, ay;
+      typ r2, rv, A, ax, ay, v, dv;
       #if _3D_bool
       typ Ox = Omx[planet];
       typ Oy = Omy[planet];
@@ -690,6 +746,10 @@ void exp_tau_LHt(typ * X_cart, typ tau, int planet, int update_rot){
       #else
       typ Om = Omg[planet];
       #endif
+      
+      if (k2*Dt == 0.){
+            return;
+      }
       
       #if _3D_bool
       r2  = X_cart[1]*X_cart[1] + X_cart[2]*X_cart[2] + X_cart[3]*X_cart[3];
@@ -708,6 +768,10 @@ void exp_tau_LHt(typ * X_cart, typ tau, int planet, int update_rot){
       ay  = -A*Dt*(2.*rv*X_cart[2] + r2*(X_cart[4] - X_cart[1]*Om));
       #endif
       
+      /******** To be removed ********/
+      //ax *= -1.;
+      //ay *= -1.;
+      
       /******** Updating the speed ********/
       X_cart[3 + _3D_bool] += tau*ax;
       X_cart[4 + _3D_bool] += tau*ay;
@@ -715,86 +779,127 @@ void exp_tau_LHt(typ * X_cart, typ tau, int planet, int update_rot){
       X_cart[6] += tau*az;
       #endif
       
-      /******** Updating the rotation ********/
-      if (update_rot){
-            #if _3D_bool
-            Omx[planet] -= tau/(alp*R*R)*(X_cart[2]*az - X_cart[3]*ay);
-            Omy[planet] -= tau/(alp*R*R)*(X_cart[3]*ax - X_cart[1]*az);
-            Omz[planet] -= tau/(alp*R*R)*(X_cart[1]*ay - X_cart[2]*ax);
-            #else
-            Omg[planet] -= tau/(alp*R*R)*(X_cart[1]*ay - X_cart[2]*ax);
-            #endif
+      #if 0
+      /******** Checking that tides are large enough to be machine representable ********/
+      v  = X_cart[3 + _3D_bool]*X_cart[3 + _3D_bool] + X_cart[4 + _3D_bool]*X_cart[4 + _3D_bool];
+      dv = tau*tau*(ax*ax + ay*ay);
+      #if _3D_bool
+      v  += X_cart[6]*X_cart[6];
+      dv += tau*tau*az*az;
+      #endif
+      v  = sqrt(v);
+      dv = sqrt(dv);
+      if (fabs(dv/v) < 2.*DBL_EPSILON){
+            fprintf(stderr, "\nWarning: Tides are not machine representable. |dv/v| = 10^%.2lf\n", log10(fabs(dv/v)));
       }
+      #endif
+      
+      /******** Updating the rotation ********/
+      #if _3D_bool
+      Omx[planet] -= tau/(alp*R*R)*(X_cart[2]*az - X_cart[3]*ay);
+      Omy[planet] -= tau/(alp*R*R)*(X_cart[3]*ax - X_cart[1]*az);
+      Omz[planet] -= tau/(alp*R*R)*(X_cart[1]*ay - X_cart[2]*ax);
+      #else
+      Omg[planet] -= tau/(alp*R*R)*(X_cart[1]*ay - X_cart[2]*ax);
+      #endif
 }
 #endif
 
 
-void UnaveragedSABAn(typ tau, typ T, int output_step, typ * X_old, int n){
+void SABAn(typ tau, typ T, int output_step, typ * X_old, int n){
 
-      /******** Integrates the complete Hamiltonian with a SABAn where      ********/
-      /******** 1 <= n <= 6 for a time T with a timestep tau. Outputs every ********/
-      /******** output_step timestep to file pth/UnaveragedSABAn_chain.txt. ********/
-      /******** The Keplerian part A is integrated exactly, but the         ********/
-      /******** perturbative part takes the form B = B_1(p) + B_2(q) and is ********/
-      /******** integrated approximetaly but symplectically with a SABA1.   ********/
+      /******** Integrates the complete Hamiltonian with a SABAn where       ********/
+      /******** 1 <= n <= 10 for a time T with a timestep tau. Outputs every ********/
+      /******** output_step timestep to file pth/SABAn_chain.txt.            ********/
+      /******** The Keplerian part A is integrated exactly, but the          ********/
+      /******** perturbative part takes the form B = B_1(p) + B_2(q) and is  ********/
+      /******** integrated approximetaly but symplectically with a SABA1.    ********/
 
 
       char file_path[800];
       char nn[10];
+      char taustr[7];
+      char taustr2[14];
+      char tautau[21];
       FILE * file;
       long int N_step, iter;
-      int i;
+      int i, n_dec;
       typ X_cart[Nd*how_many_planet + 1];
       typ X_buff[Nd*how_many_planet + 1];
       typ X_new [Nd*how_many_planet + 1];
       typ X_uv  [Nd*how_many_planet + 1];
       typ lbdOld[   how_many_planet + 1];
       typ   gOld[   how_many_planet + 1];
-      typ a, e, vp, M, mu, E, beta, lbd, g, H;
+      typ a, e, vp, M, mu, E, beta, lbd, g, H, ten;
       #if _3D_bool
       typ  OmOld[  how_many_planet + 1];
       typ I, Om;
       #endif
-      typ c1, c2, c3, c4, d1, d2, d3;
+      typ c1, c2, c3, c4, c5, c6, d1, d2, d3, d4, d5;
       typ alkhqp[7];
-      int continuous = tau*((typ) output_step) < 0.5 ? 1 : 0;
+      int continuous = tau*((typ) output_step) <= 0.5 ? 1 : 0;
+      
+      /******** Finding the number of decimals of the timestep ********/
+      n_dec = 0;
+      ten = 1.;
+      while (n_dec < 15 && tau*ten - floor(tau*ten) > 4.*DBL_EPSILON){
+            n_dec ++;
+            ten *= 10.;
+      }
+      if      (n_dec== 0){strcpy(taustr, "%.0lf");}  else if (n_dec== 1){strcpy(taustr, "%.1lf");}  else if (n_dec== 2){strcpy(taustr, "%.2lf");}  else if (n_dec== 3){strcpy(taustr, "%.3lf");}
+      else if (n_dec== 4){strcpy(taustr, "%.4lf");}  else if (n_dec== 5){strcpy(taustr, "%.5lf");}  else if (n_dec== 6){strcpy(taustr, "%.6lf");}  else if (n_dec== 7){strcpy(taustr, "%.7lf");}
+      else if (n_dec== 8){strcpy(taustr, "%.8lf");}  else if (n_dec== 9){strcpy(taustr, "%.9lf");}  else if (n_dec==10){strcpy(taustr, "%.10lf");} else if (n_dec==11){strcpy(taustr, "%.11lf");}
+      else if (n_dec==12){strcpy(taustr, "%.12lf");} else if (n_dec==13){strcpy(taustr, "%.13lf");} else if (n_dec==14){strcpy(taustr, "%.14lf");} else if (n_dec==15){strcpy(taustr, "%.15lf");}
+      strcpy(taustr2, taustr); strcat(taustr2, " %.21lf");
       
       /******** Opening output file ********/
       strcpy(file_path, pth);
-      strcat(file_path, "UnaveragedSABA");
+      strcat(file_path, "SABA");
       sprintf(nn, "%d", n);
       strcat(file_path, nn);
-      #if tides_bool
+      #if (tides_bool && GR_bool)
+      strcat(file_path, "_tides+GR_");
+      #elif tides_bool
       strcat(file_path, "_tides_");
+      #elif GR_bool
+      strcat(file_path, "_GR_");
       #else
       strcat(file_path, "_");
       #endif
-      for (i = 1; i <= how_many_planet; i ++){
-            sprintf(nn, "%d", p_i[i]);
-            strcat(file_path, nn);
-      }
-      
+      sprintf(tautau, taustr, tau);
+      strcat(file_path, tautau);
       strcat(file_path, ".txt");
       file = fopen(file_path, "w");
       if (file == NULL){
-            fprintf(stderr, "\nError: Cannot create or open file UnaveragedSABAn_chain.txt in function UnaveragedSABAn.\n");
+            fprintf(stderr, "\nError: Cannot create or open file in function SABAn.\n");
             abort();
       }
       
-      /******** Initializing constants (Laskar & Robutel, 2001) ********/
-      c1 = 0.;  c2 = 0.;  c3 = 0.;  c4 = 0.;  d1 = 0.;  d2 = 0.;  d3 = 0.;
-      if      (n == 1){c1 = 0.5;                   d1 = 1.;}
-      else if (n == 2){c1 = 0.5 - sqrt(3.)/6.;     d1 = 0.5;                   c2 = sqrt(3.)/3.;}
-      else if (n == 3){c1 = 0.5 - sqrt(15.)/10.;   d1 = 5./18.;                c2 = sqrt(15.)/10.;         d2 = 4./9.;}
-      else if (n == 4){c1 = 0.0694318442029737124; d1 = 0.1739274225687269287; c2 = 0.2605776340045981552; d2 = 0.3260725774312730713; c3 = 0.3399810435848562648;}
-      else if (n == 5){c1 = 0.0469100770306680036; d1 = 0.1184634425280945438; c2 = 0.1838552679164904509; d2 = 0.2393143352496832340; c3 = 0.2692346550528415455; d3 = 64./225.;}
-      else if (n == 6){c1 = 0.0337652428984239861; d1 = 0.0856622461895851725; c2 = 0.1356300638684437571; d2 = 0.1803807865240693038; c3 = 0.2112951001915338025;
-                       d3 = 0.2339569672863455237; c4 = 0.2386191860831969086;}
-      else{fprintf(stderr, "\nError: n must be between 1 and 6 in function UnaveragedSABAn.\n");  abort();}
+      /******** Initializing coefficients (Laskar & Robutel, 2001, Table 1) ********/
+      c1 = 0.;  c2 = 0.;  c3 = 0.;  c4 = 0.; c5 = 0.; c6 = 0.; d1 = 0.;  d2 = 0.;  d3 = 0.; d4 = 0.; d5 = 0.;
+      if      (n == 1){c1 = .5;                   d1 = 1.;}
+      else if (n == 2){c1 = .5 - sqrt(3.)/6.;     d1 = .5;                   c2 = sqrt(3.)/3.;}
+      else if (n == 3){c1 = .5 - sqrt(15.)/10.;   d1 = 5./18.;               c2 = sqrt(15.)/10.;        d2 = 4./9.;}
+      else if (n == 4){c1 = .0694318442029737124; d1 = .1739274225687269287; c2 = .2605776340045981552; d2 = .3260725774312730713; c3 = .3399810435848562648;}
+      else if (n == 5){c1 = .0469100770306680036; d1 = .1184634425280945438; c2 = .1838552679164904509; d2 = .2393143352496832340; c3 = .2692346550528415455;
+                       d3 = 64./225.;}
+      else if (n == 6){c1 = .0337652428984239861; d1 = .0856622461895851725; c2 = .1356300638684437571; d2 = .1803807865240693038; c3 = .2112951001915338025;
+                       d3 = .2339569672863455237; c4 = .2386191860831969086;}
+      else if (n == 7){c1 = .0254460438286207377; d1 = .0647424830844348466; c2 = .1037883633716820423; d2 = .1398526957446383340; c3 = .1678430171109986365;
+                       d3 = .1909150252525594725; c4 = .2029225756886985835; d4 = 256./1225.;}
+      else if (n == 8){c1 = .0198550717512318842; d1 = .0506142681451881296; c2 = .0818116895419547460; d2 = .1111905172266872353; c3 = .1355670337486488769;
+                       d3 = .1568533229389436437; c4 = .1710488837103395904; d4 = .1813418916891809915; c5 = .1834346424956498049;}
+      else if (n == 9){c1 = .0159198802461869551; d1 = .0406371941807872060; c2 = .0660645660904951478; d2 = .0903240803474287020; c3 = .1113298373130226985;
+                       d3 = .1303053482014677312; c4 = .1445590046483907341; d4 = .1561735385200014200; c5 = .1621267117019044645; d5 = 16384./99225.;}
+      else if (n ==10){c1 = .0130467357414141400; d1 = .0333356721543440688; c2 = .0544215809140936047; d2 = .0747256745752902966; c3 = .0928268991949800522;
+                       d3 = .1095431812579910220; c4 = .1230070870848886077; d4 = .1346333596549981775; c5 = .1422605275738079900; d5 = .14776211235737643509;
+                       c6 = .1488743389816312109;}                 
+      else{fprintf(stderr, "\nError: n must be between 1 and 10 in function SABAn.\n");  abort();}
 
-      /******** Checking validity of coefficients. To be removed when robust ********/
-      if (fabs(2.*c1 + (n == 2 ? 1. : 2.)*c2 + (n == 4 ? 1. : 2.)*c3 + c4 - 1.) > 1.e-15 || fabs((n == 1 ? 1. : 2.)*d1 + (n == 3 ? 1. : 2.)*d2 + (n == 5 ? 1. : 2.)*d3 - 1.) > 1.e-15){
-            fprintf(stderr, "\nError: The sum of the coefficients does not seem to be 1 in function UnaveragedSABAn.\n");
+      /******** Checking validity of coefficients ********/
+      if (fabs(2.*c1 + (n == 2 ? 1. : 2.)*c2 + (n == 4 ? 1. : 2.)*c3 + (n == 6 ? 1. : 2.)*c4 + (n == 8 ? 1. : 2.)*c5 + c6 - 1.) > 4.*DBL_EPSILON
+      || fabs((n == 1 ? 1. : 2.)*d1 + (n == 3 ? 1. : 2.)*d2 + (n == 5 ? 1. : 2.)*d3 + (n == 7 ? 1. : 2.)*d4 + (n == 9 ? 1. : 2.)*d5 - 1.) > 4.*DBL_EPSILON){
+            fprintf(stderr, "\nError: The sum of the coefficients does not seem to be 1 in function SABAn.\n");
             abort();
       }
       
@@ -828,32 +933,57 @@ void UnaveragedSABAn(typ tau, typ T, int output_step, typ * X_old, int n){
       
             /******** Writing to file ********/
             if (iter%output_step == 0){
-                  for (i = 1; i <= Nd*how_many_planet; i ++){
+                  for (i = 1; i <= Nd*how_many_planet; i ++){ //Filling the buffer with the current state of the simulation
                         X_buff[i] = X_cart[i];
                   }
                   if (iter){
-                        #if tides_bool
-                        for (i = 1; i <= how_many_planet; i ++){ //Need to perform a step exp(-tau/2*S) on the buffer before outputting
-                              exp_tau_LHt(X_buff + Nd*i - Nd, -tau/2., i, 0);
-                        }
-                        #else
                         for (i = 1; i <= how_many_planet; i ++){ //Need to perform a step exp(-c1*tau*L_A) on the buffer before outputting
                               mu = G*(m0 + masses[i]);
                               kepsaut(X_buff + Nd*i - Nd, mu, -c1*tau);
                         }
-                        #endif
                   }
                   else{
-                        #if tides_bool
-                        fprintf(file, "Numerical integration with tides of the unaveraged Hamiltonian with a SABA%d integrator in heliocentric canonical coordinates.\n", n);
-                        fprintf(file, "Tides are included pseudo-symplectically by writing the overall integrator under the form exp(tau/2*S)*exp(tau*L_K)*exp(tau/2*S)\n");
-                        fprintf(file, "where S can be written L_Ht with Ht the tidal pseudo-Hamiltonian described in Couturier et al. 2021 and exp(tau*L_K) is the\n");
-                        fprintf(file, "usual operator of the SABA%d integrator (Laskar and Robutel, 2001)\n", n);
+                        #if (tides_bool && GR_bool)
+                        fprintf(file, "Numerical integration with tides and GR of the complete Hamiltonian with a SABA%d integrator in heliocentric canonical coordinates.\n", n);
+                        #elif tides_bool
+                        fprintf(file, "Numerical integration with tides of the complete Hamiltonian with a SABA%d integrator in heliocentric canonical coordinates.\n", n);
+                        #elif GR_bool
+                        fprintf(file, "Numerical integration with GR of the complete Hamiltonian with a SABA%d integrator in heliocentric canonical coordinates.\n", n);
                         #else
-                        fprintf(file, "Numerical integration of the unaveraged Hamiltonian with a SABA%d integrator in heliocentric canonical coordinates.\n", n);
-                        fprintf(file, "The integrator is exp(tau*L_K) = exp(c1*tau*L_A)*exp(d1*tau*L_B)* ... *exp(d1*tau*L_B)*exp(c1*tau*L_A) (Laskar & Robutel, 2001).\n");
+                        fprintf(file, "Numerical integration of the complete Hamiltonian with a SABA%d integrator in heliocentric canonical coordinates.\n", n);
+                        #endif
+                        if (n == 1){
+                              fprintf(file, "The integrator is exp(tau*L_K) = exp(tau/2*L_A)*exp(tau*L_B)*exp(tau/2*L_A) (Laskar & Robutel, 2001).\n");
+                        }
+                        else if (n == 2){
+                              fprintf(file, "The integrator is exp(tau*L_K) = exp(c1*tau*L_A)*exp(d1*tau*L_B)*exp(c2*tau*L_A)*exp(d1*tau*L_B)*exp(c1*tau*L_A) (Laskar & Robutel, 2001).\n");
+                        }
+                        else{
+                              fprintf(file, "The integrator is exp(tau*L_K) = exp(c1*tau*L_A)*exp(d1*tau*L_B)* ... *exp(d1*tau*L_B)*exp(c1*tau*L_A) (Laskar & Robutel, 2001).\n");
+                        }
                         fprintf(file, "The Keplerian part A is integrated exactly using function kepsaut. The perturbative part B is not integrable but can be\n");
                         fprintf(file, "written B = B1 + B2 with B1 and B2 both integrable. Therefore, B is integrated approximately but symplectically with a SABA1.\n");
+                        #if tides_bool
+                        fprintf(file, "Tides are included pseudo-symplectically by writing the overall integrator under the form\n");
+                        if (n == 1){
+                              fprintf(file, "exp(tau/2*L_A)*exp(tau/2*S)*exp(tau*L_B)*exp(tau/2*S)*exp(tau/2*L_A)\n");
+                        }
+                        else if (n == 2){
+                              fprintf(file, "exp(c1*tau*L_A)*exp(tau/2*S)*exp(d1*tau*L_B)*exp(c2*tau*L_A)*exp(d1*tau*L_B)*exp(tau/2*S)*exp(c1*tau*L_A)\n");
+                        }
+                        else if (n < 4){
+                              fprintf(file, "exp(c1*tau*L_A)*exp(tau/2*S)*exp(d1*tau*L_B)* ... *exp(d1*tau*L_B)*exp(tau/2*S)*exp(c1*tau*L_A)\n");
+                        }
+                        else if (n < 8){
+                              fprintf(file, "exp(c1*tau*L_A)* ... *exp(d2*tau*L_B)*exp(tau/2*S)* ... *exp(tau/2*S)*exp(d2*tau*L_B)* ... *exp(c1*tau*L_A)\n");
+                        }
+                        else{
+                              fprintf(file, "exp(c1*tau*L_A)* ... *exp(d4*tau*L_B)*exp(tau/2*S)* ... *exp(tau/2*S)*exp(d4*tau*L_B)* ... *exp(c1*tau*L_A)\n");
+                        }
+                        fprintf(file, "where S can be written L_Ht with Ht the tidal pseudo-Hamiltonian described in Couturier et al. 2021\n");
+                        #endif
+                        #if GR_bool
+                        fprintf(file, "General relativity is included symplectically following Saha&Tremaine, 1994, Sect. 5.\n");
                         #endif
                         fprintf(file, "\n");
                         #if canon_output_bool
@@ -862,14 +992,42 @@ void UnaveragedSABAn(typ tau, typ T, int output_step, typ * X_old, int n){
                         fprintf(file, "The output coordinates are non-canonical (heliocentric position and heliocentric speed).\n");
                         #endif
                         fprintf(file, "This file has %d columns that are (for 1 <= j <= %d):\n", 2 + Nd*how_many_planet, how_many_planet);
-                        #if _3D_bool
-                        fprintf(file, "Time, Hamiltonian, a_j, e_j, I_j, phi_j, sig_j, Omega_j\n");
+                        if (how_many_resonant == 0){
+                              #if _3D_bool
+                              fprintf(file, "Time, Hamiltonian, a_j, e_j, I_j, lbd_j, -vrp_j, Omega_j\n");
+                              #else
+                              fprintf(file, "Time, Hamiltonian, a_j, e_j, lbd_j, -vrp_j\n");
+                              #endif
+                        }
+                        else{
+                              #if _3D_bool
+                              fprintf(file, "Time, Hamiltonian, a_j, e_j, I_j, phi_j, sig_j, Omega_j\n");
+                              #else
+                              fprintf(file, "Time, Hamiltonian, a_j, e_j, phi_j, sig_j\n");
+                              #endif
+                        }
+                        fprintf(file, "\n");
+                        fprintf(file, "The Hamiltonian is that being integrated by the SABA%d, and is given by Laskar&Robutel, 1995, Eqs (8), (9) and (10).", n);
+                        #if (tides_bool && GR_bool)
+                        fprintf(file, " General relativity and tides are not included in it.\n");
+                        #elif tides_bool
+                        fprintf(file, " Tides are not included in it.\n");
+                        #elif GR_bool
+                        fprintf(file, " General relativity is not included in it.\n");
                         #else
-                        fprintf(file, "Time, Hamiltonian, a_j, e_j, phi_j, sig_j\n");
+                        fprintf(file, "\n");
                         #endif
+                        fprintf(file, "The overall integration error in the Hamiltonian is O(tau^%d*epsilon + tau^2*epsilon^2)", 2*n);
+                        if (how_many_planet == 2){
+                              fprintf(file, " where epsilon = (m_1 + m_2)/m_0.\n");
+                        }
+                        else{
+                              fprintf(file, " where epsilon = (m_1 + ... + m_%d)/m_0.\n", how_many_planet);
+                        }
                         fprintf(file, "\n");
                   }
-                  H = UnaveragedHamiltonian(X_buff);
+                  H = Hamiltonian(X_buff);
+                  fprintf(file, taustr2, tau*(typ) iter, H);
                   #if !canon_output_bool
                   canonical2nonCanonical(X_buff);
                   #endif
@@ -894,48 +1052,52 @@ void UnaveragedSABAn(typ tau, typ T, int output_step, typ * X_old, int n){
                               Om  = atan2(alkhqp[6], alkhqp[5]);
                               #endif
                         }
-                        #if _3D_bool
-                        X_old[Nd*i - 5] = 2.*asin(sqrt(alkhqp[5]*alkhqp[5] + alkhqp[6]*alkhqp[6]));
-                        X_old[Nd*i - 4] = Om;
-                        #endif
-                        X_old[Nd*i - 3] = lbd;
-                        X_old[Nd*i - 2] = g;
-                        X_old[Nd*i - 1] = beta*sqrt(mu*alkhqp[1]);
-                        X_old[Nd*i]     = X_old[Nd*i - 1]*(1. - sqrt(1. - e*e));
+                        if (how_many_resonant == 0){
+                              #if _3D_bool
+                              I = 2.*asin(sqrt(alkhqp[5]*alkhqp[5] + alkhqp[6]*alkhqp[6]));
+                              fprintf(file, " %.16lf %.16lf %.16lf %.16lf %.16lf %.16lf", alkhqp[1], e, I, lbd, g, Om);
+                              #else
+                              fprintf(file, " %.16lf %.16lf %.16lf %.16lf", alkhqp[1], e, lbd, g);
+                              #endif
+                        }
+                        else{
+                              #if _3D_bool
+                              X_old[Nd*i - 5] = 2.*asin(sqrt(alkhqp[5]*alkhqp[5] + alkhqp[6]*alkhqp[6]));
+                              X_old[Nd*i - 4] = Om;
+                              #endif
+                              X_old[Nd*i - 3] = lbd;
+                              X_old[Nd*i - 2] = g;
+                              X_old[Nd*i - 1] = beta*sqrt(mu*alkhqp[1]);
+                              X_old[Nd*i]     = X_old[Nd*i - 1]*(1. - sqrt(1. - e*e));
+                        }
                   }
-                  old2new(X_old, X_new, X_uv);             // (lbd_j, -vrp_j; Lbd_j, D_j) -> (phi_j, v_j; Phi_j, u_j)
-                  fprintf(file, "%.6lf %.20lf", tau*(typ) iter, H);
-                  for (i = 1; i <= how_many_planet; i ++){
-                        e   = sqrt(1. - (1. - X_old[Nd*i]/X_old[Nd*i - 1])*(1. - X_old[Nd*i]/X_old[Nd*i - 1]));
-                        a   = X_old[Nd*i - 1]*X_old[Nd*i - 1]*(m0 + masses[i])/(G*m0*m0*masses[i]*masses[i]);
-                        #if _3D_bool
-                        fprintf(file, " %.15lf %.15lf %.15lf %.15lf %.15lf %.15lf", a, e, X_old[Nd*i - 5], X_new[Nd*i - 3], X_new[Nd*i - 2], X_old[Nd*i - 4]);
-                        #else
-                        fprintf(file, " %.15lf %.15lf %.15lf %.15lf", a, e, X_new[Nd*i - 3], X_new[Nd*i - 2]);
-                        #endif
+                  if (how_many_resonant != 0){
+                        old2new(X_old, X_new, X_uv);             // (lbd_j, -vrp_j; Lbd_j, D_j) -> (phi_j, v_j; Phi_j, u_j)
+                        for (i = 1; i <= how_many_planet; i ++){
+                              e   = sqrt(1. - (1. - X_old[Nd*i]/X_old[Nd*i - 1])*(1. - X_old[Nd*i]/X_old[Nd*i - 1]));
+                              a   = X_old[Nd*i - 1]*X_old[Nd*i - 1]*(m0 + masses[i])/(G*m0*m0*masses[i]*masses[i]);
+                              #if _3D_bool
+                              fprintf(file, " %.16lf %.16lf %.16lf %.16lf %.16lf %.16lf", a, e, X_old[Nd*i - 5], X_new[Nd*i - 3], X_new[Nd*i - 2], X_old[Nd*i - 4]);
+                              #else
+                              fprintf(file, " %.16lf %.16lf %.16lf %.16lf", a, e, X_new[Nd*i - 3], X_new[Nd*i - 2]);
+                              #endif
+                        }
                   }
                   fprintf(file, "\n");
             }
             
-            #if tides_bool
-            /******** Step exp(tau/2*S). For the first iteration only ********/
-            if (!iter){
-                  for (i = 1; i <= how_many_planet; i ++){
-                        exp_tau_LHt(X_cart + Nd*i - Nd, tau/2., i, 1);
-                  }
-            }
-            
-            /******** Step exp(c1*tau*L_A) ********/
-            for (i = 1; i <= how_many_planet; i ++){
-                  mu = G*(m0 + masses[i]);
-                  kepsaut(X_cart + Nd*i - Nd, mu, c1*tau);
-            }
-            #else
             /******** Step exp(c1*tau*L_A). For the first iteration only ********/
             if (!iter){
                   for (i = 1; i <= how_many_planet; i ++){
                         mu = G*(m0 + masses[i]);
                         kepsaut(X_cart + Nd*i - Nd, mu, c1*tau);
+                  }
+            }
+            
+            #if tides_bool
+            if (n < 4){
+                  for (i = 1; i <= how_many_planet; i ++){
+                        exp_tau_LHt(X_cart + Nd*i - Nd, tau/2., i);
                   }
             }
             #endif
@@ -955,6 +1117,14 @@ void UnaveragedSABAn(typ tau, typ T, int output_step, typ * X_old, int n){
                         exp_tau_LB(d2*tau, X_cart);
 
                         if (n >= 4){
+                              #if tides_bool
+                              if (n < 8){
+                                    for (i = 1; i <= how_many_planet; i ++){
+                                          exp_tau_LHt(X_cart + Nd*i - Nd, tau/2., i);
+                                    }
+                              }
+                              #endif
+                        
                               /******** Step exp(c3*tau*L_A) ********/
                               for (i = 1; i <= how_many_planet; i ++){
                                     mu = G*(m0 + masses[i]);
@@ -972,6 +1142,62 @@ void UnaveragedSABAn(typ tau, typ T, int output_step, typ * X_old, int n){
                                                 kepsaut(X_cart + Nd*i - Nd, mu, c4*tau);
                                           }
                                           
+                                          if (n >= 7){
+                                                /******** Step exp(d4*tau*L_B) ********/
+                                                exp_tau_LB(d4*tau, X_cart);
+                                                
+                                                if (n >= 8){
+                                                      #if tides_bool
+                                                      for (i = 1; i <= how_many_planet; i ++){
+                                                            exp_tau_LHt(X_cart + Nd*i - Nd, tau/2., i);
+                                                      }
+                                                      #endif
+                                                      
+                                                      /******** Step exp(c5*tau*L_A) ********/
+                                                      for (i = 1; i <= how_many_planet; i ++){
+                                                            mu = G*(m0 + masses[i]);
+                                                            kepsaut(X_cart + Nd*i - Nd, mu, c5*tau);
+                                                      }
+                                                      
+                                                      if (n >= 9){
+                                                            /******** Step exp(d5*tau*L_B) ********/
+                                                            exp_tau_LB(d5*tau, X_cart);
+                                                            
+                                                            if (n >= 10){
+                                                                  /******** Step exp(c6*tau*L_A) ********/
+                                                                  for (i = 1; i <= how_many_planet; i ++){
+                                                                        mu = G*(m0 + masses[i]);
+                                                                        kepsaut(X_cart + Nd*i - Nd, mu, c6*tau);
+                                                                  }
+                                                                  
+                                                                  /******** Step exp(d5*tau*L_B) ********/
+                                                                  exp_tau_LB(d5*tau, X_cart);
+                                                            }
+                                                            
+                                                            /******** Step exp(c5*tau*L_A) ********/
+                                                            for (i = 1; i <= how_many_planet; i ++){
+                                                                  mu = G*(m0 + masses[i]);
+                                                                  kepsaut(X_cart + Nd*i - Nd, mu, c5*tau);
+                                                            }
+                                                      }
+                                                      
+                                                      #if tides_bool
+                                                      for (i = 1; i <= how_many_planet; i ++){
+                                                            exp_tau_LHt(X_cart + Nd*i - Nd, tau/2., i);
+                                                      }
+                                                      #endif
+                                                      
+                                                      /******** Step exp(d4*tau*L_B) ********/
+                                                      exp_tau_LB(d4*tau, X_cart);
+                                                }
+                                                
+                                                /******** Step exp(c4*tau*L_A) ********/
+                                                for (i = 1; i <= how_many_planet; i ++){
+                                                      mu = G*(m0 + masses[i]);
+                                                      kepsaut(X_cart + Nd*i - Nd, mu, c4*tau);
+                                                }
+                                          }
+                                          
                                           /******** Step exp(d3*tau*L_B) ********/
                                           exp_tau_LB(d3*tau, X_cart);
                                     }
@@ -982,6 +1208,15 @@ void UnaveragedSABAn(typ tau, typ T, int output_step, typ * X_old, int n){
                                           kepsaut(X_cart + Nd*i - Nd, mu, c3*tau);
                                     }
                               }
+                              
+                              #if tides_bool
+                              if (n < 8){
+                                    for (i = 1; i <= how_many_planet; i ++){
+                                          exp_tau_LHt(X_cart + Nd*i - Nd, tau/2., i);
+                                    }
+                              }
+                              #endif
+                              
                               /******** Step exp(d2*tau*L_B) ********/
                               exp_tau_LB(d2*tau, X_cart);
                         }
@@ -996,24 +1231,20 @@ void UnaveragedSABAn(typ tau, typ T, int output_step, typ * X_old, int n){
                   /******** Step exp(d1*tau*L_B) ********/
                   exp_tau_LB(d1*tau, X_cart);
             }
-            #if tides_bool
-            /******** Step exp(c1*tau*L_A) ********/
-            for (i = 1; i <= how_many_planet; i ++){
-                  mu = G*(m0 + masses[i]);
-                  kepsaut(X_cart + Nd*i - Nd, mu, c1*tau);
-            }
             
-            /******** Step exp(tau*S) ********/
-            for (i = 1; i <= how_many_planet; i ++){
-                  exp_tau_LHt(X_cart + Nd*i - Nd, tau, i, 1);
+            #if tides_bool
+            if (n < 4){
+                  for (i = 1; i <= how_many_planet; i ++){
+                        exp_tau_LHt(X_cart + Nd*i - Nd, tau/2., i);
+                  }
             }
-            #else
+            #endif
+            
             /******** Step exp(2*c1*tau*L_A) ********/
             for (i = 1; i <= how_many_planet; i ++){
                   mu = G*(m0 + masses[i]);
                   kepsaut(X_cart + Nd*i - Nd, mu, 2.*c1*tau);
             }
-            #endif
             
             /******** To be removed potentially. Checking for close encounters. Does not handle large timesteps ********/
             #if close_enc_bool
@@ -1064,13 +1295,727 @@ void UnaveragedSABAn(typ tau, typ T, int output_step, typ * X_old, int n){
 }
 
 
-typ UnaveragedHamiltonian(typ * X_cart){
+void SABAH84(typ tau, typ T, int output_step, typ * X_old){
+
+      /******** Integrates the complete Hamiltonian with a SABAH84         ********/
+      /******** for a time T with a timestep tau. Outputs every output_step ********/
+      /******** timestep to file pth/SABAH1064_chain.txt.                   ********/
+      /******** The Keplerian part A is integrated exactly, but the         ********/
+      /******** perturbative part takes the form B = B_1(p) + B_2(q) and is ********/
+      /******** integrated approximetaly but symplectically with a SABA1.   ********/
+
+
+      char file_path[800];
+      char taustr[7];
+      char taustr2[14];
+      char tautau[21];
+      FILE * file;
+      long int N_step, iter;
+      int i, n_dec;
+      typ X_cart[Nd*how_many_planet + 1];
+      typ X_buff[Nd*how_many_planet + 1];
+      typ X_new [Nd*how_many_planet + 1];
+      typ X_uv  [Nd*how_many_planet + 1];
+      typ lbdOld[   how_many_planet + 1];
+      typ   gOld[   how_many_planet + 1];
+      typ a, e, vp, M, mu, E, beta, lbd, g, H, ten;
+      #if _3D_bool
+      typ  OmOld[  how_many_planet + 1];
+      typ I, Om;
+      #endif
+      typ c1, c2, c3, c4, d1, d2, d3;
+      typ alkhqp[7];
+      int continuous = tau*((typ) output_step) <= 0.5 ? 1 : 0;
+      
+      /******** Finding the number of decimals of the timestep ********/
+      n_dec = 0;
+      ten = 1.;
+      while (n_dec < 15 && tau*ten - floor(tau*ten) > 4.*DBL_EPSILON){
+            n_dec ++;
+            ten *= 10.;
+      }
+      if      (n_dec== 0){strcpy(taustr, "%.0lf");}  else if (n_dec== 1){strcpy(taustr, "%.1lf");}  else if (n_dec== 2){strcpy(taustr, "%.2lf");}  else if (n_dec== 3){strcpy(taustr, "%.3lf");}
+      else if (n_dec== 4){strcpy(taustr, "%.4lf");}  else if (n_dec== 5){strcpy(taustr, "%.5lf");}  else if (n_dec== 6){strcpy(taustr, "%.6lf");}  else if (n_dec== 7){strcpy(taustr, "%.7lf");}
+      else if (n_dec== 8){strcpy(taustr, "%.8lf");}  else if (n_dec== 9){strcpy(taustr, "%.9lf");}  else if (n_dec==10){strcpy(taustr, "%.10lf");} else if (n_dec==11){strcpy(taustr, "%.11lf");}
+      else if (n_dec==12){strcpy(taustr, "%.12lf");} else if (n_dec==13){strcpy(taustr, "%.13lf");} else if (n_dec==14){strcpy(taustr, "%.14lf");} else if (n_dec==15){strcpy(taustr, "%.15lf");}
+      strcpy(taustr2, taustr); strcat(taustr2, " %.21lf");
+      
+      /******** Opening output file ********/
+      strcpy(file_path, pth);
+      strcat(file_path, "SABAH84");
+      #if (tides_bool && GR_bool)
+      strcat(file_path, "_tides+GR_");
+      #elif tides_bool
+      strcat(file_path, "_tides_");
+      #elif GR_bool
+      strcat(file_path, "_GR_");
+      #else
+      strcat(file_path, "_");
+      #endif
+      sprintf(tautau, taustr, tau);
+      strcat(file_path, tautau);
+      strcat(file_path, ".txt");
+      file = fopen(file_path, "w");
+      if (file == NULL){
+            fprintf(stderr, "\nError: Cannot create or open file in function SABAH84.\n");
+            abort();
+      }
+      
+      /******** Initializing coefficients (Blanes et al, 2013, Table 4) ********/
+      c1 = .27414026894340187616; c2 = -.10756843844016423063; c3 = -.04801850259060169269; c4 = .76289334417472809430;
+      d1 = .64088579516251271773; d2 = -.85857544895678285659; d3 =  .71768965379427013886;
+      
+      /******** Checking validity of coefficients ********/
+      if (fabs(2.*(c1 + c2 + c3) + c4 - 1.) > 2.*DBL_EPSILON || fabs(2.*(d1 + d2 + d3) - 1.) > 2.*DBL_EPSILON){
+            fprintf(stderr, "\nError: The sum of the coefficients does not seem to be 1 in function SABAH84.\n");
+            abort();
+      }
+      
+      /******** Initializing the cartesian coordinates ********/
+      for (i = 1; i <= how_many_planet; i ++){
+            mu = G*(m0 + masses[i]);
+            a  = X_old[Nd*i - 1]*X_old[Nd*i - 1]*(m0 + masses[i])/(G*m0*m0*masses[i]*masses[i]);
+            e  = sqrt(1. - (1. - X_old[Nd*i]/X_old[Nd*i - 1])*(1. - X_old[Nd*i]/X_old[Nd*i - 1]));
+            vp = -X_old[Nd*i - 2];
+            M  =  X_old[Nd*i - 3] - vp;
+            E  = mean2eccentric(M + vp, e*cos(vp), e*sin(vp)) - vp;
+            lbdOld[i] = X_old[Nd*i - 3];  gOld[i] = X_old[Nd*i - 2];
+            #if _3D_bool
+            I  = X_old[Nd*i - 5]; //X_old = (I, Omega, lbd, -vrp, Lbd, D) in 3D case
+            Om = X_old[Nd*i - 4];
+            OmOld[i] = Om;
+            ell2cart(a, e, I,  E, vp, Om, mu, X_cart + Nd*i - Nd);
+            #else
+            ell2cart(a, e, 0., E, vp, 0., mu, X_cart + Nd*i - Nd);
+            #endif
+      }
+      
+      /******** Rotating to the invariant plane ********/
+      #if (toInvar_bool && _3D_bool)
+      toInvar(X_cart);
+      #endif
+
+      /******** Integrating ********/
+      N_step = (long int) ceil(T/tau);
+      for (iter = 0; iter < N_step + 1; iter ++){
+      
+            /******** Writing to file ********/
+            if (iter%output_step == 0){
+                  for (i = 1; i <= Nd*how_many_planet; i ++){ //Filling the buffer with the current state of the simulation
+                        X_buff[i] = X_cart[i];
+                  }
+                  if (iter){
+                        for (i = 1; i <= how_many_planet; i ++){ //Need to perform a step exp(-c1*tau*L_A) on the buffer before outputting
+                              mu = G*(m0 + masses[i]);
+                              kepsaut(X_buff + Nd*i - Nd, mu, -c1*tau);
+                        }
+                  }
+                  else{
+                        #if (tides_bool && GR_bool)
+                        fprintf(file, "Numerical integration with tides and GR of the complete Hamiltonian with a SABAH84 integrator in heliocentric canonical coordinates.\n");
+                        #elif tides_bool
+                        fprintf(file, "Numerical integration with tides of the complete Hamiltonian with a SABAH84 integrator in heliocentric canonical coordinates.\n");
+                        #elif GR_bool
+                        fprintf(file, "Numerical integration with GR of the complete Hamiltonian with a SABAH84 integrator in heliocentric canonical coordinates.\n");
+                        #else
+                        fprintf(file, "Numerical integration of the complete Hamiltonian with a SABAH84 integrator in heliocentric canonical coordinates.\n");
+                        #endif
+                        fprintf(file, "The integrator is exp(tau*L_K) = exp(c1*tau*L_A)*exp(d1*tau*L_B)* ... *exp(d1*tau*L_B)*exp(c1*tau*L_A) (Blanes et al., 2013).\n");
+                        fprintf(file, "The Keplerian part A is integrated exactly using function kepsaut. The perturbative part B is not integrable but can be\n");
+                        fprintf(file, "written B = B1 + B2 with B1 and B2 both integrable. Therefore, B is integrated approximately but symplectically with a SABA1.\n");
+                        #if tides_bool
+                        fprintf(file, "Tides are included pseudo-symplectically by writing the overall integrator under the form\n");
+                        fprintf(file, "exp(c1*tau*L_A)*exp(tau/2*S)*exp(d1*tau*L_B)* ... *exp(d1*tau*L_B)*exp(tau/2*S)*exp(c1*tau*L_A)\n");
+                        fprintf(file, "where S can be written L_Ht with Ht the tidal pseudo-Hamiltonian described in Couturier et al. 2021\n");
+                        #endif
+                        #if GR_bool
+                        fprintf(file, "General relativity is included symplectically following Saha&Tremaine, 1994, Sect. 5.\n");
+                        #endif
+                        fprintf(file, "\n");
+                        #if canon_output_bool
+                        fprintf(file, "The output coordinates are canonical (heliocentric position and barycentric speed).\n");
+                        #else
+                        fprintf(file, "The output coordinates are non-canonical (heliocentric position and heliocentric speed).\n");
+                        #endif
+                        fprintf(file, "This file has %d columns that are (for 1 <= j <= %d):\n", 2 + Nd*how_many_planet, how_many_planet);
+                        if (how_many_resonant == 0){
+                              #if _3D_bool
+                              fprintf(file, "Time, Hamiltonian, a_j, e_j, I_j, lbd_j, -vrp_j, Omega_j\n");
+                              #else
+                              fprintf(file, "Time, Hamiltonian, a_j, e_j, lbd_j, -vrp_j\n");
+                              #endif
+                        }
+                        else{
+                              #if _3D_bool
+                              fprintf(file, "Time, Hamiltonian, a_j, e_j, I_j, phi_j, sig_j, Omega_j\n");
+                              #else
+                              fprintf(file, "Time, Hamiltonian, a_j, e_j, phi_j, sig_j\n");
+                              #endif
+                        }
+                        fprintf(file, "\n");
+                        fprintf(file, "The Hamiltonian is that being integrated by the SABAH84, and is given by Laskar&Robutel, 1995, Eqs (8), (9) and (10).");
+                        #if (tides_bool && GR_bool)
+                        fprintf(file, " General relativity and tides are not included in it.\n");
+                        #elif tides_bool
+                        fprintf(file, " Tides are not included in it.\n");
+                        #elif GR_bool
+                        fprintf(file, " General relativity is not included in it.\n");
+                        #else
+                        fprintf(file, "\n");
+                        #endif
+                        fprintf(file, "The overall integration error in the Hamiltonian is O(tau^8*epsilon + tau^4*epsilon^2)");
+                        if (how_many_planet == 2){
+                              fprintf(file, " where epsilon = (m_1 + m_2)/m_0.\n");
+                        }
+                        else{
+                              fprintf(file, " where epsilon = (m_1 + ... + m_%d)/m_0.\n", how_many_planet);
+                        }
+                        fprintf(file, "\n");
+                  }
+                  H = Hamiltonian(X_buff);
+                  fprintf(file, taustr2, tau*(typ) iter, H);
+                  #if !canon_output_bool
+                  canonical2nonCanonical(X_buff);
+                  #endif
+                  for (i = 1; i <= how_many_planet; i ++){ // (x, y; vx, vy) -> (lbd_j, -vrp_j; Lbd_j, D_j) or (x, y, z; vx, vy, vz) -> (I, Omega, lbd_j, -vrp_j; Lbd_j, D_j)
+                        beta = m0*masses[i]/(m0 + masses[i]);
+                        mu   = G*(m0 + masses[i]);
+                        cart2ell(X_buff + Nd*i - Nd, alkhqp, mu);
+                        e    = sqrt(alkhqp[3]*alkhqp[3] + alkhqp[4]*alkhqp[4]);
+                        if (continuous){
+                              lbd = continuousAngle(alkhqp[2],                  lbdOld[i]);
+                              g   = continuousAngle(-atan2(alkhqp[4], alkhqp[3]), gOld[i]);
+                              lbdOld[i] = lbd;  gOld[i] = g;
+                              #if _3D_bool
+                              Om  = continuousAngle(atan2(alkhqp[6], alkhqp[5]), OmOld[i]);
+                              OmOld[i] = Om;
+                              #endif
+                        }
+                        else{
+                              lbd = alkhqp[2];
+                              g   = -atan2(alkhqp[4], alkhqp[3]);
+                              #if _3D_bool
+                              Om  = atan2(alkhqp[6], alkhqp[5]);
+                              #endif
+                        }
+                        if (how_many_resonant == 0){
+                              #if _3D_bool
+                              I = 2.*asin(sqrt(alkhqp[5]*alkhqp[5] + alkhqp[6]*alkhqp[6]));
+                              fprintf(file, " %.16lf %.16lf %.16lf %.16lf %.16lf %.16lf", alkhqp[1], e, I, lbd, g, Om);
+                              #else
+                              fprintf(file, " %.16lf %.16lf %.16lf %.16lf", alkhqp[1], e, lbd, g);
+                              #endif
+                        }
+                        else{
+                              #if _3D_bool
+                              X_old[Nd*i - 5] = 2.*asin(sqrt(alkhqp[5]*alkhqp[5] + alkhqp[6]*alkhqp[6]));
+                              X_old[Nd*i - 4] = Om;
+                              #endif
+                              X_old[Nd*i - 3] = lbd;
+                              X_old[Nd*i - 2] = g;
+                              X_old[Nd*i - 1] = beta*sqrt(mu*alkhqp[1]);
+                              X_old[Nd*i]     = X_old[Nd*i - 1]*(1. - sqrt(1. - e*e));
+                        }
+                  }
+                  if (how_many_resonant != 0){
+                        old2new(X_old, X_new, X_uv);             // (lbd_j, -vrp_j; Lbd_j, D_j) -> (phi_j, v_j; Phi_j, u_j)
+                        for (i = 1; i <= how_many_planet; i ++){
+                              e   = sqrt(1. - (1. - X_old[Nd*i]/X_old[Nd*i - 1])*(1. - X_old[Nd*i]/X_old[Nd*i - 1]));
+                              a   = X_old[Nd*i - 1]*X_old[Nd*i - 1]*(m0 + masses[i])/(G*m0*m0*masses[i]*masses[i]);
+                              #if _3D_bool
+                              fprintf(file, " %.16lf %.16lf %.16lf %.16lf %.16lf %.16lf", a, e, X_old[Nd*i - 5], X_new[Nd*i - 3], X_new[Nd*i - 2], X_old[Nd*i - 4]);
+                              #else
+                              fprintf(file, " %.16lf %.16lf %.16lf %.16lf", a, e, X_new[Nd*i - 3], X_new[Nd*i - 2]);
+                              #endif
+                        }
+                  }
+                  fprintf(file, "\n");
+            }
+            
+            /******** Step exp(c1*tau*L_A). For the first iteration only ********/
+            if (!iter){
+                  for (i = 1; i <= how_many_planet; i ++){
+                        mu = G*(m0 + masses[i]);
+                        kepsaut(X_cart + Nd*i - Nd, mu, c1*tau);
+                  }
+            }
+            #if tides_bool
+            for (i = 1; i <= how_many_planet; i ++){
+                  exp_tau_LHt(X_cart + Nd*i - Nd, tau/2., i);
+            }
+            #endif
+            /******** Step exp(d1*tau*L_B) ********/
+            exp_tau_LB(d1*tau, X_cart);
+            /******** Step exp(c2*tau*L_A) ********/
+            for (i = 1; i <= how_many_planet; i ++){
+                  mu = G*(m0 + masses[i]);
+                  kepsaut(X_cart + Nd*i - Nd, mu, c2*tau);
+            }
+            /******** Step exp(d2*tau*L_B) ********/
+            exp_tau_LB(d2*tau, X_cart);
+            /******** Step exp(c3*tau*L_A) ********/
+            for (i = 1; i <= how_many_planet; i ++){
+                  mu = G*(m0 + masses[i]);
+                  kepsaut(X_cart + Nd*i - Nd, mu, c3*tau);
+            }
+            /******** Step exp(d3*tau*L_B) ********/
+            exp_tau_LB(d3*tau, X_cart);
+            /******** Step exp(c4*tau*L_A) ********/
+            for (i = 1; i <= how_many_planet; i ++){
+                  mu = G*(m0 + masses[i]);
+                  kepsaut(X_cart + Nd*i - Nd, mu, c4*tau);
+            }
+            /******** Step exp(d3*tau*L_B) ********/
+            exp_tau_LB(d3*tau, X_cart);
+            /******** Step exp(c3*tau*L_A) ********/
+            for (i = 1; i <= how_many_planet; i ++){
+                  mu = G*(m0 + masses[i]);
+                  kepsaut(X_cart + Nd*i - Nd, mu, c3*tau);
+            }
+            /******** Step exp(d2*tau*L_B) ********/
+            exp_tau_LB(d2*tau, X_cart);
+            /******** Step exp(c2*tau*L_A) ********/
+            for (i = 1; i <= how_many_planet; i ++){
+                  mu = G*(m0 + masses[i]);
+                  kepsaut(X_cart + Nd*i - Nd, mu, c2*tau);
+            }
+            /******** Step exp(d1*tau*L_B) ********/
+            exp_tau_LB(d1*tau, X_cart);
+            #if tides_bool
+            for (i = 1; i <= how_many_planet; i ++){
+                  exp_tau_LHt(X_cart + Nd*i - Nd, tau/2., i);
+            }
+            #endif
+            /******** Step exp(2*c1*tau*L_A) ********/
+            for (i = 1; i <= how_many_planet; i ++){
+                  mu = G*(m0 + masses[i]);
+                  kepsaut(X_cart + Nd*i - Nd, mu, 2.*c1*tau);
+            }
+            
+            /******** To be removed potentially. Checking for close encounters. Does not handle large timesteps ********/
+            #if close_enc_bool
+            int j;
+            typ xi, yi, xj, yj, ri, rj, dx, dy, d, RHi, RHj;
+            #if _3D_bool
+            typ zi, zj, dz;
+            #endif
+            for (i = 1; i <= how_many_planet; i ++){
+                  xi  = X_cart[Nd*i - 3 - 2*_3D_bool];
+                  yi  = X_cart[Nd*i - 2 - 2*_3D_bool];
+                  #if _3D_bool
+                  zi  = X_cart[Nd*i - 3];
+                  ri  = sqrt(xi*xi + yi*yi + zi*zi);
+                  #else
+                  ri  = sqrt(xi*xi + yi*yi);
+                  #endif
+                  RHi = ri*pow(masses[i]/(3.*m0), 1./3.);
+                  for (j = i + 1; j <= how_many_planet; j ++){
+                        xj  = X_cart[Nd*j - 3 - 2*_3D_bool];
+                        yj  = X_cart[Nd*j - 2 - 2*_3D_bool];
+                        #if _3D_bool
+                        zj  = X_cart[Nd*j - 3];
+                        rj  = sqrt(xj*xj + yj*yj + zj*zj);
+                        #else
+                        rj  = sqrt(xj*xj + yj*yj);
+                        #endif
+                        RHj = rj*pow(masses[j]/(3.*m0), 1./3.);
+                        dx  = xi - xj;
+                        dy  = yi - yj;
+                        #if _3D_bool
+                        dz  = zi - zj;
+                        d   = sqrt(dx*dx + dy*dy + dz*dz);
+                        #else
+                        d   = sqrt(dx*dx + dy*dy);
+                        #endif
+                        if (d < RHi + RHj){
+                              printf("\nError: Planets %d and %d are in each other Hill sphere. Ending integration now.\n", i, j);
+                              iter = N_step + 1;
+                        }
+                  }
+            }
+            #endif
+      }
+
+      /******** Closing output file ********/
+      fclose(file);
+}
+
+
+void SABAH1064(typ tau, typ T, int output_step, typ * X_old){
+
+      /******** Integrates the complete Hamiltonian with a SABAH1064        ********/
+      /******** for a time T with a timestep tau. Outputs every output_step ********/
+      /******** timestep to file pth/SABAH1064_chain.txt.                   ********/
+      /******** The Keplerian part A is integrated exactly, but the         ********/
+      /******** perturbative part takes the form B = B_1(p) + B_2(q) and is ********/
+      /******** integrated approximetaly but symplectically with a SABA1.   ********/
+
+
+      char file_path[800];
+      char taustr[7];
+      char taustr2[14];
+      char tautau[21];
+      FILE * file;
+      long int N_step, iter;
+      int i, n_dec;
+      typ X_cart[Nd*how_many_planet + 1];
+      typ X_buff[Nd*how_many_planet + 1];
+      typ X_new [Nd*how_many_planet + 1];
+      typ X_uv  [Nd*how_many_planet + 1];
+      typ lbdOld[   how_many_planet + 1];
+      typ   gOld[   how_many_planet + 1];
+      typ a, e, vp, M, mu, E, beta, lbd, g, H, ten;
+      #if _3D_bool
+      typ  OmOld[  how_many_planet + 1];
+      typ I, Om;
+      #endif
+      typ c1, c2, c3, c4, c5, d1, d2, d3, d4, d5;
+      typ alkhqp[7];
+      int continuous = tau*((typ) output_step) <= 0.5 ? 1 : 0;
+      
+      /******** Finding the number of decimals of the timestep ********/
+      n_dec = 0;
+      ten = 1.;
+      while (n_dec < 15 && tau*ten - floor(tau*ten) > 4.*DBL_EPSILON){
+            n_dec ++;
+            ten *= 10.;
+      }
+      if      (n_dec== 0){strcpy(taustr, "%.0lf");}  else if (n_dec== 1){strcpy(taustr, "%.1lf");}  else if (n_dec== 2){strcpy(taustr, "%.2lf");}  else if (n_dec== 3){strcpy(taustr, "%.3lf");}
+      else if (n_dec== 4){strcpy(taustr, "%.4lf");}  else if (n_dec== 5){strcpy(taustr, "%.5lf");}  else if (n_dec== 6){strcpy(taustr, "%.6lf");}  else if (n_dec== 7){strcpy(taustr, "%.7lf");}
+      else if (n_dec== 8){strcpy(taustr, "%.8lf");}  else if (n_dec== 9){strcpy(taustr, "%.9lf");}  else if (n_dec==10){strcpy(taustr, "%.10lf");} else if (n_dec==11){strcpy(taustr, "%.11lf");}
+      else if (n_dec==12){strcpy(taustr, "%.12lf");} else if (n_dec==13){strcpy(taustr, "%.13lf");} else if (n_dec==14){strcpy(taustr, "%.14lf");} else if (n_dec==15){strcpy(taustr, "%.15lf");}
+      strcpy(taustr2, taustr); strcat(taustr2, " %.21lf");
+      
+      /******** Opening output file ********/
+      strcpy(file_path, pth);
+      strcat(file_path, "SABAH1064");
+      #if (tides_bool && GR_bool)
+      strcat(file_path, "_tides+GR_");
+      #elif tides_bool
+      strcat(file_path, "_tides_");
+      #elif GR_bool
+      strcat(file_path, "_GR_");
+      #else
+      strcat(file_path, "_");
+      #endif
+      sprintf(tautau, taustr, tau);
+      strcat(file_path, tautau);
+      strcat(file_path, ".txt");
+      file = fopen(file_path, "w");
+      if (file == NULL){
+            fprintf(stderr, "\nError: Cannot create or open file in function SABAH1064.\n");
+            abort();
+      }
+      
+      /******** Initializing coefficients (Blanes et al, 2013, Table 4) ********/
+      c1 = .04731908697653382270; c2 = .26511052357487851595; c3 = -.00997652288381124084; c4 = -.05992919973494155126; c5 = .25747611206734045345;
+      d1 = .11968846245853220353; d2 = .37529558553793742504; d3 = -.46845934183259937836; d4 =  .33513973427558970104; d5 = .27667111912108009750;
+      
+      /******** Checking validity of coefficients ********/
+      if (fabs(2.*(c3 + c1 + c4 + c5 + c2) - 1.) > 2.*DBL_EPSILON || fabs(d5 + 2.*(d1 + d4 + d2 + d3) - 1.) > 2.*DBL_EPSILON){
+            fprintf(stderr, "\nError: The sum of the coefficients does not seem to be 1 in function SABAH1064.\n");
+            abort();
+      }
+      
+      /******** Initializing the cartesian coordinates ********/
+      for (i = 1; i <= how_many_planet; i ++){
+            mu = G*(m0 + masses[i]);
+            a  = X_old[Nd*i - 1]*X_old[Nd*i - 1]*(m0 + masses[i])/(G*m0*m0*masses[i]*masses[i]);
+            e  = sqrt(1. - (1. - X_old[Nd*i]/X_old[Nd*i - 1])*(1. - X_old[Nd*i]/X_old[Nd*i - 1]));
+            vp = -X_old[Nd*i - 2];
+            M  =  X_old[Nd*i - 3] - vp;
+            E  = mean2eccentric(M + vp, e*cos(vp), e*sin(vp)) - vp;
+            lbdOld[i] = X_old[Nd*i - 3];  gOld[i] = X_old[Nd*i - 2];
+            #if _3D_bool
+            I  = X_old[Nd*i - 5]; //X_old = (I, Omega, lbd, -vrp, Lbd, D) in 3D case
+            Om = X_old[Nd*i - 4];
+            OmOld[i] = Om;
+            ell2cart(a, e, I,  E, vp, Om, mu, X_cart + Nd*i - Nd);
+            #else
+            ell2cart(a, e, 0., E, vp, 0., mu, X_cart + Nd*i - Nd);
+            #endif
+      }
+      
+      /******** Rotating to the invariant plane ********/
+      #if (toInvar_bool && _3D_bool)
+      toInvar(X_cart);
+      #endif
+
+      /******** Integrating ********/
+      N_step = (long int) ceil(T/tau);
+      for (iter = 0; iter < N_step + 1; iter ++){
+      
+            /******** Writing to file ********/
+            if (iter%output_step == 0){
+                  for (i = 1; i <= Nd*how_many_planet; i ++){ //Filling the buffer with the current state of the simulation
+                        X_buff[i] = X_cart[i];
+                  }
+                  if (iter){
+                        for (i = 1; i <= how_many_planet; i ++){ //Need to perform a step exp(-c1*tau*L_A) on the buffer before outputting
+                              mu = G*(m0 + masses[i]);
+                              kepsaut(X_buff + Nd*i - Nd, mu, -c1*tau);
+                        }
+                  }
+                  else{
+                        #if (tides_bool && GR_bool)
+                        fprintf(file, "Numerical integration with tides and GR of the complete Hamiltonian with a SABAH1064 integrator in heliocentric canonical coordinates.\n");
+                        #elif tides_bool
+                        fprintf(file, "Numerical integration with tides of the complete Hamiltonian with a SABAH1064 integrator in heliocentric canonical coordinates.\n");
+                        #elif GR_bool
+                        fprintf(file, "Numerical integration with GR of the complete Hamiltonian with a SABAH1064 integrator in heliocentric canonical coordinates.\n");
+                        #else
+                        fprintf(file, "Numerical integration of the complete Hamiltonian with a SABAH1064 integrator in heliocentric canonical coordinates.\n");
+                        #endif
+                        fprintf(file, "The integrator is exp(tau*L_K) = exp(c1*tau*L_A)*exp(d1*tau*L_B)* ... *exp(d1*tau*L_B)*exp(c1*tau*L_A) (Blanes et al., 2013).\n");
+                        fprintf(file, "The Keplerian part A is integrated exactly using function kepsaut. The perturbative part B is not integrable but can be\n");
+                        fprintf(file, "written B = B1 + B2 with B1 and B2 both integrable. Therefore, B is integrated approximately but symplectically with a SABA1.\n");
+                        #if tides_bool
+                        fprintf(file, "Tides are included pseudo-symplectically by writing the overall integrator under the form\n");
+                        fprintf(file, "exp(c1*tau*L_A)*exp(d1*tau*L_B)*exp(c2*tau*L_A)*exp(tau/2*S)*exp(d2*tau*L_B)* ... *exp(d2*tau*L_B)");
+                        fprintf(file, "*exp(tau/2*S)*exp(c2*tau*L_A)*exp(d1*tau*L_B)*exp(c1*tau*L_A)\n");
+                        fprintf(file, "where S can be written L_Ht with Ht the tidal pseudo-Hamiltonian described in Couturier et al. 2021\n");
+                        #endif
+                        #if GR_bool
+                        fprintf(file, "General relativity is included symplectically following Saha&Tremaine, 1994, Sect. 5.\n");
+                        #endif
+                        fprintf(file, "\n");
+                        #if canon_output_bool
+                        fprintf(file, "The output coordinates are canonical (heliocentric position and barycentric speed).\n");
+                        #else
+                        fprintf(file, "The output coordinates are non-canonical (heliocentric position and heliocentric speed).\n");
+                        #endif
+                        fprintf(file, "This file has %d columns that are (for 1 <= j <= %d):\n", 2 + Nd*how_many_planet, how_many_planet);
+                        if (how_many_resonant == 0){
+                              #if _3D_bool
+                              fprintf(file, "Time, Hamiltonian, a_j, e_j, I_j, lbd_j, -vrp_j, Omega_j\n");
+                              #else
+                              fprintf(file, "Time, Hamiltonian, a_j, e_j, lbd_j, -vrp_j\n");
+                              #endif
+                        }
+                        else{
+                              #if _3D_bool
+                              fprintf(file, "Time, Hamiltonian, a_j, e_j, I_j, phi_j, sig_j, Omega_j\n");
+                              #else
+                              fprintf(file, "Time, Hamiltonian, a_j, e_j, phi_j, sig_j\n");
+                              #endif
+                        }
+                        fprintf(file, "\n");
+                        fprintf(file, "The Hamiltonian is that being integrated by the SABAH1064, and is given by Laskar&Robutel, 1995, Eqs (8), (9) and (10).");
+                        #if (tides_bool && GR_bool)
+                        fprintf(file, " General relativity and tides are not included in it.\n");
+                        #elif tides_bool
+                        fprintf(file, " Tides are not included in it.\n");
+                        #elif GR_bool
+                        fprintf(file, " General relativity is not included in it.\n");
+                        #else
+                        fprintf(file, "\n");
+                        #endif
+                        fprintf(file, "The overall integration error in the Hamiltonian is O(tau^10*epsilon + tau^6*epsilon^2 + tau^4*epsilon^3)");
+                        if (how_many_planet == 2){
+                              fprintf(file, " where epsilon = (m_1 + m_2)/m_0.\n");
+                        }
+                        else{
+                              fprintf(file, " where epsilon = (m_1 + ... + m_%d)/m_0.\n", how_many_planet);
+                        }
+                        fprintf(file, "\n");
+                  }
+                  H = Hamiltonian(X_buff);
+                  fprintf(file, taustr2, tau*(typ) iter, H);
+                  #if !canon_output_bool
+                  canonical2nonCanonical(X_buff);
+                  #endif
+                  for (i = 1; i <= how_many_planet; i ++){ // (x, y; vx, vy) -> (lbd_j, -vrp_j; Lbd_j, D_j) or (x, y, z; vx, vy, vz) -> (I, Omega, lbd_j, -vrp_j; Lbd_j, D_j)
+                        beta = m0*masses[i]/(m0 + masses[i]);
+                        mu   = G*(m0 + masses[i]);
+                        cart2ell(X_buff + Nd*i - Nd, alkhqp, mu);
+                        e    = sqrt(alkhqp[3]*alkhqp[3] + alkhqp[4]*alkhqp[4]);
+                        if (continuous){
+                              lbd = continuousAngle(alkhqp[2],                  lbdOld[i]);
+                              g   = continuousAngle(-atan2(alkhqp[4], alkhqp[3]), gOld[i]);
+                              lbdOld[i] = lbd;  gOld[i] = g;
+                              #if _3D_bool
+                              Om  = continuousAngle(atan2(alkhqp[6], alkhqp[5]), OmOld[i]);
+                              OmOld[i] = Om;
+                              #endif
+                        }
+                        else{
+                              lbd = alkhqp[2];
+                              g   = -atan2(alkhqp[4], alkhqp[3]);
+                              #if _3D_bool
+                              Om  = atan2(alkhqp[6], alkhqp[5]);
+                              #endif
+                        }
+                        if (how_many_resonant == 0){
+                              #if _3D_bool
+                              I = 2.*asin(sqrt(alkhqp[5]*alkhqp[5] + alkhqp[6]*alkhqp[6]));
+                              fprintf(file, " %.16lf %.16lf %.16lf %.16lf %.16lf %.16lf", alkhqp[1], e, I, lbd, g, Om);
+                              #else
+                              fprintf(file, " %.16lf %.16lf %.16lf %.16lf", alkhqp[1], e, lbd, g);
+                              #endif
+                        }
+                        else{
+                              #if _3D_bool
+                              X_old[Nd*i - 5] = 2.*asin(sqrt(alkhqp[5]*alkhqp[5] + alkhqp[6]*alkhqp[6]));
+                              X_old[Nd*i - 4] = Om;
+                              #endif
+                              X_old[Nd*i - 3] = lbd;
+                              X_old[Nd*i - 2] = g;
+                              X_old[Nd*i - 1] = beta*sqrt(mu*alkhqp[1]);
+                              X_old[Nd*i]     = X_old[Nd*i - 1]*(1. - sqrt(1. - e*e));
+                        }
+                  }
+                  if (how_many_resonant != 0){
+                        old2new(X_old, X_new, X_uv);             // (lbd_j, -vrp_j; Lbd_j, D_j) -> (phi_j, v_j; Phi_j, u_j)
+                        for (i = 1; i <= how_many_planet; i ++){
+                              e   = sqrt(1. - (1. - X_old[Nd*i]/X_old[Nd*i - 1])*(1. - X_old[Nd*i]/X_old[Nd*i - 1]));
+                              a   = X_old[Nd*i - 1]*X_old[Nd*i - 1]*(m0 + masses[i])/(G*m0*m0*masses[i]*masses[i]);
+                              #if _3D_bool
+                              fprintf(file, " %.16lf %.16lf %.16lf %.16lf %.16lf %.16lf", a, e, X_old[Nd*i - 5], X_new[Nd*i - 3], X_new[Nd*i - 2], X_old[Nd*i - 4]);
+                              #else
+                              fprintf(file, " %.16lf %.16lf %.16lf %.16lf", a, e, X_new[Nd*i - 3], X_new[Nd*i - 2]);
+                              #endif
+                        }
+                  }
+                  fprintf(file, "\n");
+            }
+            
+            /******** Step exp(c1*tau*L_A). For the first iteration only ********/
+            if (!iter){
+                  for (i = 1; i <= how_many_planet; i ++){
+                        mu = G*(m0 + masses[i]);
+                        kepsaut(X_cart + Nd*i - Nd, mu, c1*tau);
+                  }
+            }
+            /******** Step exp(d1*tau*L_B) ********/
+            exp_tau_LB(d1*tau, X_cart);
+            /******** Step exp(c2*tau*L_A) ********/
+            for (i = 1; i <= how_many_planet; i ++){
+                  mu = G*(m0 + masses[i]);
+                  kepsaut(X_cart + Nd*i - Nd, mu, c2*tau);
+            }
+            #if tides_bool
+            for (i = 1; i <= how_many_planet; i ++){
+                  exp_tau_LHt(X_cart + Nd*i - Nd, tau/2., i);
+            }
+            #endif
+            /******** Step exp(d2*tau*L_B) ********/
+            exp_tau_LB(d2*tau, X_cart);
+            /******** Step exp(c3*tau*L_A) ********/
+            for (i = 1; i <= how_many_planet; i ++){
+                  mu = G*(m0 + masses[i]);
+                  kepsaut(X_cart + Nd*i - Nd, mu, c3*tau);
+            }
+            /******** Step exp(d3*tau*L_B) ********/
+            exp_tau_LB(d3*tau, X_cart);
+            /******** Step exp(c4*tau*L_A) ********/
+            for (i = 1; i <= how_many_planet; i ++){
+                  mu = G*(m0 + masses[i]);
+                  kepsaut(X_cart + Nd*i - Nd, mu, c4*tau);
+            }
+            /******** Step exp(d4*tau*L_B) ********/
+            exp_tau_LB(d4*tau, X_cart);
+            /******** Step exp(c5*tau*L_A) ********/
+            for (i = 1; i <= how_many_planet; i ++){
+                  mu = G*(m0 + masses[i]);
+                  kepsaut(X_cart + Nd*i - Nd, mu, c5*tau);
+            }
+            /******** Step exp(d5*tau*L_B) ********/
+            exp_tau_LB(d5*tau, X_cart);
+            /******** Step exp(c5*tau*L_A) ********/
+            for (i = 1; i <= how_many_planet; i ++){
+                  mu = G*(m0 + masses[i]);
+                  kepsaut(X_cart + Nd*i - Nd, mu, c5*tau);
+            }
+            /******** Step exp(d4*tau*L_B) ********/
+            exp_tau_LB(d4*tau, X_cart);
+            /******** Step exp(c4*tau*L_A) ********/
+            for (i = 1; i <= how_many_planet; i ++){
+                  mu = G*(m0 + masses[i]);
+                  kepsaut(X_cart + Nd*i - Nd, mu, c4*tau);
+            }
+            /******** Step exp(d3*tau*L_B) ********/
+            exp_tau_LB(d3*tau, X_cart);
+            /******** Step exp(c3*tau*L_A) ********/
+            for (i = 1; i <= how_many_planet; i ++){
+                  mu = G*(m0 + masses[i]);
+                  kepsaut(X_cart + Nd*i - Nd, mu, c3*tau);
+            }
+            /******** Step exp(d2*tau*L_B) ********/
+            exp_tau_LB(d2*tau, X_cart);
+            #if tides_bool
+            for (i = 1; i <= how_many_planet; i ++){
+                  exp_tau_LHt(X_cart + Nd*i - Nd, tau/2., i);
+            }
+            #endif
+            /******** Step exp(c2*tau*L_A) ********/
+            for (i = 1; i <= how_many_planet; i ++){
+                  mu = G*(m0 + masses[i]);
+                  kepsaut(X_cart + Nd*i - Nd, mu, c2*tau);
+            }
+            /******** Step exp(d1*tau*L_B) ********/
+            exp_tau_LB(d1*tau, X_cart);
+            /******** Step exp(2*c1*tau*L_A) ********/
+            for (i = 1; i <= how_many_planet; i ++){
+                  mu = G*(m0 + masses[i]);
+                  kepsaut(X_cart + Nd*i - Nd, mu, 2.*c1*tau);
+            }
+            
+            /******** To be removed potentially. Checking for close encounters. Does not handle large timesteps ********/
+            #if close_enc_bool
+            int j;
+            typ xi, yi, xj, yj, ri, rj, dx, dy, d, RHi, RHj;
+            #if _3D_bool
+            typ zi, zj, dz;
+            #endif
+            for (i = 1; i <= how_many_planet; i ++){
+                  xi  = X_cart[Nd*i - 3 - 2*_3D_bool];
+                  yi  = X_cart[Nd*i - 2 - 2*_3D_bool];
+                  #if _3D_bool
+                  zi  = X_cart[Nd*i - 3];
+                  ri  = sqrt(xi*xi + yi*yi + zi*zi);
+                  #else
+                  ri  = sqrt(xi*xi + yi*yi);
+                  #endif
+                  RHi = ri*pow(masses[i]/(3.*m0), 1./3.);
+                  for (j = i + 1; j <= how_many_planet; j ++){
+                        xj  = X_cart[Nd*j - 3 - 2*_3D_bool];
+                        yj  = X_cart[Nd*j - 2 - 2*_3D_bool];
+                        #if _3D_bool
+                        zj  = X_cart[Nd*j - 3];
+                        rj  = sqrt(xj*xj + yj*yj + zj*zj);
+                        #else
+                        rj  = sqrt(xj*xj + yj*yj);
+                        #endif
+                        RHj = rj*pow(masses[j]/(3.*m0), 1./3.);
+                        dx  = xi - xj;
+                        dy  = yi - yj;
+                        #if _3D_bool
+                        dz  = zi - zj;
+                        d   = sqrt(dx*dx + dy*dy + dz*dz);
+                        #else
+                        d   = sqrt(dx*dx + dy*dy);
+                        #endif
+                        if (d < RHi + RHj){
+                              printf("\nError: Planets %d and %d are in each other Hill sphere. Ending integration now.\n", i, j);
+                              iter = N_step + 1;
+                        }
+                  }
+            }
+            #endif
+      }
+
+      /******** Closing output file ********/
+      fclose(file);
+}
+
+
+typ Hamiltonian(typ * X_cart){
 
       /******** Returns the value of the Unaveraged Hamiltonian given by         ********/
       /******** Eq. (2.53) of https://jeremycouturier.com/img/PhD_manuscript.pdf ********/
 
       int i, j;
-      typ xi, yi, vxi, vyi, xj, yj, vxj, vyj, ri, vi2, bti, dij, vivj, mi, mj;
+      typ xi, yi, vxi, vyi, xj, yj, vxj, vyj, ri, vi2, bti, btj, dij, vivj, mi, mj;
       #if _3D_bool
       typ zi, vzi, zj, vzj;
       #endif
@@ -1097,10 +2042,10 @@ typ UnaveragedHamiltonian(typ * X_cart){
             ri  = sqrt(xi*xi + yi*yi);
             vi2 = vxi*vxi + vyi*vyi;
             #endif
-            //HK += mi*mi*vi2/(2.*bti) - G*m0*mi/ri;
-            HK += bti*vi2/2. - G*m0*mi/ri;
+            HK += bti*vi2/2. - G*m0*mi/ri; //Taking into account factor m/beta in barycentric speeds
             for (j = i + 1; j <= how_many_planet; j ++){
                   mj  = masses[j];
+                  btj = m0*mj/(m0 + mj);
                   #if _3D_bool
                   xj  = X_cart[Nd*j - 5];
                   yj  = X_cart[Nd*j - 4];
@@ -1118,7 +2063,7 @@ typ UnaveragedHamiltonian(typ * X_cart){
                   dij = sqrt((xi - xj)*(xi - xj) + (yi - yj)*(yi - yj));
                   vivj= vxi*vxj + vyi*vyj;
                   #endif
-                  HP += mi*mj*vivj/m0 - G*mi*mj/dij;
+                  HP += bti*btj*vivj/m0 - G*mi*mj/dij;
             }
       }
       return HK + HP;
@@ -2030,7 +2975,7 @@ void LibrationCenterFind(typ * X_old, int precision){
       }
       printf("Amplitude = %.20lf, required = %.13lf\n\n", amplitude, AR[precision]);
       /******** To be removed ********/
-      UnaveragedSABAn(tau/2., 5000., 2, X_old, 5);
+      SABAn(tau/2., 5000., 2, X_old, 5);
       new2old(X_old, X_new, X_uv);
 }
 
@@ -2307,7 +3252,7 @@ void PeriodicOrbitFind(typ * X_old){
       T2 = max(target_ratio.numerator, target_ratio.denominator)*min(2.*M_PI/nu_fast, 2.*M_PI/nu_reso);
       T  = 0.5*(fabs(T1) + fabs(T2));
       dt = T/(256.*round(T));
-      UnaveragedSABAn(dt, 3.2*T, 1, X_old, 4);
+      SABAn(dt, 3.2*T, 1, X_old, 4);
 }
 
 

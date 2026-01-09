@@ -53,7 +53,6 @@ extern typ Omz   [how_many_planet + 1];      //z-coordinate of sideral rotations
 extern typ Omg   [how_many_planet + 1];      //Sideral rotations                 of the planets
 #endif
 #endif
-extern typ m0;                               //Mass of the star
 
 
 /******** Some global variables and arrays ********/
