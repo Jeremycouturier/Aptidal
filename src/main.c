@@ -35,10 +35,26 @@ int main(){
       }
       
       X_old_init(X_old);
-      //SABAn(0.25, 7000000000., 50000, X_old, 10);
-      //EquilibriumFind(X_old, 2);
+      SABAn(0.125, 5000., 2, X_old, 8);
+      
+      //EquilibriumFind(X_old, 1);
+      //SABAn(0.125, 15000., 1, X_old, 6);
+      //LibrationCenterFind(X_old, 1);
+      
+      /*
+      for (int _ = 0; _ < 3; _ ++){
+            LibrationCenterNAFF(X_old, 0.0625,  15000., 5, 1, 50);
+      }
+      for (int _ = 0; _ < 8; _ ++){
+            LibrationCenterNAFF(X_old, 0.03125, 45000., 5, 1, 50);
+      }
+      SABAn(0.125, 15000., 1, X_old, 7);
+      */
+      
       //AveragedSABAn(0.125, 25000., 4, X_old, 6);
-      SABAn(0.25, 150000000., 1617, X_old, 10);
+      
+      //SABAn(0.25, 450158004., 2540*10, X_old, 10);
+      
       //SABAH1064(.25, 45000., 2, X_old);
       //SABAH1064(.125, 1600000., 64, X_old);
       //SABAH84(.0625, 1600000., 128, X_old);

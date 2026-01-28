@@ -535,8 +535,8 @@ void newt(typ DM, typ A, typ B, typ * const p_X, typ * const p_C, typ * const p_
                  -1./6.)*X*X*X)
                 /
                 ((23./326040.*X*X
-                  +7./494)*X*X
-                 +1.
+                  +7./494.)*X*X
+                  +1.
                 );
       }   
       else 
@@ -726,10 +726,10 @@ void exp_tau_LB(typ tau, typ * X_cart){
 #if tides_bool
 void exp_tau_LHt(typ * X_cart, typ tau, int planet){
 
-      /******** Modifies the speeds and spins due to tides          ********/
-      /******** Tides are dissipative, a RK1 is propably enough     ********/
-      /******** Heliocentric and barycentric speeds are confused    ********/
-      /******** The barycentric speed has a neglected factor m/beta ********/
+      /******** Modifies the speeds and spins due to tides       ********/
+      /******** Tides are dissipative, a RK1 is propably enough  ********/
+      /******** Heliocentric and barycentric speeds are confused ********/
+      /******** The barycentric speed has a factor m/beta        ********/
 
       typ k2 = k2s[planet];
       typ Dt = Dts[planet];
@@ -747,7 +747,7 @@ void exp_tau_LHt(typ * X_cart, typ tau, int planet){
       typ Om = Omg[planet];
       #endif
       
-      if (k2*Dt == 0.){
+      if (k2 == 0.){
             return;
       }
       
@@ -759,6 +759,8 @@ void exp_tau_LHt(typ * X_cart, typ tau, int planet){
       rv  = X_cart[1]*X_cart[3] + X_cart[2]*X_cart[4];
       #endif
       A   = 3.*k2*G*m0*m0/m*R*R*R*R*R/(r2*r2*r2*r2*r2);
+      
+      /******** Dissipative part of tides ********/
       #if _3D_bool
       ax  = -A*Dt*(2.*rv*X_cart[1] + r2*(X_cart[4] + X_cart[2]*Oz - X_cart[3]*Oy));
       ay  = -A*Dt*(2.*rv*X_cart[2] + r2*(X_cart[5] + X_cart[3]*Ox - X_cart[1]*Oz));
@@ -768,30 +770,21 @@ void exp_tau_LHt(typ * X_cart, typ tau, int planet){
       ay  = -A*Dt*(2.*rv*X_cart[2] + r2*(X_cart[4] - X_cart[1]*Om));
       #endif
       
-      /******** To be removed ********/
-      //ax *= -1.;
-      //ay *= -1.;
-      
+      /******** Conservative part of tides ********/
+      #if _3D_bool
+      ax -= A*r2*X_cart[1];
+      ay -= A*r2*X_cart[2];
+      az -= A*r2*X_cart[3];
+      #else
+      ax -= A*r2*X_cart[1];
+      ay -= A*r2*X_cart[2];
+      #endif
+
       /******** Updating the speed ********/
       X_cart[3 + _3D_bool] += tau*ax;
       X_cart[4 + _3D_bool] += tau*ay;
       #if _3D_bool
       X_cart[6] += tau*az;
-      #endif
-      
-      #if 0
-      /******** Checking that tides are large enough to be machine representable ********/
-      v  = X_cart[3 + _3D_bool]*X_cart[3 + _3D_bool] + X_cart[4 + _3D_bool]*X_cart[4 + _3D_bool];
-      dv = tau*tau*(ax*ax + ay*ay);
-      #if _3D_bool
-      v  += X_cart[6]*X_cart[6];
-      dv += tau*tau*az*az;
-      #endif
-      v  = sqrt(v);
-      dv = sqrt(dv);
-      if (fabs(dv/v) < 2.*DBL_EPSILON){
-            fprintf(stderr, "\nWarning: Tides are not machine representable. |dv/v| = 10^%.2lf\n", log10(fabs(dv/v)));
-      }
       #endif
       
       /******** Updating the rotation ********/
@@ -837,20 +830,19 @@ void SABAn(typ tau, typ T, int output_step, typ * X_old, int n){
       #endif
       typ c1, c2, c3, c4, c5, c6, d1, d2, d3, d4, d5;
       typ alkhqp[7];
-      int continuous = tau*((typ) output_step) <= 0.5 ? 1 : 0;
+      int continuous = tau*((typ) output_step) <= .5 ? 1 : 0;
       
       /******** Finding the number of decimals of the timestep ********/
       n_dec = 0;
       ten = 1.;
-      while (n_dec < 15 && tau*ten - floor(tau*ten) > 4.*DBL_EPSILON){
+      while (n_dec < 15 && tau*ten - floor(tau*ten) > 8.*DBL_EPSILON){
             n_dec ++;
             ten *= 10.;
       }
       if      (n_dec== 0){strcpy(taustr, "%.0lf");}  else if (n_dec== 1){strcpy(taustr, "%.1lf");}  else if (n_dec== 2){strcpy(taustr, "%.2lf");}  else if (n_dec== 3){strcpy(taustr, "%.3lf");}
       else if (n_dec== 4){strcpy(taustr, "%.4lf");}  else if (n_dec== 5){strcpy(taustr, "%.5lf");}  else if (n_dec== 6){strcpy(taustr, "%.6lf");}  else if (n_dec== 7){strcpy(taustr, "%.7lf");}
       else if (n_dec== 8){strcpy(taustr, "%.8lf");}  else if (n_dec== 9){strcpy(taustr, "%.9lf");}  else if (n_dec==10){strcpy(taustr, "%.10lf");} else if (n_dec==11){strcpy(taustr, "%.11lf");}
-      else if (n_dec==12){strcpy(taustr, "%.12lf");} else if (n_dec==13){strcpy(taustr, "%.13lf");} else if (n_dec==14){strcpy(taustr, "%.14lf");} else if (n_dec==15){strcpy(taustr, "%.15lf");}
-      strcpy(taustr2, taustr); strcat(taustr2, " %.21lf");
+      else if (n_dec==12){strcpy(taustr, "%.12lf");} else if (n_dec==13){strcpy(taustr, "%.13lf");} else if (n_dec==14){strcpy(taustr, "%.14lf");} else               {strcpy(taustr, "%.15lf");}
       
       /******** Opening output file ********/
       strcpy(file_path, pth);
@@ -875,6 +867,19 @@ void SABAn(typ tau, typ T, int output_step, typ * X_old, int n){
             abort();
       }
       
+      /******** Finding the number of decimals of output_step*timestep ********/
+      n_dec = 0;
+      ten = 1.;
+      while (n_dec < 15 && ((typ) output_step)*tau*ten - floor(((typ) output_step)*tau*ten) > 8.*DBL_EPSILON){
+            n_dec ++;
+            ten *= 10.;
+      }
+      if      (n_dec== 0){strcpy(taustr, "%.0lf");}  else if (n_dec== 1){strcpy(taustr, "%.1lf");}  else if (n_dec== 2){strcpy(taustr, "%.2lf");}  else if (n_dec== 3){strcpy(taustr, "%.3lf");}
+      else if (n_dec== 4){strcpy(taustr, "%.4lf");}  else if (n_dec== 5){strcpy(taustr, "%.5lf");}  else if (n_dec== 6){strcpy(taustr, "%.6lf");}  else if (n_dec== 7){strcpy(taustr, "%.7lf");}
+      else if (n_dec== 8){strcpy(taustr, "%.8lf");}  else if (n_dec== 9){strcpy(taustr, "%.9lf");}  else if (n_dec==10){strcpy(taustr, "%.10lf");} else if (n_dec==11){strcpy(taustr, "%.11lf");}
+      else if (n_dec==12){strcpy(taustr, "%.12lf");} else if (n_dec==13){strcpy(taustr, "%.13lf");} else if (n_dec==14){strcpy(taustr, "%.14lf");} else               {strcpy(taustr, "%.15lf");}
+      strcpy(taustr2, taustr); strcat(taustr2, " %.21lf");
+      
       /******** Initializing coefficients (Laskar & Robutel, 2001, Table 1) ********/
       c1 = 0.;  c2 = 0.;  c3 = 0.;  c4 = 0.; c5 = 0.; c6 = 0.; d1 = 0.;  d2 = 0.;  d3 = 0.; d4 = 0.; d5 = 0.;
       if      (n == 1){c1 = .5;                   d1 = 1.;}
@@ -892,8 +897,8 @@ void SABAn(typ tau, typ T, int output_step, typ * X_old, int n){
       else if (n == 9){c1 = .0159198802461869551; d1 = .0406371941807872060; c2 = .0660645660904951478; d2 = .0903240803474287020; c3 = .1113298373130226985;
                        d3 = .1303053482014677312; c4 = .1445590046483907341; d4 = .1561735385200014200; c5 = .1621267117019044645; d5 = 16384./99225.;}
       else if (n ==10){c1 = .0130467357414141400; d1 = .0333356721543440688; c2 = .0544215809140936047; d2 = .0747256745752902966; c3 = .0928268991949800522;
-                       d3 = .1095431812579910220; c4 = .1230070870848886077; d4 = .1346333596549981775; c5 = .1422605275738079900; d5 = .14776211235737643509;
-                       c6 = .1488743389816312109;}                 
+                       d3 = .1095431812579910220; c4 = .1230070870848886077; d4 = .1346333596549981775; c5 = .1422605275738079900; d5 = .1477621123573764351;
+                       c6 = .1488743389816312109;}
       else{fprintf(stderr, "\nError: n must be between 1 and 10 in function SABAn.\n");  abort();}
 
       /******** Checking validity of coefficients ********/
@@ -1337,8 +1342,7 @@ void SABAH84(typ tau, typ T, int output_step, typ * X_old){
       if      (n_dec== 0){strcpy(taustr, "%.0lf");}  else if (n_dec== 1){strcpy(taustr, "%.1lf");}  else if (n_dec== 2){strcpy(taustr, "%.2lf");}  else if (n_dec== 3){strcpy(taustr, "%.3lf");}
       else if (n_dec== 4){strcpy(taustr, "%.4lf");}  else if (n_dec== 5){strcpy(taustr, "%.5lf");}  else if (n_dec== 6){strcpy(taustr, "%.6lf");}  else if (n_dec== 7){strcpy(taustr, "%.7lf");}
       else if (n_dec== 8){strcpy(taustr, "%.8lf");}  else if (n_dec== 9){strcpy(taustr, "%.9lf");}  else if (n_dec==10){strcpy(taustr, "%.10lf");} else if (n_dec==11){strcpy(taustr, "%.11lf");}
-      else if (n_dec==12){strcpy(taustr, "%.12lf");} else if (n_dec==13){strcpy(taustr, "%.13lf");} else if (n_dec==14){strcpy(taustr, "%.14lf");} else if (n_dec==15){strcpy(taustr, "%.15lf");}
-      strcpy(taustr2, taustr); strcat(taustr2, " %.21lf");
+      else if (n_dec==12){strcpy(taustr, "%.12lf");} else if (n_dec==13){strcpy(taustr, "%.13lf");} else if (n_dec==14){strcpy(taustr, "%.14lf");} else               {strcpy(taustr, "%.15lf");}
       
       /******** Opening output file ********/
       strcpy(file_path, pth);
@@ -1360,6 +1364,19 @@ void SABAH84(typ tau, typ T, int output_step, typ * X_old){
             fprintf(stderr, "\nError: Cannot create or open file in function SABAH84.\n");
             abort();
       }
+      
+      /******** Finding the number of decimals of output_step*timestep ********/
+      n_dec = 0;
+      ten = 1.;
+      while (n_dec < 15 && ((typ) output_step)*tau*ten - floor(((typ) output_step)*tau*ten) > 8.*DBL_EPSILON){
+            n_dec ++;
+            ten *= 10.;
+      }
+      if      (n_dec== 0){strcpy(taustr, "%.0lf");}  else if (n_dec== 1){strcpy(taustr, "%.1lf");}  else if (n_dec== 2){strcpy(taustr, "%.2lf");}  else if (n_dec== 3){strcpy(taustr, "%.3lf");}
+      else if (n_dec== 4){strcpy(taustr, "%.4lf");}  else if (n_dec== 5){strcpy(taustr, "%.5lf");}  else if (n_dec== 6){strcpy(taustr, "%.6lf");}  else if (n_dec== 7){strcpy(taustr, "%.7lf");}
+      else if (n_dec== 8){strcpy(taustr, "%.8lf");}  else if (n_dec== 9){strcpy(taustr, "%.9lf");}  else if (n_dec==10){strcpy(taustr, "%.10lf");} else if (n_dec==11){strcpy(taustr, "%.11lf");}
+      else if (n_dec==12){strcpy(taustr, "%.12lf");} else if (n_dec==13){strcpy(taustr, "%.13lf");} else if (n_dec==14){strcpy(taustr, "%.14lf");} else               {strcpy(taustr, "%.15lf");}
+      strcpy(taustr2, taustr); strcat(taustr2, " %.21lf");
       
       /******** Initializing coefficients (Blanes et al, 2013, Table 4) ********/
       c1 = .27414026894340187616; c2 = -.10756843844016423063; c3 = -.04801850259060169269; c4 = .76289334417472809430;
@@ -1683,8 +1700,7 @@ void SABAH1064(typ tau, typ T, int output_step, typ * X_old){
       if      (n_dec== 0){strcpy(taustr, "%.0lf");}  else if (n_dec== 1){strcpy(taustr, "%.1lf");}  else if (n_dec== 2){strcpy(taustr, "%.2lf");}  else if (n_dec== 3){strcpy(taustr, "%.3lf");}
       else if (n_dec== 4){strcpy(taustr, "%.4lf");}  else if (n_dec== 5){strcpy(taustr, "%.5lf");}  else if (n_dec== 6){strcpy(taustr, "%.6lf");}  else if (n_dec== 7){strcpy(taustr, "%.7lf");}
       else if (n_dec== 8){strcpy(taustr, "%.8lf");}  else if (n_dec== 9){strcpy(taustr, "%.9lf");}  else if (n_dec==10){strcpy(taustr, "%.10lf");} else if (n_dec==11){strcpy(taustr, "%.11lf");}
-      else if (n_dec==12){strcpy(taustr, "%.12lf");} else if (n_dec==13){strcpy(taustr, "%.13lf");} else if (n_dec==14){strcpy(taustr, "%.14lf");} else if (n_dec==15){strcpy(taustr, "%.15lf");}
-      strcpy(taustr2, taustr); strcat(taustr2, " %.21lf");
+      else if (n_dec==12){strcpy(taustr, "%.12lf");} else if (n_dec==13){strcpy(taustr, "%.13lf");} else if (n_dec==14){strcpy(taustr, "%.14lf");} else               {strcpy(taustr, "%.15lf");}
       
       /******** Opening output file ********/
       strcpy(file_path, pth);
@@ -1706,6 +1722,19 @@ void SABAH1064(typ tau, typ T, int output_step, typ * X_old){
             fprintf(stderr, "\nError: Cannot create or open file in function SABAH1064.\n");
             abort();
       }
+      
+      /******** Finding the number of decimals of output_step*timestep ********/
+      n_dec = 0;
+      ten = 1.;
+      while (n_dec < 15 && ((typ) output_step)*tau*ten - floor(((typ) output_step)*tau*ten) > 8.*DBL_EPSILON){
+            n_dec ++;
+            ten *= 10.;
+      }
+      if      (n_dec== 0){strcpy(taustr, "%.0lf");}  else if (n_dec== 1){strcpy(taustr, "%.1lf");}  else if (n_dec== 2){strcpy(taustr, "%.2lf");}  else if (n_dec== 3){strcpy(taustr, "%.3lf");}
+      else if (n_dec== 4){strcpy(taustr, "%.4lf");}  else if (n_dec== 5){strcpy(taustr, "%.5lf");}  else if (n_dec== 6){strcpy(taustr, "%.6lf");}  else if (n_dec== 7){strcpy(taustr, "%.7lf");}
+      else if (n_dec== 8){strcpy(taustr, "%.8lf");}  else if (n_dec== 9){strcpy(taustr, "%.9lf");}  else if (n_dec==10){strcpy(taustr, "%.10lf");} else if (n_dec==11){strcpy(taustr, "%.11lf");}
+      else if (n_dec==12){strcpy(taustr, "%.12lf");} else if (n_dec==13){strcpy(taustr, "%.13lf");} else if (n_dec==14){strcpy(taustr, "%.14lf");} else               {strcpy(taustr, "%.15lf");}
+      strcpy(taustr2, taustr); strcat(taustr2, " %.21lf");
       
       /******** Initializing coefficients (Blanes et al, 2013, Table 4) ********/
       c1 = .04731908697653382270; c2 = .26511052357487851595; c3 = -.00997652288381124084; c4 = -.05992919973494155126; c5 = .25747611206734045345;
@@ -2872,17 +2901,18 @@ void LibrationCenterFind(typ * X_old, int precision){
       typ n    [  how_many_planet + 1];
       typ tau = 0.0078125;
       
-      typ dt[3] = {2., 0.75, 0.5};         //Timestep in units of tau
-      //typ T [3] = {3000., 4500., 4500.};   //Integration time
-      typ T [3] = {30000., 35000., 40000.};   //Integration time
+      typ dt[3] = {2., 1., 0.5};         //Timestep in units of tau
+      //typ T [3] = {3000., 4500., 6500.};   //Integration time
+      typ T [3] = {8000., 16000., 32000.};   //Integration time
+      //typ T [3] = {30000., 35000., 40000.};   //Integration time
       //typ T [3] = {80000., 35000., 40000.};   //Integration time
       int Hf[3] = {2, 5, 5};               //order of Hanning filter
-      //int Hr[3] = {15, 45, 75};            //Number of harmonics
+      int Hr[3] = {15, 45, 75};            //Number of harmonics
       //int Hr[3] = {40, 145, 175};            //Number of harmonics
-      int Sn[3] = {1, 1, 4};               //Order of the SABA integrator
-      int Hr[3] = {50, 145, 175};            //Number of harmonics
-      //typ AR[3] = {0.5e-2, 0.5e-4, 2.e-6}; //Required value for the amplitude
-      typ AR[3] = {2.0e-2, 0.5e-4, 2.e-6}; //Required value for the amplitude
+      int Sn[3] = {1, 2, 4};               //Order of the SABA integrator
+      //int Hr[3] = {50, 145, 175};            //Number of harmonics
+      typ AR[3] = {0.5e-2, 0.5e-4, 2.e-6}; //Required value for the amplitude
+      //typ AR[3] = {2.0e-2, 0.5e-4, 2.e-6}; //Required value for the amplitude
       
       /******** Obtaining the average value of the eccentricity in order to adapt the required amplitude for convergence ********/
       mean_e = 0.;
@@ -2945,13 +2975,14 @@ void LibrationCenterFind(typ * X_old, int precision){
             }
             j ++;
             if (amplitude > 0.9*oldAmplitude && amplitude < 1.4*oldAmplitude){
-                  if (noProgress < 3){
+                  if (noProgress < 1){
                         noProgress ++;
                   }
                   else{
                         Hr[precision] += 10;
                         T [precision] *= 2.;
                         noProgress     = 0;
+                        printf("Increasing integration time and number of harmonics.\n\n");
                   }
             }
             if (j > 32 && !went2fixedPoint ){
@@ -2975,7 +3006,7 @@ void LibrationCenterFind(typ * X_old, int precision){
       }
       printf("Amplitude = %.20lf, required = %.13lf\n\n", amplitude, AR[precision]);
       /******** To be removed ********/
-      SABAn(tau/2., 5000., 2, X_old, 5);
+      SABAn(2.*tau, 5000., 4, X_old, 5);
       new2old(X_old, X_new, X_uv);
 }
 
