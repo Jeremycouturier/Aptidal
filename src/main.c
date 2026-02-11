@@ -21,6 +21,7 @@ int main(){
       int i;
       typ n       [   how_many_planet + 1];
       typ X_old   [Nd*how_many_planet + 1];
+      typ X_buff  [Nd*how_many_planet + 1];
       typ X_new   [Nd*how_many_planet + 1];
       typ X_uv    [Nd*how_many_planet + 1];
       typ xvXu    [Nd*how_many_planet + 1];
@@ -35,11 +36,41 @@ int main(){
       }
       
       X_old_init(X_old);
-      SABAn(0.125, 5000., 2, X_old, 8);
+      
+      
+      
+      /*typ frequencies[2];
+      typ nu1, nu2;
+      FundamentalFrequency(0.0625, 40000., X_old, 2, 1, 2, frequencies, 2);
+      nu1 = *frequencies;
+      nu2 = *(frequencies + 1);
+      printf("nu1_1 = %.16lf, nu1_2 = %.16lf, diffusion index = %.6lf\n", nu1, nu2, log10(fabs((nu1-nu2)/nu1)));*/
+      
+      
+      //SABAn(0.25, 10000000., 1000, X_old, 10);
+      //SABAH1064(.0625, 50000., 40, X_old);
       
       //EquilibriumFind(X_old, 1);
-      //SABAn(0.125, 15000., 1, X_old, 6);
+      //SABAn(0.2,  50000., 1, X_old, 9);
+      //LibrationCenterNAFF(X_old, 0.0078125, 100000., 2, 2, 40);
+      //SABAn(0.25, 50000., 1, X_old, 10);
+      LibrationCenterFollow(X_old, epsilon/400000., 20000, 2);
+      //EquilibriumFollow(X_old, -epsilon/120000., 200, 0);
+      
+      /*for (int __ = 1; __ <= Nd*how_many_planet; __ ++){
+            X_buff[__] = X_old[__];
+      }
+      SABAn(0.125, 16000., 1, X_buff, 4);
+      for (int _ = 5; _ < 8; _ ++){
+            LibrationCenterNAFF(X_old, .0078125, 16000., 5, 2, 55);
+            for (int __ = 1; __ <= Nd*how_many_planet; __ ++){
+                  X_buff[__] = X_old[__];
+            }
+            SABAn(0.125, 16000., 1, X_buff, _);
+      }*/
+      
       //LibrationCenterFind(X_old, 1);
+      //SABAn(0.2, 50000., 1, X_old, 9);
       
       /*
       for (int _ = 0; _ < 3; _ ++){

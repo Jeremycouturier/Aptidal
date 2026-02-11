@@ -35,6 +35,11 @@ void kepsaut(typ * cart, typ mu, typ dt);
 void exp_tau_LB(typ tau, typ * X_cart);
 
 
+#if tides_bool
+void exp_tau_LHt(typ * X_cart, typ tau, int planet);
+#endif
+
+
 void SABAn(typ tau, typ T, int output_step, typ * X_old, int n);
 
 
@@ -47,9 +52,7 @@ void SABAH1064(typ tau, typ T, int output_step, typ * X_old);
 typ Hamiltonian(typ * X_cart);
 
 
-#if tides_bool
-void exp_tau_LHt(typ * X_cart, typ tau, int planet);
-#endif
+void FundamentalFrequency(typ tau, typ T, typ * X_old, int n, int lbd_n, int n_freq, typ * frequencies, int Hanning_order);
 
 
 void get_frequencies(typ tau, typ T, typ * X_old, int n);

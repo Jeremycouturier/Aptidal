@@ -4,7 +4,7 @@
 /*********************************************************************/
 /******** Defining the output path. Must end with / and exist ********/
 /*********************************************************************/
-#define pth "/home/atipique/Documents/Aptidal_vs_intplabasic/Aptidal_check/Aptidal_vs_REBOUNDx/"
+#define pth "/home/atipique/Documents/git/K2138/Stability_map/"
 
 
 
@@ -14,7 +14,7 @@
 /******** Two or more consecutive p_i can be equal (coorbital planets) and p_i = 0  ********/
 /******** indicates that planet n° i is not in resonance with other planets         ********/
 /*******************************************************************************************/
-#define resonance_chain {4, 6, 9}
+#define resonance_chain {1, 2, 3}
 
 
 
@@ -25,9 +25,9 @@
 #define one_more_deg_bool 0  //Determines if non-resonant terms (those associated with the inequality (ki,kj)=(0,0)) are pushed one degree further in eccentricity than the resonant terms.
                              //For example, if max_deg is 3 and one_more_deg_bool is 1, the non-resonant terms will be expanded to 4^th degree. Unimportant if non_resonant_bool is 0.
 #define second_mass_bool 0   //Determines if the model is expanded to second order in mass. Terms at second order in mass are truncated to degree 0 in eccentricity.
-#define tides_bool 1         //Determines if there are tides raised by the star on the planets in the system. The tidal model of Couturier et al. 2021 is used
+#define tides_bool 0         //Determines if there are tides raised by the star on the planets in the system. The tidal model of Couturier et al. 2021 is used
 #define GR_bool 0            //To be coded. Determines if the first PPN order of General Relativity is included in the Hamiltonian. Eq. (3.55) of https://jeremycouturier.com/img/PhD_manuscript.pdf
-#define _3D_bool 0           //For function UnaveragedSABAn only. Determines if the problem is 3D or coplanar
+#define _3D_bool 0           //Determines if the problem is 3D or coplanar
 #define canon_input_bool 1   //Determines if the heliocentric coordinates in input  are canonical (heliocentric position, barycentric speed) or not (heliocentric position, heliocentric speed)
 #define canon_output_bool 1  //Determines if the heliocentric coordinates in output are canonical (heliocentric position, barycentric speed) or not (heliocentric position, heliocentric speed)
                              //Both canon_input_bool and canon_output_bool must be left to 1 for now
@@ -49,28 +49,28 @@
 #if GR_bool
 #define c_light 1.e9                   //Speed of light in units of length per units of time. Only when GR_bool = 1
 #endif
-#define body_masses {1.337103473310441e-5,1.4290562159203059e-5,2.1684355013014528e-5}  //Masses of the planets in units of the star mass.
-#define body_sma    {1.,                  1.3623750308265988295,1.90111422454179961695} //Initial semi-major axes             of the planets.
-#define body_ecc    {0.000139561767929666,0.000323278381021412, 0.000087905618891651}   //Initial eccentricities              of the planets.
-#define body_lambda {5.04415017034909,    2.31539633741730,     5.73238776305489}       //Initial mean longitudes             of the planets in radians.
-#define body_varpi  {-3.05631036699109,   0.05087438462962,    -3.03567278882899}       //Initial longitudes of the periapses of the planets in radians.
+#define body_masses  {.0000164,            .0000232,             .0000201}            //Masses                              of the planets.
+#define body_sma     {1.,                  1.58787168693712,     2.08163985690122}    //Initial and nominal semi-major axes of the planets.
+#define body_ecc     {.030926701082493544, .026393721371291534,  .029890025944465996} //Initial eccentricities              of the planets.
+#define body_lambda  {3.43243525446097,    3.14461962640603,     2.00201798071676}    //Initial mean longitudes             of the planets.
+#define body_varpi   {2.85604040156521,   -.28945714350387,      2.85298777882168}    //Initial longitudes of the periapses of the planets.
 
 #if _3D_bool
-#define body_inc    {}       //Initial inclinations of the planets in radians.
-#define body_Omeg   {}       //Initial longitudes of the ascending node of the planets in radians.
+#define body_inc     {}  //Initial inclinations of the planets in radians.
+#define body_Omeg    {}  //Initial longitudes of the ascending node of the planets in radians.
 #endif
 
 #if tides_bool
-#define body_radii  {0.0020838706470602,  0.002810401191461818, 0.003180302820616584}  //Radii of the planets, in units of length
-#define body_k2     {0.9,                 1.6,                  1.2}                   //Second Love number of the planets
-#define body_Dt     {.002040434347043969, .002040987554411171,  .00970195563655274}    //Tidal timelag of the bodies, in units of time. Q1 = 78, Q2 = 124, Q3 = 43
-#define body_alpha  {.33,                 .33,                  .33}                   //Dimensionless structure constant of the bodies. 2/5 for an homogeneous body.
+#define body_radii   {}  //Radii of the planets, in units of length
+#define body_k2      {}  //Second Love number of the planets
+#define body_Dt      {}  //Tidal timelag of the planets, in units of time.
+#define body_alpha   {}  //Dimensionless momoent of inertia of the planets. 2/5 for an homogeneous body.
 #if _3D_bool
-#define body_Omegx  {}                     //x-coordinate of the initial sideral rotation of the bodies, in radians/unit of time
-#define body_Omegy  {}                     //y-coordinate of the initial sideral rotation of the bodies, in radians/unit of time
-#define body_Omegz  {}                     //z-coordinate of the initial sideral rotation of the bodies, in radians/unit of time
+#define body_Omegx   {}  //x-coordinate of the initial sideral rotation of the planets, in radians/unit of time
+#define body_Omegy   {}  //y-coordinate of the initial sideral rotation of the planets, in radians/unit of time
+#define body_Omegz   {}  //z-coordinate of the initial sideral rotation of the planets, in radians/unit of time
 #else
-#define body_Omega  {6.283227313383659,   3.9512813841527255,   2.3970233244389}       //Initial sideral rotation of the bodies, in radians/unit of time
+#define body_Omega   {}  //Initial sideral rotation of the planets, in radians/unit of time
 #endif
 #endif
 

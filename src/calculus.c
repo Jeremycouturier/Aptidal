@@ -1349,9 +1349,9 @@ int EquilibriumFind(typ * X_old, int precision){
       typ X_new[4*how_many_planet + 1];
       typ X_uv [4*how_many_planet + 1];
       typ xvXu [4*how_many_planet + 1];
-      typ tau = 0.25;
+      typ tau = 0.5;
       typ dt[3] = {2., 0.75, 0.5};         //Timestep in units of tau
-      typ T [3] = {4000., 8000., 16000.};  //Integration time
+      typ T [3] = {16000., 32000., 64000.};//Integration time
       int Hf[3] = {2, 5, 5};               //order of Hanning filter
       int Sn[3] = {1, 1, 4};               //Order of the SABA integrator
       typ AR[3] = {1.e-4, 1.e-7, 1.e-8};   //Required value for the precision
@@ -1361,7 +1361,7 @@ int EquilibriumFind(typ * X_old, int precision){
       PointPrint(X_old, 0);
       
       /******** I first try to converge with a low precision using a small integration time and a large timestep ********/
-      while(prec > AR[precision] && n_iter <= 16){
+      while(prec > AR[precision] && n_iter <= 32){
             SABAn_average(tau*dt[precision], T[precision], Hf[precision], xvXu, X_old, Sn[precision]);
             nonDofReinit(X_new, xvXu);
             prec = 0.;
@@ -1383,7 +1383,7 @@ int EquilibriumFind(typ * X_old, int precision){
             n_iter ++;
       }
       
-      if (n_iter > 16 && prec > AR[precision]){ //This initial condition is hopeless
+      if (n_iter > 32 && prec > AR[precision]){ //This initial condition is hopeless
             printf("This initial condition is hopeless.\n");
             return 0;
       }
