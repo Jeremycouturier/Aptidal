@@ -2105,7 +2105,7 @@ void FundamentalFrequency(typ tau, typ T, typ * X_old, int n, int lbd_n, int n_f
       /******** timestep tau in order to evaluate the fundamental frequency of the angle lbd_n ********/
       /******** If n_freq is > 1, then the frequency is evaluated on each sub-interval of      ********/
       /******** size 2T, allowing the diffusion of the fundamental frequencies to be obtained, ********/
-      /******** and thus the chaoticity of the system to be evaluated (Laskar et al., 1992)    ********/
+      /******** and thus the chaoticity of the system to be evaluated (Laskar et al., 1992).   ********/
       /******** The frequencies are written into the vector frequencies of size n_freq.        ********/
       /******** If Hanning_order > 0, the frequency omega is refined by a Newton-Raphson method********/
       /******** on d<lbd_n(t), e^i*omega*t>/domega using a Hanning filter of order             ********/
@@ -2368,7 +2368,7 @@ void FundamentalFrequency(typ tau, typ T, typ * X_old, int n, int lbd_n, int n_f
             /******** Newton-Raphson on d<f(t), e^i*omega*t>/domega where f(t) = cos(lbd(t)) ********/
             if (Hanning_order){
                   delta = 1.; p = 0; nu = omega;
-                  while (delta > 1.e-9){
+                  while (delta > 1.e-8){
                         num = 0.;  denom = 0.;
                         /******** Computing relevant integrals with a Simpson method ********/
                         for (iter = -N_step + 2; iter <= N_step; iter += 2){
@@ -2385,9 +2385,10 @@ void FundamentalFrequency(typ tau, typ T, typ * X_old, int n, int lbd_n, int n_f
                         nu   -= num/denom;
                         delta = fabs(num/denom);
                         p ++;
-                        if (p > 20 && delta > 1.e-9){
-                              fprintf(stderr, "\nError: Newton-Raphson method does not seem to converge in function get_frequencies.\n");
-                              abort();
+                        if (p > 50 && delta > 1.e-8){
+                              fprintf(stderr, "\nWarning: Newton-Raphson method does not seem to converge in function FundamentalFrequency.\n");
+                              delta = 1.e-50;
+                              nu    = omega;
                         }
                   }
                   omega = nu;

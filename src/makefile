@@ -21,7 +21,8 @@ intpla.o: intpla.c intpla.h structure.o coefficients.o transformation.o calculus
 
 aptidal: main.c structure.o coefficients.o transformation.o calculus.o intpla.o parameters.h
 	#$(FF) main.c $(OPTF) structure.o coefficients.o transformation.o calculus.o intpla.o -lgsl -lgslcblas -lm -o aptidal
-	$(FF) main.c $(OPTF) structure.o coefficients.o transformation.o calculus.o intpla.o -lm -o aptidal
+	$(FF) -fopenmp main.c $(OPTF) structure.o coefficients.o transformation.o calculus.o intpla.o -lm -o aptidal
+	#$(FF) main.c $(OPTF) structure.o coefficients.o transformation.o calculus.o intpla.o -lm -o aptidal
 
 clean: 
 	\rm -f *.o *.log

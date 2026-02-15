@@ -698,3 +698,49 @@ void rotate_with_quaternion(typ x, typ y, typ z, struct quaternion q, typ * xr, 
       *zr =      (2.*q.x*q.z - 2.*q.y*q.w)*x +      (2.*q.y*q.z + 2.*q.x*q.w)*y + (1. - 2.*q.x*q.x - 2.*q.y*q.y)*z;
 }
 #endif
+
+
+typ * readFromFile(char * file_name, int * size){
+
+      /******** Reads from a file. Function taken from NcorpiON software.    ********/
+      /******** Writes the number of data read in *size and returns an array ********/
+      /******** with these data in one line. Array must be freed after use   ********/
+
+      FILE * file = fopen(file_name, "r");
+      if (file == NULL){
+            fprintf(stderr, "Error : Could not open file in function readFromFile_withoutConstraint. Did you specify the path 'pth' in the parameter file ?\n");
+            abort();
+      }
+      typ i = 0.;
+      int j = 0;
+      int returnValue = 1;
+ 
+      while (returnValue == 1){ //Obtaining the number of data to be read
+            returnValue = fscanf(file, "%lf", &i);
+            j ++;
+      }
+      j --;
+      *size = j;
+      typ * buffer = (typ *)malloc(j*sizeof(typ)); //Allocating memory for the buffer
+      if (buffer == NULL){
+            fprintf(stderr, "Could not allocate memory for the buffer in function readFromFile_withoutConstraint\n");
+            abort();
+      }
+      
+      rewind(file); //Going back to the beginning of the file
+      returnValue = 1;
+      j           = 0;
+      while (returnValue == 1){ //Reading the file a second time to store its data
+            if (j > *size){
+                  fprintf(stderr, "Error : The buffer is not big enough in function readFromFile_withoutConstraint.\n");
+                  abort();
+            }
+            returnValue = fscanf(file, "%lf", &i);
+            if (returnValue == 1){
+                  *(buffer + j) = i;
+            }
+            j ++;
+      }
+      fclose(file);
+      return buffer;
+}

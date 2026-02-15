@@ -153,4 +153,7 @@ struct quaternion get_quaternion(typ ux, typ uy, typ uz, typ vx, typ vy, typ vz)
 
 void rotate_with_quaternion(typ x, typ y, typ z, struct quaternion q, typ * xr, typ * yr, typ * zr);
 #endif
+
+
+typ * readFromFile(char * file_name, int * size);
 #endif
