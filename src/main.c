@@ -40,26 +40,45 @@ int main(){
       X_old_init(X_old);
       
       /******** Trying to make a stability map of the 1:2:3 resonance chain ********/
-      typ Lbd1, Lbd2, Lbd3, lbd1, lbd2, lbd3, g1, g2, g3, D1, D2, D3, Phi, Gamma, Upsilon, Phi_lc, delta_Phi, nu3, delta, nu1, nu2, B;
-      typ frequencies[2];
-      int every = 10;
-      int n_vertical = 342;
-      typ diffusion_rate[n_vertical];
+      typ Lbd1, Lbd2, Lbd3, lbd1, lbd2, lbd3, g1, g2, g3, D1, D2, D3, Phi, Gamma, Upsilon, Phi_lc, delta_Phi, nu3, delta, n1_1, n2_1, n3_1, n1_2, n2_2, n3_2, n1_3, n2_3, n3_3, B;
+      typ freq[3][how_many_planet];
+      int every = 14;
+      int n_vertical = 240;
+      typ * diffusion_rate;
+      typ * n1n2;
+      typ * n2n3;
+      diffusion_rate = (typ *)malloc((2*n_vertical + 1)*sizeof(typ));
+      n1n2           = (typ *)malloc((2*n_vertical + 1)*sizeof(typ));
+      n2n3           = (typ *)malloc((2*n_vertical + 1)*sizeof(typ));
+      if (diffusion_rate == NULL || n1n2 == NULL || n2n3 == NULL){
+            fprintf(stderr, "\nError : Cannot allocate memory for array.\n");
+            abort();
+      }
       typ p = 1.;
       typ q = 3.;
-      char LibCenPath[800];
-      char out_path[800];
-      strcpy(out_path, "/home/atipique/Documents/git/K2138/Stability_map/");
-      strcat(out_path, "fundamental_frequencies.txt");
+      char LibCenPath[200];
+      char out_diffusion[200];
+      char out_n1n2[200];
+      char out_n2n3[200];
+      strcpy(out_n1n2, "/home/atipique/Documents/git/K2138/Stability_map/");
+      strcat(out_n1n2, "n1_over_n2.txt");
+      strcpy(out_n2n3, "/home/atipique/Documents/git/K2138/Stability_map/");
+      strcat(out_n2n3, "n2_over_n3.txt");
+      strcpy(out_diffusion, "/home/atipique/Documents/git/K2138/Stability_map/");
+      strcat(out_diffusion, "diffusion.txt");
       strcpy(LibCenPath, "/home/atipique/Documents/git/K2138/Stability_map/");
       strcat(LibCenPath, "LibCen_123_aptidal.txt");
-      FILE * file = fopen(out_path, "w");
-      fprintf(file, "The columns are delta, B, delta_Phi, dPhi, Phi_lc, Gamma, Upsilon, diffusion rate at Phi_lc, diffusion rate at Phi_lc + dPhi, diffusion rate at Phi_lc + 2*dPhi...\n\n");
+      FILE * file_diffusion = fopen(out_diffusion, "w");
+      FILE * file_n1n2 = fopen(out_n1n2, "w");
+      FILE * file_n2n3 = fopen(out_n2n3, "w");
+      fprintf(file_diffusion, "The columns are delta, B, delta_Phi, dPhi, Phi_lc, Gamma, Upsilon, ..., diff rate at Phi_lc-dPhi, diff rate at Phi_lc, diff rate at Phi_lc+dPhi, ...\n\n");
+      fprintf(file_n1n2, "The columns are delta, B, delta_Phi, dPhi, Phi_lc, Gamma, Upsilon, ..., n1/n2 at Phi_lc-dPhi, n1/n2 at Phi_lc, n1/n2 at Phi_lc+dPhi, ...\n\n");
+      fprintf(file_n2n3, "The columns are delta, B, delta_Phi, dPhi, Phi_lc, Gamma, Upsilon, ..., n2/n3 at Phi_lc-dPhi, n2/n3 at Phi_lc, n2/n3 at Phi_lc+dPhi, ...\n\n");
       typ * data = NULL;
       int n_data;
       data = readFromFile(LibCenPath, &n_data);
       if (n_data % 23 != 0){
-            fprintf(stderr, "Error : The file must have exactly 21 columns per line.\n");
+            fprintf(stderr, "\nError : The file must have exactly 21 columns per line.\n");
             abort();
       }
       int n_lines = n_data/23;
@@ -75,10 +94,12 @@ int main(){
                   delta = data[23*i + 4];
                   B = data[23*i + 3];
                   Phi_lc = Lbd1/p;  Gamma = (p+q)*Lbd1/p + Lbd2;  Upsilon = Lbd1 + Lbd2 + Lbd3;
-                  fprintf(file, "%.16lf %.16lf %.16lf %.16lf %.16lf %.16lf %.16lf", delta, B, delta_Phi, 1.32*Gamma/((typ) n_vertical)*delta_Phi, Phi_lc, Gamma, Upsilon);
+                  fprintf(file_diffusion, "%.16lf %.16lf %.16lf %.16lf %.16lf %.16lf %.16lf", delta, B, delta_Phi, 1.32*Gamma/((typ) n_vertical)*delta_Phi, Phi_lc, Gamma, Upsilon);
+                  fprintf(file_n1n2, "%.16lf %.16lf %.16lf %.16lf %.16lf %.16lf %.16lf", delta, B, delta_Phi, 1.32*Gamma/((typ) n_vertical)*delta_Phi, Phi_lc, Gamma, Upsilon);
+                  fprintf(file_n2n3, "%.16lf %.16lf %.16lf %.16lf %.16lf %.16lf %.16lf", delta, B, delta_Phi, 1.32*Gamma/((typ) n_vertical)*delta_Phi, Phi_lc, Gamma, Upsilon);
                   /******** Getting the coordinates of the 1 dof model at the libration centers ********/
-                  #pragma omp parallel for num_threads(19) private(Phi, Lbd1, Lbd2, Lbd3, X_old, frequencies, nu1, nu2) shared(diffusion_rate)
-                  for (j = 0; j < n_vertical; j ++){
+                  #pragma omp parallel for num_threads(20) private(Phi, Lbd1, Lbd2, Lbd3, X_old, freq, n1_1, n2_1, n3_1, n1_2, n2_2, n3_2, n1_3, n2_3, n3_3) shared(diffusion_rate)
+                  for (j = -n_vertical; j <= n_vertical; j ++){
                         printf("    j = %d\n", j);
                         Phi  = Phi_lc + 1.32*Gamma*((typ) j)/((typ) n_vertical)*delta_Phi;
                         Lbd1 = p*Phi;
@@ -87,20 +108,33 @@ int main(){
                         X_old[1] = lbd1; X_old[2]  = g1; X_old[3]  = Lbd1; X_old[4]  = D1;
                         X_old[5] = lbd2; X_old[6]  = g2; X_old[7]  = Lbd2; X_old[8]  = D2; 
                         X_old[9] = lbd3; X_old[10] = g3; X_old[11] = Lbd3; X_old[12] = D3;
-                        FundamentalFrequency(0.0625, fabs(2.*M_PI/nu3*4.), X_old, 2, 1, 2, frequencies, 2);
-                        nu1 = *frequencies;
-                        nu2 = *(frequencies + 1);
-                        diffusion_rate[j] = fabs((nu1 - nu2)/nu1);
+                        FundamentalFrequency(0.046875, fabs(2.*M_PI/nu3*4.), X_old, 2, 3, freq, 2);
+                        n1_1 = freq[0][0];
+                        n1_2 = freq[1][0];
+                        n1_3 = freq[2][0];
+                        n2_1 = freq[0][1];
+                        n2_2 = freq[1][1];
+                        n2_3 = freq[2][1];
+                        n3_1 = freq[0][2];
+                        n3_2 = freq[1][2];
+                        n3_3 = freq[2][2];
+                        diffusion_rate[j + n_vertical] = (fabs((n1_1-n1_2)/n1_1)+fabs((n1_2-n1_3)/n1_2)+fabs((n2_1-n2_2)/n2_1)+fabs((n2_2-n2_3)/n2_2)+fabs((n3_1-n3_2)/n3_1)+fabs((n3_2-n3_3)/n3_2))/6.;
+                        n1n2[j + n_vertical] = (n1_1+n1_2+n1_3)/(n2_1+n2_2+n2_3);
+                        n2n3[j + n_vertical] = (n2_1+n2_2+n2_3)/(n3_1+n3_2+n3_3);
                   }
-                  for (j = 0; j < n_vertical; j ++){
-                        fprintf(file, " %.16lf", diffusion_rate[j]);
+                  for (j = 0; j <= 2*n_vertical; j ++){
+                        fprintf(file_diffusion, " %.16lf", diffusion_rate[j]);
+                        fprintf(file_n1n2, " %.16lf", n1n2[j]);
+                        fprintf(file_n2n3, " %.16lf", n2n3[j]);
                   }
-                  fprintf(file, "\n");
+                  fprintf(file_diffusion, "\n"); fprintf(file_n1n2, "\n"); fprintf(file_n2n3, "\n");
             }
       }
-      
-      free(data);  data = NULL;
-      fclose(file);
+      free(diffusion_rate); diffusion_rate = NULL;
+      free(n1n2); n1n2 = NULL;
+      free(n2n3); n2n3 = NULL;
+      free(data); data = NULL;
+      fclose(file_diffusion); fclose(file_n1n2); fclose(file_n2n3);
 
       /*typ frequencies[2];
       typ nu1, nu2;

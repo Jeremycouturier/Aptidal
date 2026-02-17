@@ -2099,25 +2099,27 @@ typ Hamiltonian(typ * X_cart){
 }
 
 
-void FundamentalFrequency(typ tau, typ T, typ * X_old, int n, int lbd_n, int n_freq, typ * frequencies, int Hanning_order){
+void FundamentalFrequency(typ tau, typ T, typ * X_old, int n, int n_freq, typ freq[][how_many_planet], int Hanning_order){
 
       /******** Integrates the complete Hamiltonian with a SABAn for a time 2*n_freq*T with a  ********/
-      /******** timestep tau in order to evaluate the fundamental frequency of the angle lbd_n ********/
+      /******** timestep tau in order to evaluate the fundamental frequency of the angle lbd_j ********/
       /******** If n_freq is > 1, then the frequency is evaluated on each sub-interval of      ********/
       /******** size 2T, allowing the diffusion of the fundamental frequencies to be obtained, ********/
       /******** and thus the chaoticity of the system to be evaluated (Laskar et al., 1992).   ********/
-      /******** The frequencies are written into the vector frequencies of size n_freq.        ********/
-      /******** If Hanning_order > 0, the frequency omega is refined by a Newton-Raphson method********/
-      /******** on d<lbd_n(t), e^i*omega*t>/domega using a Hanning filter of order             ********/
-      /******** Hanning_order. If Hanning_order > 0, tau should be rather small for the        ********/
-      /******** integrals to be computed correctly.                                            ********/
+      /******** The frequencies are written into the array freq[how_many_planet][n_freq].      ********/
+      /******** For example, freq[1][3] will contain the frequency n_4 on the second interval. ********/
+      /******** The frequencies n_j are first obtained by a linear fit of the angle lbd_j.     ********/
+      /******** If Hanning_order > 0, they are then refined by a Newton-Raphson method on      ********/
+      /******** d/dn_j <cos(lbd_j), e^i*n_j*t> using a Hanning filter of order Hanning_order   ********/
+      /******** If Hanning_order > 0, tau must be small for a correct integral computation.    ********/
       
       int i, j, p;
       long int N_step, iter;
       typ X_cart  [Nd*how_many_planet + 1];
       typ X_buff  [Nd*how_many_planet + 1];
-      typ lbdOld[    how_many_planet + 1];
-      typ a, e, vp, M, I, Om, mu, E, beta, lbnd, g, delta, n_n;
+      typ lbdOld  [   how_many_planet + 1];
+      typ n_n     [   how_many_planet + 1];
+      typ a, e, vp, M, I, Om, mu, E, beta, lbnd, g, delta;
       typ omega, b, t, S, dSdomega, dSdb, par, learning_rate, oldS, N;
       typ c1, c2, c3, c4, c5, c6, d1, d2, d3, d4, d5;
       typ alkhqp[7];
@@ -2180,26 +2182,30 @@ void FundamentalFrequency(typ tau, typ T, typ * X_old, int n, int lbd_n, int n_f
       #endif
       
       /******** Integrating ********/
-      N_step    = (long int) ceil(T/tau);
-      N_step   += N_step % 2 == 0 ? 0 : 1;
-      typ * lbd = (typ *)malloc((2*N_step + 1)*sizeof(typ));
-      if (lbd == NULL){
-            fprintf(stderr, "\nError: Could not allocate memory for array lbd in function FundamentalFrequency.\n");
-            abort();
+      N_step  = (long int) ceil(T/tau);
+      N_step += N_step % 2 == 0 ? 0 : 1;
+      typ * lbd[how_many_planet + 1];
+      lbd[0] = NULL;
+      for (i = 1; i <= how_many_planet; i ++){
+            lbd[i] = (typ *)malloc((2*N_step + 1)*sizeof(typ));
+            if (lbd[i] == NULL){
+                  fprintf(stderr, "\nError: Could not allocate memory for array lbd in function FundamentalFrequency.\n");
+                  abort();
+            }
       }
       
       for (j = 0; j < n_freq; j ++){
             for (iter = -N_step + 1; iter <= N_step; iter ++){
                   /******** For the first iteration only ********/
-                  if (iter == -N_step + 1){
+                  if (iter == -N_step + 1 && !j){
                         /******** Initializing lbd(0) ********/
-                        lbd[0] = X_old[Nd*lbd_n - 3];
+                        for (i = 1; i <= how_many_planet; i ++){
+                              lbd[i][0] = X_old[Nd*i - 3];
+                        }
                         /******** Step exp(c1*tau*L_A) ********/
-                        if (!j){
-                              for (i = 1; i <= how_many_planet; i ++){
-                                    mu = G*(m0 + masses[i]);
-                                    kepsaut(X_cart + Nd*i - Nd, mu, c1*tau);
-                              }
+                        for (i = 1; i <= how_many_planet; i ++){
+                              mu = G*(m0 + masses[i]);
+                              kepsaut(X_cart + Nd*i - Nd, mu, c1*tau);
                         }
                   }
                   
@@ -2320,82 +2326,87 @@ void FundamentalFrequency(typ tau, typ T, typ * X_old, int n, int lbd_n, int n_f
                         kepsaut(X_buff + Nd*i - Nd, mu, -c1*tau);
                   }
                   
-                  /******** Getting relevant coordinates from cartesian coordinates ********/
-                  i    = lbd_n;
-                  beta = m0*masses[i]/(m0 + masses[i]);
-                  mu   = G*(m0 + masses[i]);
-                  cart2ell(X_buff + Nd*i - Nd, alkhqp, mu);
-                  lbnd = continuousAngle(alkhqp[2], lbdOld[i]);
-                  lbdOld[i] = lbnd;
-                  a   = alkhqp[1];
-                  n_n = sqrt(mu/(a*a*a));
-                  
-                  /******** Computing lbd(t) ********/
-                  lbd[iter + N_step] = lbnd;
+                  /******** Getting lbd and n at the end of the timestep ********/
+                  for (i = 1; i <= how_many_planet; i ++){
+                        beta = m0*masses[i]/(m0 + masses[i]);
+                        mu   = G*(m0 + masses[i]);
+                        cart2ell(X_buff + Nd*i - Nd, alkhqp, mu);
+                        lbnd = continuousAngle(alkhqp[2], lbdOld[i]);
+                        lbdOld[i] = lbnd;
+                        a = alkhqp[1];
+                        n_n[i] = sqrt(mu/(a*a*a));
+                        lbd[i][iter + N_step] = lbnd;
+                  }
             }
             
             /******** Determination of the frequency omega via a linear fit lbd = omega*t + b                            ********/
             /******** I obtain a first determination of omega from the mean motion and of b from the value at the origin ********/
-            omega = n_n;
-            b     = lbd[N_step];
-            /******** I now refine omega and b by minimizing S(omega,b) = sum_{all points} (omega*t + b - lbd(t))^2 via a gradient descent ********/
-            delta  = 1.;  p = 0;  learning_rate = .0000000298023223876953125;  oldS = 1.e300;  N = (typ) (2*N_step + 1);
-            while(delta > 1.e-11 && p < 512){
-                  S = 0.;  dSdomega = 0.; dSdb = 0.;
-                  for (iter = -N_step; iter <= N_step; iter ++){
-                        t         = tau* (typ) iter;
-                        par       = omega*t + b - lbd[iter + N_step];
-                        S        += par*par/N;
-                        dSdomega += 2.*par*t/N;
-                        dSdb     += 2.*par/N;
-                  }
-                  if (S > oldS){
-                        learning_rate /= 2.;
-                  }
-                  delta  = fabs(S - oldS);
-                  oldS   = S;
-                  omega -= learning_rate*dSdomega; //Gradient descent
-                  b     -= learning_rate*dSdb;
-                  p ++;
-                  if (p > 256 && delta > 1.e-8){
-                        learning_rate /= 2.;
-                  }
-                  if (p == 512 && delta > 1.e-8){
-                        fprintf(stderr, "\nError: The gradient descent does not seem to converge in function FundamentalFrequency. The learning rate is probably ill-chosen.\n");
-                        abort();
-                  }
-            }
-            /******** Newton-Raphson on d<f(t), e^i*omega*t>/domega where f(t) = cos(lbd(t)) ********/
-            if (Hanning_order){
-                  delta = 1.; p = 0; nu = omega;
-                  while (delta > 1.e-8){
-                        num = 0.;  denom = 0.;
-                        /******** Computing relevant integrals with a Simpson method ********/
-                        for (iter = -N_step + 2; iter <= N_step; iter += 2){
-                              t0 = tau* (typ) (iter - 2);
-                              t1 = tau* (typ) (iter - 1);
-                              t2 = tau* (typ)  iter;
-                              H0 = Cp*fast_pow(1. + cos(M_PI*t0/T), Hanning_order);
-                              H1 = Cp*fast_pow(1. + cos(M_PI*t1/T), Hanning_order);
-                              H2 = Cp*fast_pow(1. + cos(M_PI*t2/T), Hanning_order);
-                              num   += t0*   H0*sin(nu*t0)*cos(lbd[iter + N_step - 2]) + 4.*t1*   H1*sin(nu*t1)*cos(lbd[iter + N_step - 1]) + t2*   H2*sin(nu*t2)*cos(lbd[iter + N_step]);
-                              denom += t0*t0*H0*cos(nu*t0)*cos(lbd[iter + N_step - 2]) + 4.*t1*t1*H1*cos(nu*t1)*cos(lbd[iter + N_step - 1]) + t2*t2*H2*cos(nu*t2)*cos(lbd[iter + N_step]);
+            for (i = 1; i <= how_many_planet; i ++){
+                  omega = n_n[i];
+                  b     = lbd[i][N_step];
+                  /******** I now refine omega and b by minimizing S(omega,b) = sum_{all points} (omega*t + b - lbd(t))^2 via a gradient descent ********/
+                  delta  = 1.;  p = 0;  learning_rate = .0000000298023223876953125;  oldS = 1.e300;  N = (typ) (2*N_step + 1);
+                  while(delta > 1.e-11 && p < 512){
+                        S = 0.;  dSdomega = 0.; dSdb = 0.;
+                        for (iter = -N_step; iter <= N_step; iter ++){
+                              t         = tau* (typ) iter;
+                              par       = omega*t + b - lbd[i][iter + N_step];
+                              S        += par*par/N;
+                              dSdomega += 2.*par*t/N;
+                              dSdb     += 2.*par/N;
                         }
-                        num  *= tau/(6.*T);  denom *= tau/(6.*T);
-                        nu   -= num/denom;
-                        delta = fabs(num/denom);
+                        if (S > oldS){
+                              learning_rate /= 2.;
+                        }
+                        delta  = fabs(S - oldS);
+                        oldS   = S;
+                        omega -= learning_rate*dSdomega; //Gradient descent
+                        b     -= learning_rate*dSdb;
                         p ++;
-                        if (p > 50 && delta > 1.e-8){
-                              fprintf(stderr, "\nWarning: Newton-Raphson method does not seem to converge in function FundamentalFrequency.\n");
-                              delta = 1.e-50;
-                              nu    = omega;
+                        if (p > 256 && delta > 1.e-8){
+                              learning_rate /= 2.;
+                        }
+                        if (p == 512 && delta > 1.e-8){
+                              fprintf(stderr, "\nError: The gradient descent does not seem to converge in function FundamentalFrequency. The learning rate is probably ill-chosen.\n");
+                              abort();
                         }
                   }
-                  omega = nu;
+                  /******** Newton-Raphson on d<f(t), e^i*nj*t>/dnj where f(t) = cos(lbd_j(t)) ********/
+                  if (Hanning_order){
+                        delta = 1.; p = 0; nu = omega;
+                        while (delta > 1.e-8){
+                              num = 0.;  denom = 0.;
+                              /******** Computing relevant integrals with a Simpson method ********/
+                              for (iter = -N_step + 2; iter <= N_step; iter += 2){
+                                    t0 = tau* (typ) (iter - 2);
+                                    t1 = tau* (typ) (iter - 1);
+                                    t2 = tau* (typ)  iter;
+                                    H0 = Cp*fast_pow(1. + cos(M_PI*t0/T), Hanning_order);
+                                    H1 = Cp*fast_pow(1. + cos(M_PI*t1/T), Hanning_order);
+                                    H2 = Cp*fast_pow(1. + cos(M_PI*t2/T), Hanning_order);
+                                    num   += t0*   H0*sin(nu*t0)*cos(lbd[i][iter + N_step - 2]) + 4.*t1*   H1*sin(nu*t1)*cos(lbd[i][iter + N_step - 1]) + t2*   H2*sin(nu*t2)*cos(lbd[i][iter + N_step]);
+                                    denom += t0*t0*H0*cos(nu*t0)*cos(lbd[i][iter + N_step - 2]) + 4.*t1*t1*H1*cos(nu*t1)*cos(lbd[i][iter + N_step - 1]) + t2*t2*H2*cos(nu*t2)*cos(lbd[i][iter + N_step]);
+                              }
+                              num  *= tau/(6.*T);  denom *= tau/(6.*T);
+                              nu   -= num/denom;
+                              delta = fabs(num/denom);
+                              p ++;
+                              if (p > 50 && delta > 1.e-8){
+                                    fprintf(stderr, "\nWarning: Newton-Raphson method does not converge in function FundamentalFrequency. Frequency obtained by linear fit will not be refined.\n");
+                                    delta = 1.e-50;
+                                    nu    = omega;
+                              }
+                        }
+                        omega = nu;
+                  }
+                  freq[j][i - 1] = omega;
+                  /******** Initializing first value of lambda for the next sub-interval ********/
+                  lbd[i][0] = lbd[i][2*N_step];
             }
-            frequencies[j] = omega;
       }
-      free(lbd); lbd = NULL;
+      for (i = 1; i <= how_many_planet; i ++){
+            free(lbd[i]); lbd[i] = NULL;
+      }
 }
 
 

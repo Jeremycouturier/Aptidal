@@ -52,7 +52,7 @@ void SABAH1064(typ tau, typ T, int output_step, typ * X_old);
 typ Hamiltonian(typ * X_cart);
 
 
-void FundamentalFrequency(typ tau, typ T, typ * X_old, int n, int lbd_n, int n_freq, typ * frequencies, int Hanning_order);
+void FundamentalFrequency(typ tau, typ T, typ * X_old, int n, int n_freq, typ freq[][how_many_planet], int Hanning_order);
 
 
 void get_frequencies(typ tau, typ T, typ * X_old, int n);
