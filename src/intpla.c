@@ -3222,7 +3222,7 @@ void LibrationCenterFind(typ * X_old, int precision){
       //int Hr[3] = {40, 145, 175};            //Number of harmonics
       int Sn[3] = {1, 2, 2};               //Order of the SABA integrator
       //int Hr[3] = {50, 145, 175};            //Number of harmonics
-      typ AR[3] = {0.5e-2, 2.e-4, 1.e-6}; //Required value for the amplitude
+      typ AR[3] = {0.5e-2, 2.e-4, 3.e-6}; //Required value for the amplitude
       //typ AR[3] = {2.0e-2, 0.5e-4, 2.e-6}; //Required value for the amplitude
       
       /******** Obtaining the average value of the eccentricity in order to adapt the required amplitude for convergence ********/
@@ -3244,7 +3244,18 @@ void LibrationCenterFind(typ * X_old, int precision){
       
       /******** Adapting the length of the integration according to the largest fundamental period ********/
       P    = max(fabs(2.*M_PI/nu_reso), fabs(2.*M_PI/nu_fast));
-      T[0] = 4.*P;  T[1] = 8.*P;  T[2] = 16.*P;
+      if (mean_e > .005){
+            T[0] = 4.*P;   T[1] = 8.*P;   T[2] = 16.*P;
+      }
+      else if (mean_e > .003){
+            T[0] = 8.*P;   T[1] = 16.*P;  T[2] = 32.*P;
+      }
+      else if (mean_e > .001){
+            T[0] = 16.*P;  T[1] = 32.*P;  T[2] = 64.*P;
+      }
+      else{
+            T[0] = 32.*P;  T[1] = 64.*P;  T[2] = 128.*P;
+      }
       
       
       if (precision < 0 || precision > 2){

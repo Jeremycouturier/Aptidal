@@ -40,7 +40,7 @@ int main(){
       X_old_init(X_old);
       
       /******** Trying to make a stability map of the 1:2:3 resonance chain ********/
-      typ Lbd1, Lbd2, Lbd3, lbd1, lbd2, lbd3, g1, g2, g3, D1, D2, D3, Phi, Gamma, Upsilon, Phi_lc, delta_Phi, nu3, delta, n1_1, n2_1, n3_1, n1_2, n2_2, n3_2, n1_3, n2_3, n3_3, B;
+      /*typ Lbd1, Lbd2, Lbd3, lbd1, lbd2, lbd3, g1, g2, g3, D1, D2, D3, Phi, Gamma, Upsilon, Phi_lc, delta_Phi, nu3, delta, n1_1, n2_1, n3_1, n1_2, n2_2, n3_2, n1_3, n2_3, n3_3, B;
       typ freq[3][how_many_planet];
       int every = 14;
       int n_vertical = 240;
@@ -85,7 +85,7 @@ int main(){
       for (i = 0; i < n_lines; i ++){
             if (i % every == 0){
                   printf("i = %d\n", i);
-                  /******** Getting the old coordinates at the libration centers ********/
+                  // Getting the old coordinates at the libration centers
                   lbd1 = fmod(data[23*i + 11], 2.*M_PI); g1 = fmod(data[23*i + 12], 2.*M_PI); Lbd1 = data[23*i + 13]; D1 = data[23*i + 14];
                   lbd2 = fmod(data[23*i + 15], 2.*M_PI); g2 = fmod(data[23*i + 16], 2.*M_PI); Lbd2 = data[23*i + 17]; D2 = data[23*i + 18];
                   lbd3 = fmod(data[23*i + 19], 2.*M_PI); g3 = fmod(data[23*i + 20], 2.*M_PI); Lbd3 = data[23*i + 21]; D3 = data[23*i + 22];
@@ -97,7 +97,7 @@ int main(){
                   fprintf(file_diffusion, "%.16lf %.16lf %.16lf %.16lf %.16lf %.16lf %.16lf", delta, B, delta_Phi, 1.32*Gamma/((typ) n_vertical)*delta_Phi, Phi_lc, Gamma, Upsilon);
                   fprintf(file_n1n2, "%.16lf %.16lf %.16lf %.16lf %.16lf %.16lf %.16lf", delta, B, delta_Phi, 1.32*Gamma/((typ) n_vertical)*delta_Phi, Phi_lc, Gamma, Upsilon);
                   fprintf(file_n2n3, "%.16lf %.16lf %.16lf %.16lf %.16lf %.16lf %.16lf", delta, B, delta_Phi, 1.32*Gamma/((typ) n_vertical)*delta_Phi, Phi_lc, Gamma, Upsilon);
-                  /******** Getting the coordinates of the 1 dof model at the libration centers ********/
+                  // Getting the coordinates of the 1 dof model at the libration centers
                   #pragma omp parallel for num_threads(20) private(Phi, Lbd1, Lbd2, Lbd3, X_old, freq, n1_1, n2_1, n3_1, n1_2, n2_2, n3_2, n1_3, n2_3, n3_3) shared(diffusion_rate)
                   for (j = -n_vertical; j <= n_vertical; j ++){
                         printf("    j = %d\n", j);
@@ -134,7 +134,7 @@ int main(){
       free(n1n2); n1n2 = NULL;
       free(n2n3); n2n3 = NULL;
       free(data); data = NULL;
-      fclose(file_diffusion); fclose(file_n1n2); fclose(file_n2n3);
+      fclose(file_diffusion); fclose(file_n1n2); fclose(file_n2n3);*/
 
       /*typ frequencies[2];
       typ nu1, nu2;
@@ -144,14 +144,14 @@ int main(){
       printf("nu1_1 = %.16lf, nu1_2 = %.16lf, diffusion index = %.6lf\n", nu1, nu2, log10(fabs((nu1-nu2)/nu1)));*/
       
       
-      //SABAn(0.25, 10000000., 1000, X_old, 10);
+      //SABAn(0.125, 10000., 1, X_old, 10);
       //SABAH1064(.0625, 50000., 40, X_old);
       
       //EquilibriumFind(X_old, 1);
       //SABAn(0.2,  50000., 1, X_old, 9);
       //LibrationCenterNAFF(X_old, 0.0078125, 100000., 2, 2, 40);
       //SABAn(0.2, 50000., 1, X_old, 8);
-      //LibrationCenterFollow(X_old, epsilon/400000., 20000, 2);
+      LibrationCenterFollow(X_old, epsilon/400000., 10000, 2);
       //EquilibriumFollow(X_old, -epsilon/120000., 200, 0);
       
       /*for (int __ = 1; __ <= Nd*how_many_planet; __ ++){
