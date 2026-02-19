@@ -50,10 +50,10 @@
 #define c_light 1.e9                   //Speed of light in units of length per units of time. Only when GR_bool = 1
 #endif
 #define body_masses  {.0000164,            .0000232,             .0000201}            //Masses                              of the planets.
-#define body_sma     {1.,                  1.59087711710859,     2.08950800687952}    //Initial and nominal semi-major axes of the planets.
-#define body_ecc     {.00495593263109,     .00518627974622,      .00531268017896}     //Initial eccentricities              of the planets.
-#define body_lambda  {2.27974581324045,    5.71062645317343,     3.71268922091343}    //Initial mean longitudes             of the planets.
-#define body_varpi   {2.85392296314239,   -.30581086874008,      2.84833949804306}    //Initial longitudes of the periapses of the planets.
+#define body_sma     {1.,                  1.59888140024540,     2.11014388278594}    //Initial and nominal semi-major axes of the planets.
+#define body_ecc     {.00160828442797,     .00166871935426,      .00165294174274}     //Initial eccentricities              of the planets.
+#define body_lambda  {5.31069683631644,    4.08454724749384,     .53424131473384}     //Initial mean longitudes             of the planets.
+#define body_varpi   {2.82209873199463,   -.29932260513306,      2.85600131750107}    //Initial longitudes of the periapses of the planets.
 
 #if _3D_bool
 #define body_inc     {}  //Initial inclinations of the planets in radians.

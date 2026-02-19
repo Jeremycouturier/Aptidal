@@ -3209,16 +3209,16 @@ void LibrationCenterFind(typ * X_old, int precision){
       typ X_uv  [4*how_many_planet + 1];
       typ xvXu  [4*how_many_planet + 1];
       typ n     [  how_many_planet + 1];
-      typ tau = 0.015625;
+      typ tau = 0.0625;
       typ t   = 1.;
       
-      typ dt[3] = {2., 1., 0.5};         //Timestep in units of tau
+      typ dt[3] = {2., 1., 1.};             //Timestep in units of tau
       //typ T [3] = {3000., 4500., 6500.};   //Integration time
-      typ T [3] = {32000., 64000., 64000.};   //Integration time
+      typ T [3] = {32000., 64000., 32000.};   //Integration time
       //typ T [3] = {30000., 35000., 40000.};   //Integration time
       //typ T [3] = {80000., 35000., 40000.};   //Integration time
-      int Hf[3] = {2, 2, 5};               //order of Hanning filter
-      int Hr[3] = {15, 45, 75};            //Number of harmonics
+      int Hf[3] = {2, 2, 3};               //order of Hanning filter
+      int Hr[3] = {15, 45, 35};            //Number of harmonics
       //int Hr[3] = {40, 145, 175};            //Number of harmonics
       int Sn[3] = {1, 2, 2};               //Order of the SABA integrator
       //int Hr[3] = {50, 145, 175};            //Number of harmonics
@@ -3235,15 +3235,15 @@ void LibrationCenterFind(typ * X_old, int precision){
       AR[0] *= mean_e;  AR[1] *= mean_e;  AR[2] *= mean_e;
       
       /******** Getting the frequencies ********/
-      if (nu_reso == 0. || nu_fast == 0.){
+      /*if (nu_reso == 0. || nu_fast == 0.){
             for (i = 1; i <= how_many_planet; i ++){
                   X_buff[4*i - 3] = X_old[4*i - 3];  X_buff[4*i - 2] = X_old[4*i - 2];  X_buff[4*i - 1] = X_old[4*i - 1];  X_buff[4*i] = X_old[4*i];
             }
             get_frequencies(tau*dt[precision], T[precision], X_buff, Sn[precision]);
-      }
+      }*/
       
       /******** Adapting the length of the integration according to the largest fundamental period ********/
-      P    = max(fabs(2.*M_PI/nu_reso), fabs(2.*M_PI/nu_fast));
+      /*P    = max(fabs(2.*M_PI/nu_reso), fabs(2.*M_PI/nu_fast));
       if (mean_e > .005){
             T[0] = 4.*P;   T[1] = 8.*P;   T[2] = 16.*P;
       }
@@ -3255,7 +3255,7 @@ void LibrationCenterFind(typ * X_old, int precision){
       }
       else{
             T[0] = 32.*P;  T[1] = 64.*P;  T[2] = 128.*P;
-      }
+      }*/
       
       
       if (precision < 0 || precision > 2){
