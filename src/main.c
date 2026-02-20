@@ -57,7 +57,7 @@ int main(){
       strcpy(out_diffusion, "/home/atipique/Documents/git/K2138/Stability_map/");
       strcat(out_diffusion, "diffusion.txt");
       strcpy(LibCenPath, "/home/atipique/Documents/git/K2138/Stability_map/");
-      strcat(LibCenPath, "LibCen_123_aptidal.txt");
+      strcat(LibCenPath, "LibCen_123_aptidal_complete.txt");
       FILE * file_diffusion = fopen(out_diffusion, "w");
       fprintf(file_diffusion, "The columns are delta, B, delta_Phi, dPhi, Phi_lc, Gamma, Upsilon, ..., diff rate at Phi_lc-dPhi, diff rate at Phi_lc, diff rate at Phi_lc+dPhi, ...\n\n");
       typ * data = NULL;
@@ -68,10 +68,16 @@ int main(){
             abort();
       }
       int n_lines = n_data/24;
+      typ delta_before = 0.;
+      int pixel = 0;
+      int i_before = -10;
       for (i = 0; i < n_lines; i ++){
             delta = masses[1]*masses[2]*data[24*i + 4]/(m0*m0);
-            if ((delta < .05 && i % 8 == 0) || (delta >= .05 && delta < .1 && i % 6 == 0) || (delta >= .1 && i % 4 == 0)){
-                  printf("i = %d\n", i);
+            if (delta - delta_before >= .0003 && i - i_before >= 2){
+                  delta_before = delta;
+                  i_before = i;
+                  pixel ++;
+                  printf("\ni = %d, pixel = %d\n\n", i, pixel);
                   // Getting the old coordinates at the libration centers
                   lbd1 = fmod(data[24*i + 12], 2.*M_PI); g1 = fmod(data[24*i + 13], 2.*M_PI); Lbd1 = data[24*i + 14]; D1 = data[24*i + 15];
                   lbd2 = fmod(data[24*i + 16], 2.*M_PI); g2 = fmod(data[24*i + 17], 2.*M_PI); Lbd2 = data[24*i + 18]; D2 = data[24*i + 19];
@@ -115,6 +121,7 @@ int main(){
                   fprintf(file_diffusion, "\n");
             }
       }
+      printf("Horizontal pixels = %d\n", pixel);
       free(diffusion_rate); diffusion_rate = NULL;
       free(data); data = NULL;
       fclose(file_diffusion);
@@ -127,14 +134,14 @@ int main(){
       printf("nu1_1 = %.16lf, nu1_2 = %.16lf, diffusion index = %.6lf\n", nu1, nu2, log10(fabs((nu1-nu2)/nu1)));*/
       
       
-      //SABAn(0.25, 10000., 1, X_old, 10);
+      //SABAn(0.125, 10000., 1, X_old, 6);
       //SABAH1064(.0625, 50000., 40, X_old);
       
       //EquilibriumFind(X_old, 1);
       //SABAn(0.2,  50000., 1, X_old, 9);
       //LibrationCenterNAFF(X_old, 0.0078125, 100000., 2, 2, 40);
       //SABAn(0.2, 50000., 1, X_old, 8);
-      //LibrationCenterFollow(X_old, epsilon/400000., 2000, 2);
+      //LibrationCenterFollow(X_old, -epsilon/400000., 1000, 2);
       //EquilibriumFollow(X_old, -epsilon/120000., 200, 0);
       
       /*for (int __ = 1; __ <= Nd*how_many_planet; __ ++){
@@ -149,8 +156,8 @@ int main(){
             SABAn(0.125, 16000., 1, X_buff, _);
       }*/
       
-      //LibrationCenterFind(X_old, 1);
-      //SABAn(0.2, 50000., 1, X_old, 9);
+      //LibrationCenterFind(X_old, 2);
+      //SABAn(0.25, 64000., 1, X_old, 10);
       
       /*
       for (int _ = 0; _ < 3; _ ++){
