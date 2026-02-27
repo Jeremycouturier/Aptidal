@@ -4,7 +4,7 @@
 /*********************************************************************/
 /******** Defining the output path. Must end with / and exist ********/
 /*********************************************************************/
-#define pth "/home/atipique/Documents/git/K2138/Stability_map/"
+#define pth "/home/atipique/Documents/git/K2138/3pla_resonance_exit/pq=13/"
 
 
 
@@ -52,7 +52,7 @@
 #define body_masses  {.0000164,            .0000232,             .0000201}            //Masses                              of the planets.
 #define body_sma     {1.,                  1.58780353250668,     2.08136649141351}    //Initial and nominal semi-major axes of the planets.
 #define body_ecc     {.041599776375633113, .034657268436966315,  .037570606563022128} //Initial eccentricities              of the planets.
-#define body_lambda  {2.33047151428406,    3.01828172734352,     1.91779272709272}    //Initial mean longitudes             of the planets.
+#define body_lambda  {2.33647151428406,    3.01828172734352,     1.91779272709272}    //Initial mean longitudes             of the planets.
 #define body_varpi  {-2.69503368038729,   -.30618343421027,     -3.42372122101197}    //Initial longitudes of the periapses of the planets.
 
 #if _3D_bool

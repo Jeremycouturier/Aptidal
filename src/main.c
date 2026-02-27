@@ -40,7 +40,7 @@ int main(){
       X_old_init(X_old);
       
       /******** Trying to make a stability map of the 1:2:3 resonance chain ********/
-      typ Lbd1, Lbd2, Lbd3, lbd1, lbd2, lbd3, g1, g2, g3, D1, D2, D3, Phi, Gamma, Upsilon, Phi_lc, delta_Phi, nu3, nu, delta, n1_1, n2_1, n3_1, n1_2, n2_2, n3_2, B, P;
+      /*typ Lbd1, Lbd2, Lbd3, lbd1, lbd2, lbd3, g1, g2, g3, D1, D2, D3, Phi, Gamma, Upsilon, Phi_lc, delta_Phi, nu3, nu, delta, n1_1, n2_1, n3_1, n1_2, n2_2, n3_2, B, P;
       typ freq[2][how_many_planet];
       //int every = 14;
       int n_vertical = 431;
@@ -88,13 +88,13 @@ int main(){
                   P = 2.5*max(fabs(2.*M_PI/nu3), fabs(2.*M_PI/nu)); //Integration length. Will never be enough at the separatrix
                   B = data[24*i + 3];
                   Phi_lc = Lbd1/p;  Gamma = (p+q)*Lbd1/p + Lbd2;  Upsilon = Lbd1 + Lbd2 + Lbd3;
-                  fprintf(file_diffusion, "%.16lf %.16lf %.16lf %.16lf %.16lf %.16lf %.16lf", delta, B, delta_Phi, 2.*Gamma/((typ) n_vertical)*delta_Phi, Phi_lc, Gamma, Upsilon);
+                  fprintf(file_diffusion, "%.16lf %.16lf %.16lf %.16lf %.16lf %.16lf %.16lf", delta, B, delta_Phi, 2.5*Gamma/((typ) n_vertical)*delta_Phi, Phi_lc, Gamma, Upsilon);
                   // Getting the coordinates of the 1 dof model at the libration centers
                   printf("    j = ");
                   #pragma omp parallel for num_threads(36) private(Phi, Lbd1, Lbd2, Lbd3, X_old, freq, n1_1, n2_1, n3_1, n1_2, n2_2, n3_2) shared(diffusion_rate)
                   for (j = -n_vertical; j <= n_vertical; j ++){
                         printf("%d,", j);
-                        Phi  = Phi_lc + 2.*Gamma*((typ) j)/((typ) n_vertical)*delta_Phi;
+                        Phi  = Phi_lc + 2.5*Gamma*((typ) j)/((typ) n_vertical)*delta_Phi;
                         Lbd1 = p*Phi;
                         Lbd2 = Gamma - (p+q)*Phi;
                         Lbd3 = q*Phi - Gamma + Upsilon;
@@ -124,7 +124,7 @@ int main(){
       printf("Horizontal pixels = %d\n", pixel);
       free(diffusion_rate); diffusion_rate = NULL;
       free(data); data = NULL;
-      fclose(file_diffusion);
+      fclose(file_diffusion);*/
 
       /*typ frequencies[2];
       typ nu1, nu2;
@@ -134,7 +134,7 @@ int main(){
       printf("nu1_1 = %.16lf, nu1_2 = %.16lf, diffusion index = %.6lf\n", nu1, nu2, log10(fabs((nu1-nu2)/nu1)));*/
       
       
-      //SABAn(0.125, 10000., 1, X_old, 6);
+      SABAn(.25390625, 20000000000., 262144, X_old, 10);
       //SABAH1064(.0625, 50000., 40, X_old);
       
       //EquilibriumFind(X_old, 1);
