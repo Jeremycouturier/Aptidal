@@ -39,7 +39,7 @@ int main(){
       
       X_old_init(X_old);
       
-      /******** Trying to make a stability map of the 1:2:3 resonance chain ********/
+      /******** Trying to make a stability map of the 1:2:3 resonance chain. Sigma - delta on Y-axis ********/
       /*typ Lbd1, Lbd2, Lbd3, lbd1, lbd2, lbd3, g1, g2, g3, D1, D2, D3, Phi, Gamma, Upsilon, Phi_lc, delta_Phi, nu3, nu, delta, n1_1, n2_1, n3_1, n1_2, n2_2, n3_2, B, P;
       typ freq[2][how_many_planet];
       //int every = 14;
@@ -125,6 +125,96 @@ int main(){
       free(diffusion_rate); diffusion_rate = NULL;
       free(data); data = NULL;
       fclose(file_diffusion);*/
+      
+      
+      /******** Trying to make a stability map of the 1:2:3 resonance chain. a3 - a3_lc on Y-axis ********/
+      typ Lbd1, Lbd2, Lbd3, lbd1, lbd2, lbd3, g1, g2, g3, D1, D2, D3, Phi, Gamma, Upsilon, Phi_lc, a1, a2, a3, a3_lc, delta_Phi, nu3, nu, delta, n1_1, n2_1, n3_1, n1_2, n2_2, n3_2, B, P, n1_n2;
+      typ freq[2][how_many_planet];
+      //int every = 14;
+      int n_vertical = 431;
+      typ * diffusion_rate;
+      diffusion_rate = (typ *)malloc((2*n_vertical + 1)*sizeof(typ));
+      if (diffusion_rate == NULL){
+            fprintf(stderr, "\nError : Cannot allocate memory for array.\n");
+            abort();
+      }
+      typ p = 1.;
+      typ q = 3.;
+      char LibCenPath[200];
+      char out_diffusion[200];
+      strcpy(out_diffusion, "/home/atipique/Documents/git/K2138/Stability_map/");
+      strcat(out_diffusion, "diffusion.txt");
+      strcpy(LibCenPath, "/home/atipique/Documents/git/K2138/Stability_map/");
+      strcat(LibCenPath, "LibCen_123_aptidal_complete.txt");
+      FILE * file_diffusion = fopen(out_diffusion, "w");
+      fprintf(file_diffusion, "The columns are delta, B, delta_Phi, da3, a3_lc, a1, a2, ..., diff rate at a3_lc-da3, diff rate at a3_lc, diff rate at a3_lc+da3, ...\n\n");
+      typ * data = NULL;
+      int n_data;
+      data = readFromFile(LibCenPath, &n_data);
+      if (n_data % 24 != 0){
+            fprintf(stderr, "\nError : The file must have exactly 24 columns per line.\n");
+            abort();
+      }
+      int n_lines = n_data/24;
+      typ n1n2_before = 0.;
+      int pixel = 0;
+      int i_before = -10;
+      typ beta1, beta2, beta3, mu1, mu2, mu3;
+      beta1 = m0*masses[1]/(m0 + masses[1]);  beta2 = m0*masses[2]/(m0 + masses[2]);  beta3 = m0*masses[3]/(m0 + masses[3]);
+      mu1 = G*(m0 + masses[1]);               mu2 = G*(m0 + masses[2]);               mu3 = G*(m0 + masses[3]);
+      for (i = 0; i < n_lines; i ++){
+            n1_n2 = data[24*i];
+            if (n1_n2 - n1n2_before >= .000003 && i <= 5300 && i - i_before >= 2){
+                  n1n2_before = n1_n2;
+                  i_before = i;
+                  pixel ++;
+                  printf("\ni = %d, pixel = %d\n\n", i, pixel);
+                  // Getting the old coordinates at the libration centers
+                  lbd1 = fmod(data[24*i + 12], 2.*M_PI); g1 = fmod(data[24*i + 13], 2.*M_PI); Lbd1 = data[24*i + 14]; D1 = data[24*i + 15];
+                  lbd2 = fmod(data[24*i + 16], 2.*M_PI); g2 = fmod(data[24*i + 17], 2.*M_PI); Lbd2 = data[24*i + 18]; D2 = data[24*i + 19];
+                  lbd3 = fmod(data[24*i + 20], 2.*M_PI); g3 = fmod(data[24*i + 21], 2.*M_PI); Lbd3 = data[24*i + 22]; D3 = data[24*i + 23];
+                  a1 = Lbd1*Lbd1/(beta1*beta1*mu1);
+                  a2 = Lbd2*Lbd2/(beta2*beta2*mu2);
+                  a3 = Lbd3*Lbd3/(beta3*beta3*mu3);
+                  a3_lc = a3;
+                  delta_Phi = data[24*i + 5];
+                  nu3 = data[24*i + 10];
+                  nu  = data[24*i + 11];
+                  P = 2.5*max(fabs(2.*M_PI/nu3), fabs(2.*M_PI/nu)); //Integration length. Will never be enough at the separatrix
+                  B = data[24*i + 3];
+                  Phi_lc = Lbd1/p;  Gamma = (p+q)*Lbd1/p + Lbd2;  Upsilon = Lbd1 + Lbd2 + Lbd3;
+                  fprintf(file_diffusion, "%.16lf %.16lf %.16lf %.16lf %.16lf %.16lf %.16lf", delta, B, delta_Phi, .002/((typ) n_vertical)*a3_lc, a3_lc, a1, a2);
+                  // Getting the coordinates of the 1 dof model at the libration centers
+                  printf("    j = ");
+                  #pragma omp parallel for num_threads(36) private(a3, Lbd1, Lbd2, Lbd3, X_old, freq, n1_1, n2_1, n3_1, n1_2, n2_2, n3_2) shared(diffusion_rate)
+                  for (j = -n_vertical; j <= n_vertical; j ++){
+                        printf("%d,", j);
+                        a3 = a3_lc + .002*((typ) j)/((typ) n_vertical)*a3_lc;
+                        Lbd3 = beta3*sqrt(mu3*a3);
+                        X_old[1] = lbd1; X_old[2]  = g1; X_old[3]  = Lbd1; X_old[4]  = D1;
+                        X_old[5] = lbd2; X_old[6]  = g2; X_old[7]  = Lbd2; X_old[8]  = D2; 
+                        X_old[9] = lbd3; X_old[10] = g3; X_old[11] = Lbd3; X_old[12] = D3;                       
+                        FundamentalFrequency(0.046875, P, X_old, 2, 2, freq, 2);
+                        n1_1 = freq[0][0];
+                        n1_2 = freq[1][0];
+                        n2_1 = freq[0][1];
+                        n2_2 = freq[1][1];
+                        n3_1 = freq[0][2];
+                        n3_2 = freq[1][2];
+                        diffusion_rate[j + n_vertical] = (fabs((n1_1-n1_2)/n1_1)+fabs((n2_1-n2_2)/n2_1)+fabs((n3_1-n3_2)/n3_1))/3.;
+                  }
+                  printf("\n");
+                  for (j = 0; j <= 2*n_vertical; j ++){
+                        fprintf(file_diffusion, " %.16lf", diffusion_rate[j]);
+                  }
+                  fprintf(file_diffusion, "\n");
+            }
+      }
+      printf("Horizontal pixels = %d\n", pixel);
+      free(diffusion_rate); diffusion_rate = NULL;
+      free(data); data = NULL;
+      fclose(file_diffusion);
+      
 
       /*typ frequencies[2];
       typ nu1, nu2;
@@ -134,7 +224,7 @@ int main(){
       printf("nu1_1 = %.16lf, nu1_2 = %.16lf, diffusion index = %.6lf\n", nu1, nu2, log10(fabs((nu1-nu2)/nu1)));*/
       
       
-      SABAn(.25390625, 20000000000., 262144, X_old, 10);
+      //SABAn(.25390625, 20000000000., 262144, X_old, 10);
       //SABAH1064(.0625, 50000., 40, X_old);
       
       //EquilibriumFind(X_old, 1);
