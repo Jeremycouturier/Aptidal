@@ -3209,7 +3209,7 @@ void LibrationCenterFind(typ * X_old, int precision){
       typ X_uv  [4*how_many_planet + 1];
       typ xvXu  [4*how_many_planet + 1];
       typ n     [  how_many_planet + 1];
-      typ tau = 0.0625;
+      typ tau = .0625;
       typ t   = 1.;
       
       typ dt[3] = {2., 1., 1.};             //Timestep in units of tau
@@ -3398,7 +3398,7 @@ void LibrationCenterNAFF(typ * X_old, typ tau, typ T, int Hf, int N, int Hr){
       }
       new2old(X_old, X_new, X_uv);
       
-      //Renormalization(X_old);
+      Renormalization(X_old);
       printf("The new point is :\n");
       PointPrint(X_old, 1);
       get_n(n);
@@ -3464,7 +3464,13 @@ void LibrationCenterFollow(typ * X_old, typ dG, int Npoints, int precision){
       fprintf(file, "\n");
 
       /******** Finding the first libration center ********/
-      LibrationCenterFind(X_old, precision);
+      
+      //LibrationCenterFind(X_old, precision);
+      /******** To be removed ********/
+      for (int _ = 0; _ < 2; _ ++){
+            LibrationCenterNAFF(X_old, .0625, 32000., 2, 2, 45);
+      }
+      
       /******** Writing to file and initializing sigOld ********/
       old2new(X_old, X_new, X_uv);
       printf("Phi_%d = %.20lf, <Phi_%d> = %.20lf\n", slow, X_uv[4*slow - 1], slow, avgs[4*slow - 1]);
@@ -3493,7 +3499,13 @@ void LibrationCenterFollow(typ * X_old, typ dG, int Npoints, int precision){
       /******** Following the family of libration centers ********/
       oldRatio = nu_fast/nu_reso;  newRatio = oldRatio;  dG_inc_count = 0;  dG_dec_count = 0;
       for (j = 1; j < Npoints; j ++){
-            LibrationCenterFind(X_old, precision);
+      
+            //LibrationCenterFind(X_old, precision);
+            /******** To be removed ********/
+            for (int _ = 0; _ < 2; _ ++){
+                  LibrationCenterNAFF(X_old, .0625, 32000., 2, 2, 45);
+            }
+            
             old2new(X_old, X_new, X_uv);
             printf("Phi_%d = %.20lf, <Phi_%d> = %.20lf\n", slow, X_uv[4*slow - 1], slow, avgs[4*slow - 1]);
             new2old(X_old_av, X_new_av, avgs);

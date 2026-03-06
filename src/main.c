@@ -39,8 +39,9 @@ int main(){
       
       X_old_init(X_old);
       
+      #if 0
       /******** Trying to make a stability map of the 1:2:3 resonance chain. Sigma - delta on Y-axis ********/
-      /*typ Lbd1, Lbd2, Lbd3, lbd1, lbd2, lbd3, g1, g2, g3, D1, D2, D3, Phi, Gamma, Upsilon, Phi_lc, delta_Phi, nu3, nu, delta, n1_1, n2_1, n3_1, n1_2, n2_2, n3_2, B, P;
+      typ Lbd1, Lbd2, Lbd3, lbd1, lbd2, lbd3, g1, g2, g3, D1, D2, D3, Phi, Gamma, Upsilon, Phi_lc, delta_Phi, nu3, nu, delta, n1_1, n2_1, n3_1, n1_2, n2_2, n3_2, B, P;
       typ freq[2][how_many_planet];
       //int every = 14;
       int n_vertical = 431;
@@ -124,9 +125,10 @@ int main(){
       printf("Horizontal pixels = %d\n", pixel);
       free(diffusion_rate); diffusion_rate = NULL;
       free(data); data = NULL;
-      fclose(file_diffusion);*/
+      fclose(file_diffusion);
+      #endif
       
-      
+      #if 0
       /******** Trying to make a stability map of the 1:2:3 resonance chain. a3 - a3_lc on Y-axis ********/
       typ Lbd1, Lbd2, Lbd3, lbd1, lbd2, lbd3, g1, g2, g3, D1, D2, D3, Phi, Gamma, Upsilon, Phi_lc, a1, a2, a3, a3_lc, delta_Phi, nu3, nu, delta, n1_1, n2_1, n3_1, n1_2, n2_2, n3_2, B, P, n1_n2;
       typ freq[2][how_many_planet];
@@ -147,7 +149,7 @@ int main(){
       strcpy(LibCenPath, "/home/atipique/Documents/git/K2138/Stability_map/");
       strcat(LibCenPath, "LibCen_123_aptidal_complete.txt");
       FILE * file_diffusion = fopen(out_diffusion, "w");
-      fprintf(file_diffusion, "The columns are delta, B, delta_Phi, da3, a3_lc, a1, a2, ..., diff rate at a3_lc-da3, diff rate at a3_lc, diff rate at a3_lc+da3, ...\n\n");
+      fprintf(file_diffusion, "The columns are n1/n2, B, delta_Phi, da3, a3_lc, a1, a2, ..., diff rate at a3_lc-da3, diff rate at a3_lc, diff rate at a3_lc+da3, ...\n\n");
       typ * data = NULL;
       int n_data;
       data = readFromFile(LibCenPath, &n_data);
@@ -183,17 +185,17 @@ int main(){
                   P = 2.5*max(fabs(2.*M_PI/nu3), fabs(2.*M_PI/nu)); //Integration length. Will never be enough at the separatrix
                   B = data[24*i + 3];
                   Phi_lc = Lbd1/p;  Gamma = (p+q)*Lbd1/p + Lbd2;  Upsilon = Lbd1 + Lbd2 + Lbd3;
-                  fprintf(file_diffusion, "%.16lf %.16lf %.16lf %.16lf %.16lf %.16lf %.16lf", delta, B, delta_Phi, .002/((typ) n_vertical)*a3_lc, a3_lc, a1, a2);
+                  fprintf(file_diffusion, "%.16lf %.16lf %.16lf %.16lf %.16lf %.16lf %.16lf", n1_n2, B, delta_Phi, .002/((typ) n_vertical)*a3_lc, a3_lc, a1, a2);
                   // Getting the coordinates of the 1 dof model at the libration centers
                   printf("    j = ");
-                  #pragma omp parallel for num_threads(36) private(a3, Lbd1, Lbd2, Lbd3, X_old, freq, n1_1, n2_1, n3_1, n1_2, n2_2, n3_2) shared(diffusion_rate)
+                  #pragma omp parallel for num_threads(36) private(a3, Lbd3, X_old, freq, n1_1, n2_1, n3_1, n1_2, n2_2, n3_2) shared(diffusion_rate)
                   for (j = -n_vertical; j <= n_vertical; j ++){
                         printf("%d,", j);
                         a3 = a3_lc + .002*((typ) j)/((typ) n_vertical)*a3_lc;
                         Lbd3 = beta3*sqrt(mu3*a3);
                         X_old[1] = lbd1; X_old[2]  = g1; X_old[3]  = Lbd1; X_old[4]  = D1;
                         X_old[5] = lbd2; X_old[6]  = g2; X_old[7]  = Lbd2; X_old[8]  = D2; 
-                        X_old[9] = lbd3; X_old[10] = g3; X_old[11] = Lbd3; X_old[12] = D3;                       
+                        X_old[9] = lbd3; X_old[10] = g3; X_old[11] = Lbd3; X_old[12] = D3;
                         FundamentalFrequency(0.046875, P, X_old, 2, 2, freq, 2);
                         n1_1 = freq[0][0];
                         n1_2 = freq[1][0];
@@ -214,7 +216,7 @@ int main(){
       free(diffusion_rate); diffusion_rate = NULL;
       free(data); data = NULL;
       fclose(file_diffusion);
-      
+      #endif
 
       /*typ frequencies[2];
       typ nu1, nu2;
@@ -231,8 +233,8 @@ int main(){
       //SABAn(0.2,  50000., 1, X_old, 9);
       //LibrationCenterNAFF(X_old, 0.0078125, 100000., 2, 2, 40);
       //SABAn(0.2, 50000., 1, X_old, 8);
-      //LibrationCenterFollow(X_old, -epsilon/400000., 1000, 2);
-      //EquilibriumFollow(X_old, -epsilon/120000., 200, 0);
+      LibrationCenterFollow(X_old, epsilon/400000., 10000, 2);
+      //EquilibriumFollow(X_old, epsilon/400000., 200, 2);
       
       /*for (int __ = 1; __ <= Nd*how_many_planet; __ ++){
             X_buff[__] = X_old[__];

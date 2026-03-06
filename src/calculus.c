@@ -1350,10 +1350,10 @@ int EquilibriumFind(typ * X_old, int precision){
       typ X_uv [4*how_many_planet + 1];
       typ xvXu [4*how_many_planet + 1];
       typ tau = 0.5;
-      typ dt[3] = {2., 0.75, 0.5};         //Timestep in units of tau
+      typ dt[3] = {2., 1., 1.};            //Timestep in units of tau
       typ T [3] = {16000., 32000., 64000.};//Integration time
       int Hf[3] = {2, 5, 5};               //order of Hanning filter
-      int Sn[3] = {1, 1, 4};               //Order of the SABA integrator
+      int Sn[3] = {1, 1, 2};               //Order of the SABA integrator
       typ AR[3] = {1.e-4, 1.e-7, 1.e-8};   //Required value for the precision
       
       printf("-------------------------------------------------------------------------------------------\n\n");
