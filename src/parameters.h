@@ -14,7 +14,7 @@
 /******** Two or more consecutive p_i can be equal (coorbital planets) and p_i = 0  ********/
 /******** indicates that planet n° i is not in resonance with other planets         ********/
 /*******************************************************************************************/
-#define resonance_chain {4, 6, 9}
+#define resonance_chain {1, 2, 3}
 
 
 
@@ -49,7 +49,8 @@
 #if GR_bool
 #define c_light 1.e9                   //Speed of light in units of length per units of time. Only when GR_bool = 1
 #endif
-#define body_masses {1.337103473310441e-5,1.4290562159203059e-5,2.1684355013014528e-5} //Masses                              of the planets in stellar masses
+#define body_masses {.0000164,            .0000232,             .0000201}              //Masses                              of the planets.
+//#define body_masses {1.337103473310441e-5,1.4290562159203059e-5,2.1684355013014528e-5} //Masses                              of the planets in stellar masses
 #define body_sma    {1.,                  1.310577992870907,    1.71798416082432}      //Initial and nominal semi-major axes of the planets.
 #define body_ecc    {.0254514353826082,   .0532426677580591,    .0197844926644524}     //Initial eccentricities              of the planets.
 #define body_lambda {4.69897499773390,    2.08530364549824,     3.48459753342726}      //Initial mean longitudes             of the planets.
@@ -79,7 +80,7 @@
 /******************************************/
 /******** Defining some thresholds ********/
 /******************************************/
-#define max_deg 3            //Maximum degree in eccentricity. Aptidal allows up to 3.
+#define max_deg 1            //Maximum degree in eccentricity. Aptidal allows up to 3.
 #define max_res 9            //Maximum value of q for a resonance p : q (with gcd(p,q) = 1 and q >= p). Aptidal currently allows up to 9
 
 

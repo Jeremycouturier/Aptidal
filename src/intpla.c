@@ -3464,12 +3464,7 @@ void LibrationCenterFollow(typ * X_old, typ dG, int Npoints, int precision){
       fprintf(file, "\n");
 
       /******** Finding the first libration center ********/
-      
-      //LibrationCenterFind(X_old, precision);
-      /******** To be removed ********/
-      for (int _ = 0; _ < 2; _ ++){
-            LibrationCenterNAFF(X_old, .0625, 32000., 2, 2, 45);
-      }
+      LibrationCenterFind(X_old, precision);
       
       /******** Writing to file and initializing sigOld ********/
       old2new(X_old, X_new, X_uv);
@@ -3499,13 +3494,7 @@ void LibrationCenterFollow(typ * X_old, typ dG, int Npoints, int precision){
       /******** Following the family of libration centers ********/
       oldRatio = nu_fast/nu_reso;  newRatio = oldRatio;  dG_inc_count = 0;  dG_dec_count = 0;
       for (j = 1; j < Npoints; j ++){
-      
-            //LibrationCenterFind(X_old, precision);
-            /******** To be removed ********/
-            for (int _ = 0; _ < 2; _ ++){
-                  LibrationCenterNAFF(X_old, .0625, 32000., 2, 2, 45);
-            }
-            
+            LibrationCenterFind(X_old, precision);
             old2new(X_old, X_new, X_uv);
             printf("Phi_%d = %.20lf, <Phi_%d> = %.20lf\n", slow, X_uv[4*slow - 1], slow, avgs[4*slow - 1]);
             new2old(X_old_av, X_new_av, avgs);

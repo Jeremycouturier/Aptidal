@@ -39,15 +39,18 @@ int main(){
       
       X_old_init(X_old);
       
-      #if 0
+      #if 1
       /******** Trying to make a stability map of the 1:2:3 resonance chain. Sigma - delta on Y-axis ********/
       typ Lbd1, Lbd2, Lbd3, lbd1, lbd2, lbd3, g1, g2, g3, D1, D2, D3, Phi, Gamma, Upsilon, Phi_lc, delta_Phi, nu3, nu, delta, n1_1, n2_1, n3_1, n1_2, n2_2, n3_2, B, P;
       typ freq[2][how_many_planet];
-      //int every = 14;
-      int n_vertical = 431;
+      int n_vertical = 503;
       typ * diffusion_rate;
+      typ * n1n2;
+      typ * n3n2;
       diffusion_rate = (typ *)malloc((2*n_vertical + 1)*sizeof(typ));
-      if (diffusion_rate == NULL){
+      n1n2 = (typ *)malloc((2*n_vertical + 1)*sizeof(typ));
+      n3n2 = (typ *)malloc((2*n_vertical + 1)*sizeof(typ));
+      if (diffusion_rate == NULL || n1n2 == NULL || n3n2 == NULL){
             fprintf(stderr, "\nError : Cannot allocate memory for array.\n");
             abort();
       }
@@ -55,12 +58,20 @@ int main(){
       typ q = 3.;
       char LibCenPath[200];
       char out_diffusion[200];
-      strcpy(out_diffusion, "/home/atipique/Documents/git/K2138/Stability_map/");
+      char out_n1n2[200];
+      char out_n3n2[200];
+      strcpy(out_diffusion, "/home/atipique/Documents/git/K2138/Stability_map/123/");
       strcat(out_diffusion, "diffusion.txt");
+      strcpy(out_n1n2, "/home/atipique/Documents/git/K2138/Stability_map/123/");
+      strcat(out_n1n2, "n1n2.txt");
+      strcpy(out_n3n2, "/home/atipique/Documents/git/K2138/Stability_map/123/");
+      strcat(out_n3n2, "n3n2.txt");
       strcpy(LibCenPath, "/home/atipique/Documents/git/K2138/Stability_map/");
       strcat(LibCenPath, "LibCen_123_aptidal_complete.txt");
       FILE * file_diffusion = fopen(out_diffusion, "w");
       fprintf(file_diffusion, "The columns are delta, B, delta_Phi, dPhi, Phi_lc, Gamma, Upsilon, ..., diff rate at Phi_lc-dPhi, diff rate at Phi_lc, diff rate at Phi_lc+dPhi, ...\n\n");
+      FILE * file_n1n2 = fopen(out_n1n2, "w");
+      FILE * file_n3n2 = fopen(out_n3n2, "w");
       typ * data = NULL;
       int n_data;
       data = readFromFile(LibCenPath, &n_data);
@@ -84,18 +95,22 @@ int main(){
                   lbd2 = fmod(data[24*i + 16], 2.*M_PI); g2 = fmod(data[24*i + 17], 2.*M_PI); Lbd2 = data[24*i + 18]; D2 = data[24*i + 19];
                   lbd3 = fmod(data[24*i + 20], 2.*M_PI); g3 = fmod(data[24*i + 21], 2.*M_PI); Lbd3 = data[24*i + 22]; D3 = data[24*i + 23];
                   delta_Phi = data[24*i + 5];
+                  
                   nu3 = data[24*i + 10];
                   nu  = data[24*i + 11];
                   P = 2.5*max(fabs(2.*M_PI/nu3), fabs(2.*M_PI/nu)); //Integration length. Will never be enough at the separatrix
+                  //nu = data[24*i + 10];
+                  //P = 2.5*fabs(2.*M_PI/nu); //Integration length. Will never be enough at the separatrix
+                  
                   B = data[24*i + 3];
                   Phi_lc = Lbd1/p;  Gamma = (p+q)*Lbd1/p + Lbd2;  Upsilon = Lbd1 + Lbd2 + Lbd3;
-                  fprintf(file_diffusion, "%.16lf %.16lf %.16lf %.16lf %.16lf %.16lf %.16lf", delta, B, delta_Phi, 2.5*Gamma/((typ) n_vertical)*delta_Phi, Phi_lc, Gamma, Upsilon);
+                  fprintf(file_diffusion, "%.16lf %.16lf %.16lf %.16lf %.16lf %.16lf %.16lf", delta, B, delta_Phi, 3.5*Gamma/((typ) n_vertical)*delta_Phi, Phi_lc, Gamma, Upsilon);
                   // Getting the coordinates of the 1 dof model at the libration centers
                   printf("    j = ");
-                  #pragma omp parallel for num_threads(36) private(Phi, Lbd1, Lbd2, Lbd3, X_old, freq, n1_1, n2_1, n3_1, n1_2, n2_2, n3_2) shared(diffusion_rate)
+                  #pragma omp parallel for num_threads(36) private(Phi, Lbd1, Lbd2, Lbd3, X_old, freq, n1_1, n2_1, n3_1, n1_2, n2_2, n3_2) shared(diffusion_rate, n1n2, n3n2)
                   for (j = -n_vertical; j <= n_vertical; j ++){
                         printf("%d,", j);
-                        Phi  = Phi_lc + 2.5*Gamma*((typ) j)/((typ) n_vertical)*delta_Phi;
+                        Phi  = Phi_lc + 3.5*Gamma*((typ) j)/((typ) n_vertical)*delta_Phi;
                         Lbd1 = p*Phi;
                         Lbd2 = Gamma - (p+q)*Phi;
                         Lbd3 = q*Phi - Gamma + Upsilon;
@@ -105,27 +120,135 @@ int main(){
                         FundamentalFrequency(0.046875, P, X_old, 2, 2, freq, 2);
                         n1_1 = freq[0][0];
                         n1_2 = freq[1][0];
-                        //n1_3 = freq[2][0];
                         n2_1 = freq[0][1];
                         n2_2 = freq[1][1];
-                        //n2_3 = freq[2][1];
                         n3_1 = freq[0][2];
                         n3_2 = freq[1][2];
-                        //n3_3 = freq[2][2];
-                        //diffusion_rate[j + n_vertical] = (fabs((n1_1-n1_2)/n1_1)+fabs((n1_2-n1_3)/n1_2)+fabs((n2_1-n2_2)/n2_1)+fabs((n2_2-n2_3)/n2_2)+fabs((n3_1-n3_2)/n3_1)+fabs((n3_2-n3_3)/n3_2))/6.;
-                        diffusion_rate[j + n_vertical] = (fabs((n1_1-n1_2)/n1_1)+fabs((n2_1-n2_2)/n2_1)+fabs((n3_1-n3_2)/n3_1))/3.;
+                        diffusion_rate[j + n_vertical] = (fabs((n1_1-n1_2)/n1_1) + fabs((n2_1-n2_2)/n2_1) + fabs((n3_1-n3_2)/n3_1))/3.;
+                        n1n2[j + n_vertical] = (n1_1 + n1_2)/(n2_1 + n2_2);
+                        n3n2[j + n_vertical] = (n3_1 + n3_2)/(n2_1 + n2_2);
                   }
                   printf("\n");
                   for (j = 0; j <= 2*n_vertical; j ++){
                         fprintf(file_diffusion, " %.16lf", diffusion_rate[j]);
+                        fprintf(file_n1n2, " %.16lf", n1n2[j]);
+                        fprintf(file_n3n2, " %.16lf", n3n2[j]);
                   }
-                  fprintf(file_diffusion, "\n");
+                  fprintf(file_diffusion, "\n");  fprintf(file_n1n2, "\n");  fprintf(file_n3n2, "\n");
             }
       }
       printf("Horizontal pixels = %d\n", pixel);
       free(diffusion_rate); diffusion_rate = NULL;
+      free(n1n2); n1n2 = NULL;
+      free(n3n2); n3n2 = NULL;
       free(data); data = NULL;
-      fclose(file_diffusion);
+      fclose(file_diffusion); fclose(file_n1n2); fclose(file_n3n2);
+      #endif
+      
+      #if 0
+      /******** Trying to make a stability map of the 4:6:9 resonance chain. Sigma - delta on Y-axis ********/
+      typ Lbd1, Lbd2, Lbd3, lbd1, lbd2, lbd3, g1, g2, g3, D1, D2, D3, Phi, Gamma, Upsilon, Phi_lc, delta_Phi, nu3, nu, delta, n1_1, n2_1, n3_1, n1_2, n2_2, n3_2, B, P;
+      typ freq[2][how_many_planet];
+      int n_vertical = 503;
+      typ * diffusion_rate;
+      typ * n1n2;
+      typ * n3n2;
+      diffusion_rate = (typ *)malloc((2*n_vertical + 1)*sizeof(typ));
+      n1n2 = (typ *)malloc((2*n_vertical + 1)*sizeof(typ));
+      n3n2 = (typ *)malloc((2*n_vertical + 1)*sizeof(typ));
+      if (diffusion_rate == NULL || n1n2 == NULL || n3n2 == NULL){
+            fprintf(stderr, "\nError : Cannot allocate memory for array.\n");
+            abort();
+      }
+      typ p = 2.;
+      typ q = 3.;
+      char LibCenPath[200];
+      char out_diffusion[200];
+      char out_n1n2[200];
+      char out_n3n2[200];
+      strcpy(out_diffusion, "/home/atipique/Documents/git/K2138/Stability_map/469/");
+      strcat(out_diffusion, "diffusion.txt");
+      strcpy(out_n1n2, "/home/atipique/Documents/git/K2138/Stability_map/469/");
+      strcat(out_n1n2, "n1n2.txt");
+      strcpy(out_n3n2, "/home/atipique/Documents/git/K2138/Stability_map/469/");
+      strcat(out_n3n2, "n3n2.txt");
+      strcpy(LibCenPath, "/home/atipique/Documents/git/K2138/Stability_map/");
+      strcat(LibCenPath, "LibCen_469_aptidal.txt");
+      FILE * file_diffusion = fopen(out_diffusion, "w");
+      fprintf(file_diffusion, "The columns are delta, B, delta_Phi, dPhi, Phi_lc, Gamma, Upsilon, ..., diff rate at Phi_lc-dPhi, diff rate at Phi_lc, diff rate at Phi_lc+dPhi, ...\n\n");
+      FILE * file_n1n2 = fopen(out_n1n2, "w");
+      FILE * file_n3n2 = fopen(out_n3n2, "w");
+      typ * data = NULL;
+      int n_data;
+      data = readFromFile(LibCenPath, &n_data);
+      if (n_data % 24 != 0){
+            fprintf(stderr, "\nError : The file must have exactly 24 columns per line.\n");
+            abort();
+      }
+      int n_lines = n_data/24;
+      typ delta_before = 0.;
+      int pixel = 0;
+      int i_before = -10;
+      for (i = 0; i < n_lines; i ++){
+            delta = masses[1]*masses[2]*data[24*i + 4]/(m0*m0);
+            if (delta - delta_before >= .00007967 && i - i_before >= 2){
+                  delta_before = delta;
+                  i_before = i;
+                  pixel ++;
+                  printf("\ni = %d, pixel = %d\n\n", i, pixel);
+                  // Getting the old coordinates at the libration centers
+                  lbd1 = fmod(data[24*i + 12], 2.*M_PI); g1 = fmod(data[24*i + 13], 2.*M_PI); Lbd1 = data[24*i + 14]; D1 = data[24*i + 15];
+                  lbd2 = fmod(data[24*i + 16], 2.*M_PI); g2 = fmod(data[24*i + 17], 2.*M_PI); Lbd2 = data[24*i + 18]; D2 = data[24*i + 19];
+                  lbd3 = fmod(data[24*i + 20], 2.*M_PI); g3 = fmod(data[24*i + 21], 2.*M_PI); Lbd3 = data[24*i + 22]; D3 = data[24*i + 23];
+                  delta_Phi = data[24*i + 5];
+                  
+                  //nu3 = data[24*i + 10];
+                  //nu  = data[24*i + 11];
+                  //P = 2.5*max(fabs(2.*M_PI/nu3), fabs(2.*M_PI/nu)); //Integration length. Will never be enough at the separatrix
+                  nu = data[24*i + 10];
+                  P = 2.5*fabs(2.*M_PI/nu); //Integration length. Will never be enough at the separatrix
+                  
+                  B = data[24*i + 3];
+                  Phi_lc = Lbd1/p;  Gamma = (p+q)*Lbd1/p + Lbd2;  Upsilon = Lbd1 + Lbd2 + Lbd3;
+                  fprintf(file_diffusion, "%.16lf %.16lf %.16lf %.16lf %.16lf %.16lf %.16lf", delta, B, delta_Phi, 3.5*Gamma/((typ) n_vertical)*delta_Phi, Phi_lc, Gamma, Upsilon);
+                  // Getting the coordinates of the 1 dof model at the libration centers
+                  printf("    j = ");
+                  #pragma omp parallel for num_threads(36) private(Phi, Lbd1, Lbd2, Lbd3, X_old, freq, n1_1, n2_1, n3_1, n1_2, n2_2, n3_2) shared(diffusion_rate, n1n2, n3n2)
+                  for (j = -n_vertical; j <= n_vertical; j ++){
+                        printf("%d,", j);
+                        Phi  = Phi_lc + 3.5*Gamma*((typ) j)/((typ) n_vertical)*delta_Phi;
+                        Lbd1 = p*Phi;
+                        Lbd2 = Gamma - (p+q)*Phi;
+                        Lbd3 = q*Phi - Gamma + Upsilon;
+                        X_old[1] = lbd1; X_old[2]  = g1; X_old[3]  = Lbd1; X_old[4]  = D1;
+                        X_old[5] = lbd2; X_old[6]  = g2; X_old[7]  = Lbd2; X_old[8]  = D2; 
+                        X_old[9] = lbd3; X_old[10] = g3; X_old[11] = Lbd3; X_old[12] = D3;                       
+                        FundamentalFrequency(0.046875, P, X_old, 2, 2, freq, 2);
+                        n1_1 = freq[0][0];
+                        n1_2 = freq[1][0];
+                        n2_1 = freq[0][1];
+                        n2_2 = freq[1][1];
+                        n3_1 = freq[0][2];
+                        n3_2 = freq[1][2];
+                        diffusion_rate[j + n_vertical] = (fabs((n1_1-n1_2)/n1_1) + fabs((n2_1-n2_2)/n2_1) + fabs((n3_1-n3_2)/n3_1))/3.;
+                        n1n2[j + n_vertical] = (n1_1 + n1_2)/(n2_1 + n2_2);
+                        n3n2[j + n_vertical] = (n3_1 + n3_2)/(n2_1 + n2_2);
+                  }
+                  printf("\n");
+                  for (j = 0; j <= 2*n_vertical; j ++){
+                        fprintf(file_diffusion, " %.16lf", diffusion_rate[j]);
+                        fprintf(file_n1n2, " %.16lf", n1n2[j]);
+                        fprintf(file_n3n2, " %.16lf", n3n2[j]);
+                  }
+                  fprintf(file_diffusion, "\n");  fprintf(file_n1n2, "\n");  fprintf(file_n3n2, "\n");
+            }
+      }
+      printf("Horizontal pixels = %d\n", pixel);
+      free(diffusion_rate); diffusion_rate = NULL;
+      free(n1n2); n1n2 = NULL;
+      free(n3n2); n3n2 = NULL;
+      free(data); data = NULL;
+      fclose(file_diffusion); fclose(file_n1n2); fclose(file_n3n2);
       #endif
       
       #if 0
@@ -233,7 +356,7 @@ int main(){
       //SABAn(0.2,  50000., 1, X_old, 9);
       //LibrationCenterNAFF(X_old, 0.0078125, 100000., 2, 2, 40);
       //SABAn(0.2, 50000., 1, X_old, 8);
-      LibrationCenterFollow(X_old, epsilon/400000., 10000, 2);
+      //LibrationCenterFollow(X_old, epsilon/400000., 10000, 2);
       //EquilibriumFollow(X_old, epsilon/400000., 200, 2);
       
       /*for (int __ = 1; __ <= Nd*how_many_planet; __ ++){
@@ -250,6 +373,7 @@ int main(){
       
       //LibrationCenterFind(X_old, 2);
       //SABAn(0.25, 64000., 1, X_old, 10);
+      //AveragedSABAn(2., 64000., 1., X_old, 4);
       
       /*
       for (int _ = 0; _ < 3; _ ++){

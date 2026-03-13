@@ -204,11 +204,10 @@ void dHdold(typ * dH, typ * X_old, int KP){
             typ Lbd_2 = Lbd_0[2];
             typ Lbd_3 = Lbd_0[3];
             factor    = m1*m2/(m0*m0)*n3*Lbd_3;
-            typ Xi1   = 8.171720526314093;
-            typ Xi2   = -0.8922188353685203; // H2 = m1*m2/m0^2*n3*Lbd3*(Xi1 cos(phi) + Xi2 cos(2*phi) + Xi3 cos(3*phi))
-            typ Xi3   = -0.09881675613930538;
+            typ Xi1   = 8.142424101089068;
+            typ Xi2   = -.8864891136509759; // H2 = m1*m2/m0^2*n3*Lbd3*(Xi1 cos(phi) + Xi2 cos(2*phi))
             typ phi   = 2.*lbd_1 - 5.*lbd_2 + 3.*lbd_3;
-            typ dH2dphi = -factor*(Xi1*sin(phi) + 2.*Xi2*sin(2.*phi) + 3.*Xi3*sin(3.*phi));
+            typ dH2dphi = -factor*(Xi1*sin(phi) + 2.*Xi2*sin(2.*phi));
             *(dH + 4*1 - 3) += 2.*dH2dphi;
             *(dH + 4*2 - 3) -= 5.*dH2dphi;
             *(dH + 4*3 - 3) += 3.*dH2dphi;
