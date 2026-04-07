@@ -334,9 +334,10 @@ void new2old(typ * X_old, typ * X_new, typ * X_uv){
             X_new[Nd*k - 4] = X_uv[Nd*k - 4];
             #endif
             X_new[Nd*k - 3] = X_uv[Nd*k - 3];
+            printf("%.16lf, %.16lf\n", X_uv[Nd*k - 2], X_uv[Nd*k]);
             X_new[Nd*k - 2] = atan2(X_uv[Nd*k - 2], X_uv[Nd*k]);
             X_new[Nd*k - 1] = X_uv[Nd*k - 1];
-            X_new[Nd*k]     = 0.5*Lbd_0[k]*(X_uv[Nd*k - 2]*X_uv[Nd*k - 2] + X_uv[Nd*k]*X_uv[Nd*k]);
+            X_new[Nd*k]     = .5*Lbd_0[k]*(X_uv[Nd*k - 2]*X_uv[Nd*k - 2] + X_uv[Nd*k]*X_uv[Nd*k]);
       }
       
       /******** Computing X_old ********/
@@ -437,7 +438,6 @@ void nonCanonical2canonical(typ * X_cart){
 void toInvar(typ * X_cart){
 
       /******** Rotates the system so that the total angular momentum points in the z-direction ********/
-      /******** The barycentric speeds have a factor m/beta that needs cancelling               ********/
 
       int i;
       typ gx, gy, gz;
@@ -453,7 +453,7 @@ void toInvar(typ * X_cart){
             vx = X_cart[Nd*i - 2];
             vy = X_cart[Nd*i - 1];
             vz = X_cart[Nd*i];
-            gx += m0*masses[i]/(m0 + masses[i])*(y*vz - z*vy);
+            gx += m0*masses[i]/(m0 + masses[i])*(y*vz - z*vy); //The barycentric speeds have a factor m/beta that needs cancelling
             gy += m0*masses[i]/(m0 + masses[i])*(z*vx - x*vz);
             gz += m0*masses[i]/(m0 + masses[i])*(x*vy - y*vx);
       }

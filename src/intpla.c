@@ -203,7 +203,7 @@ void cart2ell(typ * cart, typ * alkhqp, typ mu){
             H2   =  c21 - FAC2*(Z*a11 + vZ*a21); //Should be equal to H1
             K2   =  c22 - FAC2*(Z*a12 + vZ*a22); //Should be equal to K1
             if (fabs(H1 - H2) + fabs(K1 - K2) > 1.e-6){
-                  printf("Warning : Bad computation of (k,h) in function cart2ell. (K1 - K2, H1 - H2) = (%.13lf, %.13lf)\n", K1 - K2, H1 - H2);
+                  printf("Warning : Bad computation of (k,h) in function cart2ell. (K1 - K2, H1 - H2) = (%.16lf, %.16lf)\n", K1 - K2, H1 - H2);
             }
             K    = .5*(K1 + K2);
             H    = .5*(H1 + H2);
@@ -236,6 +236,7 @@ void cart2ell(typ * cart, typ * alkhqp, typ mu){
 }
 
 
+#if 0
 typ mean2true(typ M, typ mu, typ a, typ e){
 
       /******** Computes the true anomaly from the mean anomaly using the differential equation ********/
@@ -291,6 +292,7 @@ typ mean2true(typ M, typ mu, typ a, typ e){
       
       return previous_tra;
 }
+#endif
 
 
 typ mean2eccentric(typ l, typ k, typ h){
@@ -726,10 +728,8 @@ void exp_tau_LB(typ tau, typ * X_cart){
 #if tides_bool
 void exp_tau_LHt(typ * X_cart, typ tau, int planet){
 
-      /******** Modifies the speeds and spins due to tides       ********/
-      /******** Tides are dissipative, a RK1 is propably enough  ********/
-      /******** Heliocentric and barycentric speeds are confused ********/
-      /******** The barycentric speed has a factor m/beta        ********/
+      /******** Modifies the speeds and spins due to tides ********/
+      /******** Tides are dissipative, a RK1 is enough     ********/
 
       typ k2 = k2s[planet];
       typ Dt = Dts[planet];
@@ -803,18 +803,19 @@ void SABAn(typ tau, typ T, int output_step, typ * X_old, int n){
 
       /******** Integrates the complete Hamiltonian with a SABAn where       ********/
       /******** 1 <= n <= 10 for a time T with a timestep tau. Outputs every ********/
-      /******** output_step timestep to file pth/SABAn_chain.txt.            ********/
+      /******** output_step timestep to file pth/SABAn_timestep.txt.         ********/
       /******** The Keplerian part A is integrated exactly, but the          ********/
       /******** perturbative part takes the form B = B_1(p) + B_2(q) and is  ********/
       /******** integrated approximetaly but symplectically with a SABA1.    ********/
 
 
-      char file_path[800];
+      char file_path[256];
+      char resume_path[256];
       char nn[10];
       char taustr[7];
       char taustr2[14];
       char tautau[21];
-      FILE * file;
+      FILE * file, * resume;
       long int N_step, iter;
       int i, n_dec;
       typ X_cart[Nd*how_many_planet + 1];
@@ -829,6 +830,7 @@ void SABAn(typ tau, typ T, int output_step, typ * X_old, int n){
       typ I, Om;
       #endif
       typ c1, c2, c3, c4, c5, c6, d1, d2, d3, d4, d5;
+      typ progress, previous_progress, threshold;
       typ alkhqp[7];
       int continuous = tau*((typ) output_step) <= .5 ? 1 : 0;
       
@@ -845,24 +847,27 @@ void SABAn(typ tau, typ T, int output_step, typ * X_old, int n){
       else if (n_dec==12){strcpy(taustr, "%.12lf");} else if (n_dec==13){strcpy(taustr, "%.13lf");} else if (n_dec==14){strcpy(taustr, "%.14lf");} else               {strcpy(taustr, "%.15lf");}
       
       /******** Opening output file ********/
-      strcpy(file_path, pth);
-      strcat(file_path, "SABA");
+      strcpy(file_path, pth); strcpy(resume_path, pth);
+      strcat(file_path, "SABA"); strcat(resume_path, "SABA");
       sprintf(nn, "%d", n);
-      strcat(file_path, nn);
+      strcat(file_path, nn); strcat(resume_path, nn);
       #if (tides_bool && GR_bool)
-      strcat(file_path, "_tides+GR_");
+      strcat(file_path, "_tides+GR_"); strcat(resume_path, "_tides+GR_");
       #elif tides_bool
-      strcat(file_path, "_tides_");
+      strcat(file_path, "_tides_"); strcat(resume_path, "_tides_");
       #elif GR_bool
-      strcat(file_path, "_GR_");
+      strcat(file_path, "_GR_"); strcat(resume_path, "_GR_");
       #else
-      strcat(file_path, "_");
+      strcat(file_path, "_"); strcat(resume_path, "_");
       #endif
       sprintf(tautau, taustr, tau);
-      strcat(file_path, tautau);
+      strcat(file_path, tautau); strcat(resume_path, tautau);
+      strcat(resume_path, "_resume");
       strcat(file_path, ".txt");
+      strcat(resume_path, ".txt");
       file = fopen(file_path, "w");
-      if (file == NULL){
+      resume = fopen(resume_path, "w");
+      if (file == NULL || resume == NULL){
             fprintf(stderr, "\nError: Cannot create or open file in function SABAn.\n");
             abort();
       }
@@ -934,7 +939,9 @@ void SABAn(typ tau, typ T, int output_step, typ * X_old, int n){
 
       /******** Integrating ********/
       N_step = (long int) ceil(T/tau);
-      for (iter = 0; iter < N_step + 1; iter ++){
+      threshold = N_step > 1073741824 ? .001 : .01; //For long simulations, displaying progress every 0.1%. For short simulations, displaying progress every 1%.
+      previous_progress = 0.;
+      for (iter = 0; iter < N_step; iter ++){
       
             /******** Writing to file ********/
             if (iter%output_step == 0){
@@ -950,12 +957,16 @@ void SABAn(typ tau, typ T, int output_step, typ * X_old, int n){
                   else{
                         #if (tides_bool && GR_bool)
                         fprintf(file, "Numerical integration with tides and GR of the complete Hamiltonian with a SABA%d integrator in heliocentric canonical coordinates.\n", n);
+                        printf("Starting numerical integration with tides and GR of the complete Hamiltonian with a SABA%d integrator.\n", n);
                         #elif tides_bool
                         fprintf(file, "Numerical integration with tides of the complete Hamiltonian with a SABA%d integrator in heliocentric canonical coordinates.\n", n);
+                        printf("Starting numerical integration with tides of the complete Hamiltonian with a SABA%d integrator.\n", n);
                         #elif GR_bool
                         fprintf(file, "Numerical integration with GR of the complete Hamiltonian with a SABA%d integrator in heliocentric canonical coordinates.\n", n);
+                        printf("Starting numerical integration with GR of the complete Hamiltonian with a SABA%d integrator.\n", n);
                         #else
                         fprintf(file, "Numerical integration of the complete Hamiltonian with a SABA%d integrator in heliocentric canonical coordinates.\n", n);
+                        printf("Starting numerical integration of the complete Hamiltonian with a SABA%d integrator.\n", n);
                         #endif
                         if (n == 1){
                               fprintf(file, "The integrator is exp(tau*L_K) = exp(tau/2*L_A)*exp(tau*L_B)*exp(tau/2*L_A) (Laskar & Robutel, 2001).\n");
@@ -1077,7 +1088,7 @@ void SABAn(typ tau, typ T, int output_step, typ * X_old, int n){
                         }
                   }
                   if (how_many_resonant != 0){
-                        old2new(X_old, X_new, X_uv);             // (lbd_j, -vrp_j; Lbd_j, D_j) -> (phi_j, v_j; Phi_j, u_j)
+                        old2new(X_old, X_new, X_uv);             // (lbd_j, -vrp_j; Lbd_j, D_j) --> (phi_j, v_j; Phi_j, u_j)
                         for (i = 1; i <= how_many_planet; i ++){
                               e   = sqrt(1. - (1. - X_old[Nd*i]/X_old[Nd*i - 1])*(1. - X_old[Nd*i]/X_old[Nd*i - 1]));
                               a   = X_old[Nd*i - 1]*X_old[Nd*i - 1]*(m0 + masses[i])/(G*m0*m0*masses[i]*masses[i]);
@@ -1251,6 +1262,18 @@ void SABAn(typ tau, typ T, int output_step, typ * X_old, int n){
                   kepsaut(X_cart + Nd*i - Nd, mu, 2.*c1*tau);
             }
             
+            /******** Displaying progress ********/
+            progress = ((typ) iter) / ((typ) N_step);
+            if (progress - previous_progress > threshold){
+                  previous_progress = progress;
+                  if (N_step > 1073741824){
+                        printf("progress = %.1lf %%\n", 100.*progress);
+                  }
+                  else{
+                        printf("progress = %.0lf %%\n", 100.*progress);
+                  }
+            }
+            
             /******** To be removed potentially. Checking for close encounters. Does not handle large timesteps ********/
             #if close_enc_bool
             int j;
@@ -1294,9 +1317,81 @@ void SABAn(typ tau, typ T, int output_step, typ * X_old, int n){
             }
             #endif
       }
+      
+      /******** Allowing simulation to be resumed ********/
+      typ planet_a[how_many_planet + 1];
+      typ planet_e[how_many_planet + 1];
+      typ planet_l[how_many_planet + 1];
+      typ planet_v[how_many_planet + 1];
+      #if _3D_bool
+      typ planet_I[how_many_planet + 1];
+      typ planet_O[how_many_planet + 1];
+      #endif
+      for (i = 1; i <= how_many_planet; i ++){ //Need to perform a step exp(-c1*tau*L_A) on the simulation
+            mu = G*(m0 + masses[i]);
+            kepsaut(X_cart + Nd*i - Nd, mu, -c1*tau);
+      }
+      for (i = 1; i <= how_many_planet; i ++){ //Cartesian to elliptic. Source of numerical errors because SABAn will convert back to cartesian when resuming. Fine for now
+            beta = m0*masses[i]/(m0 + masses[i]);
+            mu   = G*(m0 + masses[i]);
+            cart2ell(X_cart + Nd*i - Nd, alkhqp, mu);
+            planet_a[i] = alkhqp[1];
+            planet_e[i] = sqrt(alkhqp[3]*alkhqp[3] + alkhqp[4]*alkhqp[4]);
+            planet_l[i] = alkhqp[2];
+            planet_v[i] = atan2(alkhqp[4], alkhqp[3]);
+            #if _3D_bool
+            planet_I[i] = 2.*asin(sqrt(alkhqp[5]*alkhqp[5] + alkhqp[6]*alkhqp[6]));
+            planet_O[i] = atan2(alkhqp[6], alkhqp[5]);
+            #endif
+      }
+      fprintf(resume, "In order to resume the simulation at time t = %.16lf, set the file parameters.h as:\n", tau * (typ) N_step);
+      #if (toInvar_bool && _3D_bool)
+      fprintf(resume, "\n#define toInvar_bool 0");
+      fprintf(resume, " //Determines if the system is rotated so that the orbital angular momentum points in the z-direction. Irrelevant if _3D_bool is 0. Planet's rotations are not rotated.\n");
+      #endif
+      fprintf(resume, "\n#define body_sma {");
+      for (i = 1; i < how_many_planet; i ++){fprintf(resume, "%.17lf, ", planet_a[i]);} fprintf(resume, "%.17lf", planet_a[how_many_planet]);
+      fprintf(resume, "} //Initial semi-major axes of the planets.\n");
+      fprintf(resume, "#define body_ecc {");
+      for (i = 1; i < how_many_planet; i ++){fprintf(resume, "%.21lf, ", planet_e[i]);} fprintf(resume, "%.21lf", planet_e[how_many_planet]);
+      fprintf(resume, "} //Initial eccentricities of the planets.\n");
+      fprintf(resume, "#define body_lambda {");
+      for (i = 1; i < how_many_planet; i ++){fprintf(resume, "%.17lf, ", planet_l[i]);} fprintf(resume, "%.17lf", planet_l[how_many_planet]);
+      fprintf(resume, "} //Initial mean longitudes of the planets.\n");
+      fprintf(resume, "#define body_varpi {");
+      for (i = 1; i < how_many_planet; i ++){fprintf(resume, "%.17lf, ", planet_v[i]);} fprintf(resume, "%.17lf", planet_v[how_many_planet]);
+      fprintf(resume, "} //Initial longitudes of the periapses of the planets.\n");
+      #if _3D_bool
+      fprintf(resume, "\n#define body_inc {");
+      for (i = 1; i < how_many_planet; i ++){fprintf(resume, "%.21lf, ", planet_I[i]);} fprintf(resume, "%.21lf", planet_I[how_many_planet]);
+      fprintf(resume, "} //Initial inclinations of the planets in radians.\n");
+      fprintf(resume, "#define body_Omeg {");
+      for (i = 1; i < how_many_planet; i ++){fprintf(resume, "%.17lf, ", planet_O[i]);} fprintf(resume, "%.17lf", planet_O[how_many_planet]);
+      fprintf(resume, "} //Initial longitudes of the ascending node of the planets in radians.\n");
+      #endif
+      #if tides_bool
+      #if _3D_bool
+      fprintf(resume, "\n#define body_Omegx {");
+      for (i = 1; i < how_many_planet; i ++){fprintf(resume, "%.17lf, ", Omx[i]);} fprintf(resume, "%.17lf", Omx[how_many_planet]);
+      fprintf(resume, "} //x-coordinate of the initial sideral rotation of the bodies, in radians/unit of time.\n");
+      fprintf(resume, "#define body_Omegy {");
+      for (i = 1; i < how_many_planet; i ++){fprintf(resume, "%.17lf, ", Omy[i]);} fprintf(resume, "%.17lf", Omy[how_many_planet]);
+      fprintf(resume, "} //y-coordinate of the initial sideral rotation of the bodies, in radians/unit of time.\n");
+      fprintf(resume, "#define body_Omegz {");
+      for (i = 1; i < how_many_planet; i ++){fprintf(resume, "%.17lf, ", Omz[i]);} fprintf(resume, "%.17lf", Omz[how_many_planet]);
+      fprintf(resume, "} //z-coordinate of the initial sideral rotation of the bodies, in radians/unit of time.\n");
+      #else
+      fprintf(resume, "\n#define body_Omega {");
+      for (i = 1; i < how_many_planet; i ++){fprintf(resume, "%.17lf, ", Omg[i]);} fprintf(resume, "%.17lf", Omg[how_many_planet]);
+      fprintf(resume, "} //Initial sideral rotation of the planets, in radians/unit of time.\n");
+      #endif
+      #endif
+      fprintf(resume, "\nBecause of numerical errors, the initial conditions of the restarted simulation differ from the final conditions\n");
+      fprintf(resume, "of the original simulation by 10^-16 to 10^-15. Due to the chaotic nature of N-body systems, the restarted simulation\n");
+      fprintf(resume, "could therefore differ significantly from what the original simulation would have looked like if it had been longer.");
 
       /******** Closing output file ********/
-      fclose(file);
+      fclose(file);  fclose(resume);
 }
 
 
@@ -1310,11 +1405,12 @@ void SABAH84(typ tau, typ T, int output_step, typ * X_old){
       /******** integrated approximetaly but symplectically with a SABA1.   ********/
 
 
-      char file_path[800];
+      char file_path[256];
+      char resume_path[256];
       char taustr[7];
       char taustr2[14];
       char tautau[21];
-      FILE * file;
+      FILE * file, * resume;
       long int N_step, iter;
       int i, n_dec;
       typ X_cart[Nd*how_many_planet + 1];
@@ -1329,13 +1425,14 @@ void SABAH84(typ tau, typ T, int output_step, typ * X_old){
       typ I, Om;
       #endif
       typ c1, c2, c3, c4, d1, d2, d3;
+      typ progress, previous_progress, threshold;
       typ alkhqp[7];
       int continuous = tau*((typ) output_step) <= 0.5 ? 1 : 0;
       
       /******** Finding the number of decimals of the timestep ********/
       n_dec = 0;
       ten = 1.;
-      while (n_dec < 15 && tau*ten - floor(tau*ten) > 4.*DBL_EPSILON){
+      while (n_dec < 15 && tau*ten - floor(tau*ten) > 8.*DBL_EPSILON){
             n_dec ++;
             ten *= 10.;
       }
@@ -1345,22 +1442,25 @@ void SABAH84(typ tau, typ T, int output_step, typ * X_old){
       else if (n_dec==12){strcpy(taustr, "%.12lf");} else if (n_dec==13){strcpy(taustr, "%.13lf");} else if (n_dec==14){strcpy(taustr, "%.14lf");} else               {strcpy(taustr, "%.15lf");}
       
       /******** Opening output file ********/
-      strcpy(file_path, pth);
-      strcat(file_path, "SABAH84");
+      strcpy(file_path, pth); strcpy(resume_path, pth);
+      strcat(file_path, "SABAH84"); strcat(resume_path, "SABAH84");
       #if (tides_bool && GR_bool)
-      strcat(file_path, "_tides+GR_");
+      strcat(file_path, "_tides+GR_"); strcat(resume_path, "_tides+GR_");
       #elif tides_bool
-      strcat(file_path, "_tides_");
+      strcat(file_path, "_tides_"); strcat(resume_path, "_tides_");
       #elif GR_bool
-      strcat(file_path, "_GR_");
+      strcat(file_path, "_GR_"); strcat(resume_path, "_GR_");
       #else
-      strcat(file_path, "_");
+      strcat(file_path, "_"); strcat(resume_path, "_");
       #endif
       sprintf(tautau, taustr, tau);
-      strcat(file_path, tautau);
+      strcat(file_path, tautau); strcat(resume_path, tautau);
+      strcat(resume_path, "_resume");
       strcat(file_path, ".txt");
+      strcat(resume_path, ".txt");
       file = fopen(file_path, "w");
-      if (file == NULL){
+      resume = fopen(resume_path, "w");
+      if (file == NULL || resume == NULL){
             fprintf(stderr, "\nError: Cannot create or open file in function SABAH84.\n");
             abort();
       }
@@ -1414,7 +1514,9 @@ void SABAH84(typ tau, typ T, int output_step, typ * X_old){
 
       /******** Integrating ********/
       N_step = (long int) ceil(T/tau);
-      for (iter = 0; iter < N_step + 1; iter ++){
+      threshold = N_step > 1073741824 ? .001 : .01; //For long simulations, displaying progress every 0.1%. For short simulations, displaying progress every 1%.
+      previous_progress = 0.;
+      for (iter = 0; iter < N_step; iter ++){
       
             /******** Writing to file ********/
             if (iter%output_step == 0){
@@ -1430,12 +1532,16 @@ void SABAH84(typ tau, typ T, int output_step, typ * X_old){
                   else{
                         #if (tides_bool && GR_bool)
                         fprintf(file, "Numerical integration with tides and GR of the complete Hamiltonian with a SABAH84 integrator in heliocentric canonical coordinates.\n");
+                        printf("Starting numerical integration with tides and GR of the complete Hamiltonian with a SABAH84 integrator.\n");
                         #elif tides_bool
                         fprintf(file, "Numerical integration with tides of the complete Hamiltonian with a SABAH84 integrator in heliocentric canonical coordinates.\n");
+                        printf("Starting numerical integration with tides of the complete Hamiltonian with a SABAH84 integrator.\n");
                         #elif GR_bool
                         fprintf(file, "Numerical integration with GR of the complete Hamiltonian with a SABAH84 integrator in heliocentric canonical coordinates.\n");
+                        printf("Starting numerical integration with GR of the complete Hamiltonian with a SABAH84 integrator.\n");
                         #else
                         fprintf(file, "Numerical integration of the complete Hamiltonian with a SABAH84 integrator in heliocentric canonical coordinates.\n");
+                        printf("Starting numerical integration of the complete Hamiltonian with a SABAH84 integrator.\n");
                         #endif
                         fprintf(file, "The integrator is exp(tau*L_K) = exp(c1*tau*L_A)*exp(d1*tau*L_B)* ... *exp(d1*tau*L_B)*exp(c1*tau*L_A) (Blanes et al., 2013).\n");
                         fprintf(file, "The Keplerian part A is integrated exactly using function kepsaut. The perturbative part B is not integrable but can be\n");
@@ -1609,6 +1715,18 @@ void SABAH84(typ tau, typ T, int output_step, typ * X_old){
                   kepsaut(X_cart + Nd*i - Nd, mu, 2.*c1*tau);
             }
             
+            /******** Displaying progress ********/
+            progress = ((typ) iter) / ((typ) N_step);
+            if (progress - previous_progress > threshold){
+                  previous_progress = progress;
+                  if (N_step > 1073741824){
+                        printf("progress = %.1lf %%\n", 100.*progress);
+                  }
+                  else{
+                        printf("progress = %.0lf %%\n", 100.*progress);
+                  }
+            }
+            
             /******** To be removed potentially. Checking for close encounters. Does not handle large timesteps ********/
             #if close_enc_bool
             int j;
@@ -1652,9 +1770,81 @@ void SABAH84(typ tau, typ T, int output_step, typ * X_old){
             }
             #endif
       }
+      
+      /******** Allowing simulation to be resumed ********/
+      typ planet_a[how_many_planet + 1];
+      typ planet_e[how_many_planet + 1];
+      typ planet_l[how_many_planet + 1];
+      typ planet_v[how_many_planet + 1];
+      #if _3D_bool
+      typ planet_I[how_many_planet + 1];
+      typ planet_O[how_many_planet + 1];
+      #endif
+      for (i = 1; i <= how_many_planet; i ++){ //Need to perform a step exp(-c1*tau*L_A) on the simulation
+            mu = G*(m0 + masses[i]);
+            kepsaut(X_cart + Nd*i - Nd, mu, -c1*tau);
+      }
+      for (i = 1; i <= how_many_planet; i ++){ //Cartesian to elliptic. Source of numerical errors because SABAn will convert back to cartesian when resuming.
+            beta = m0*masses[i]/(m0 + masses[i]);
+            mu   = G*(m0 + masses[i]);
+            cart2ell(X_cart + Nd*i - Nd, alkhqp, mu);
+            planet_a[i] = alkhqp[1];
+            planet_e[i] = sqrt(alkhqp[3]*alkhqp[3] + alkhqp[4]*alkhqp[4]);
+            planet_l[i] = alkhqp[2];
+            planet_v[i] = atan2(alkhqp[4], alkhqp[3]);
+            #if _3D_bool
+            planet_I[i] = 2.*asin(sqrt(alkhqp[5]*alkhqp[5] + alkhqp[6]*alkhqp[6]));
+            planet_O[i] = atan2(alkhqp[6], alkhqp[5]);
+            #endif
+      }
+      fprintf(resume, "In order to resume the simulation at time t = %.16lf, set the file parameters.h as:\n", tau * (typ) N_step);
+      #if (toInvar_bool && _3D_bool)
+      fprintf(resume, "\n#define toInvar_bool 0");
+      fprintf(resume, " //Determines if the system is rotated so that the orbital angular momentum points in the z-direction. Irrelevant if _3D_bool is 0. Planet's rotations are not rotated.\n");
+      #endif
+      fprintf(resume, "\n#define body_sma {");
+      for (i = 1; i < how_many_planet; i ++){fprintf(resume, "%.17lf, ", planet_a[i]);} fprintf(resume, "%.17lf", planet_a[how_many_planet]);
+      fprintf(resume, "} //Initial semi-major axes of the planets.\n");
+      fprintf(resume, "#define body_ecc {");
+      for (i = 1; i < how_many_planet; i ++){fprintf(resume, "%.21lf, ", planet_e[i]);} fprintf(resume, "%.21lf", planet_e[how_many_planet]);
+      fprintf(resume, "} //Initial eccentricities of the planets.\n");
+      fprintf(resume, "#define body_lambda {");
+      for (i = 1; i < how_many_planet; i ++){fprintf(resume, "%.17lf, ", planet_l[i]);} fprintf(resume, "%.17lf", planet_l[how_many_planet]);
+      fprintf(resume, "} //Initial mean longitudes of the planets.\n");
+      fprintf(resume, "#define body_varpi {");
+      for (i = 1; i < how_many_planet; i ++){fprintf(resume, "%.17lf, ", planet_v[i]);} fprintf(resume, "%.17lf", planet_v[how_many_planet]);
+      fprintf(resume, "} //Initial longitudes of the periapses of the planets.\n");
+      #if _3D_bool
+      fprintf(resume, "\n#define body_inc {");
+      for (i = 1; i < how_many_planet; i ++){fprintf(resume, "%.21lf, ", planet_I[i]);} fprintf(resume, "%.21lf", planet_I[how_many_planet]);
+      fprintf(resume, "} //Initial inclinations of the planets in radians.\n");
+      fprintf(resume, "#define body_Omeg {");
+      for (i = 1; i < how_many_planet; i ++){fprintf(resume, "%.17lf, ", planet_O[i]);} fprintf(resume, "%.17lf", planet_O[how_many_planet]);
+      fprintf(resume, "} //Initial longitudes of the ascending node of the planets in radians.\n");
+      #endif
+      #if tides_bool
+      #if _3D_bool
+      fprintf(resume, "\n#define body_Omegx {");
+      for (i = 1; i < how_many_planet; i ++){fprintf(resume, "%.17lf, ", Omx[i]);} fprintf(resume, "%.17lf", Omx[how_many_planet]);
+      fprintf(resume, "} //x-coordinate of the initial sideral rotation of the bodies, in radians/unit of time.\n");
+      fprintf(resume, "#define body_Omegy {");
+      for (i = 1; i < how_many_planet; i ++){fprintf(resume, "%.17lf, ", Omy[i]);} fprintf(resume, "%.17lf", Omy[how_many_planet]);
+      fprintf(resume, "} //y-coordinate of the initial sideral rotation of the bodies, in radians/unit of time.\n");
+      fprintf(resume, "#define body_Omegz {");
+      for (i = 1; i < how_many_planet; i ++){fprintf(resume, "%.17lf, ", Omz[i]);} fprintf(resume, "%.17lf", Omz[how_many_planet]);
+      fprintf(resume, "} //z-coordinate of the initial sideral rotation of the bodies, in radians/unit of time.\n");
+      #else
+      fprintf(resume, "\n#define body_Omega {");
+      for (i = 1; i < how_many_planet; i ++){fprintf(resume, "%.17lf, ", Omg[i]);} fprintf(resume, "%.17lf", Omg[how_many_planet]);
+      fprintf(resume, "} //Initial sideral rotation of the planets, in radians/unit of time.\n");
+      #endif
+      #endif
+      fprintf(resume, "\nBecause of numerical errors, the initial conditions of the restarted simulation differ from the final conditions\n");
+      fprintf(resume, "of the original simulation by 10^-16 to 10^-15. Due to the chaotic nature of N-body systems, the restarted simulation\n");
+      fprintf(resume, "could therefore differ significantly from what the original simulation would have looked like if it had been longer.");
 
       /******** Closing output file ********/
-      fclose(file);
+      fclose(file);  fclose(resume);
 }
 
 
@@ -1668,11 +1858,12 @@ void SABAH1064(typ tau, typ T, int output_step, typ * X_old){
       /******** integrated approximetaly but symplectically with a SABA1.   ********/
 
 
-      char file_path[800];
+      char file_path[256];
+      char resume_path[256];
       char taustr[7];
       char taustr2[14];
       char tautau[21];
-      FILE * file;
+      FILE * file, * resume;
       long int N_step, iter;
       int i, n_dec;
       typ X_cart[Nd*how_many_planet + 1];
@@ -1687,13 +1878,14 @@ void SABAH1064(typ tau, typ T, int output_step, typ * X_old){
       typ I, Om;
       #endif
       typ c1, c2, c3, c4, c5, d1, d2, d3, d4, d5;
+      typ progress, previous_progress, threshold;
       typ alkhqp[7];
       int continuous = tau*((typ) output_step) <= 0.5 ? 1 : 0;
       
       /******** Finding the number of decimals of the timestep ********/
       n_dec = 0;
       ten = 1.;
-      while (n_dec < 15 && tau*ten - floor(tau*ten) > 4.*DBL_EPSILON){
+      while (n_dec < 15 && tau*ten - floor(tau*ten) > 8.*DBL_EPSILON){
             n_dec ++;
             ten *= 10.;
       }
@@ -1703,22 +1895,25 @@ void SABAH1064(typ tau, typ T, int output_step, typ * X_old){
       else if (n_dec==12){strcpy(taustr, "%.12lf");} else if (n_dec==13){strcpy(taustr, "%.13lf");} else if (n_dec==14){strcpy(taustr, "%.14lf");} else               {strcpy(taustr, "%.15lf");}
       
       /******** Opening output file ********/
-      strcpy(file_path, pth);
-      strcat(file_path, "SABAH1064");
+      strcpy(file_path, pth); strcpy(resume_path, pth);
+      strcat(file_path, "SABAH1064"); strcat(resume_path, "SABAH1064");
       #if (tides_bool && GR_bool)
-      strcat(file_path, "_tides+GR_");
+      strcat(file_path, "_tides+GR_"); strcat(resume_path, "_tides+GR_");
       #elif tides_bool
-      strcat(file_path, "_tides_");
+      strcat(file_path, "_tides_"); strcat(resume_path, "_tides_");
       #elif GR_bool
-      strcat(file_path, "_GR_");
+      strcat(file_path, "_GR_"); strcat(resume_path, "_GR_");
       #else
-      strcat(file_path, "_");
+      strcat(file_path, "_"); strcat(resume_path, "_");
       #endif
       sprintf(tautau, taustr, tau);
-      strcat(file_path, tautau);
+      strcat(file_path, tautau); strcat(resume_path, tautau);
+      strcat(resume_path, "_resume");
       strcat(file_path, ".txt");
+      strcat(resume_path, ".txt");
       file = fopen(file_path, "w");
-      if (file == NULL){
+      resume = fopen(resume_path, "w");
+      if (file == NULL || resume == NULL){
             fprintf(stderr, "\nError: Cannot create or open file in function SABAH1064.\n");
             abort();
       }
@@ -1772,7 +1967,9 @@ void SABAH1064(typ tau, typ T, int output_step, typ * X_old){
 
       /******** Integrating ********/
       N_step = (long int) ceil(T/tau);
-      for (iter = 0; iter < N_step + 1; iter ++){
+      threshold = N_step > 1073741824 ? .001 : .01; //For long simulations, displaying progress every 0.1%. For short simulations, displaying progress every 1%.
+      previous_progress = 0.;
+      for (iter = 0; iter < N_step; iter ++){
       
             /******** Writing to file ********/
             if (iter%output_step == 0){
@@ -1788,12 +1985,16 @@ void SABAH1064(typ tau, typ T, int output_step, typ * X_old){
                   else{
                         #if (tides_bool && GR_bool)
                         fprintf(file, "Numerical integration with tides and GR of the complete Hamiltonian with a SABAH1064 integrator in heliocentric canonical coordinates.\n");
+                        printf("Starting numerical integration with tides and GR of the complete Hamiltonian with a SABAH1064 integrator.\n");
                         #elif tides_bool
                         fprintf(file, "Numerical integration with tides of the complete Hamiltonian with a SABAH1064 integrator in heliocentric canonical coordinates.\n");
+                        printf("Starting numerical integration with tides of the complete Hamiltonian with a SABAH1064 integrator.\n");
                         #elif GR_bool
                         fprintf(file, "Numerical integration with GR of the complete Hamiltonian with a SABAH1064 integrator in heliocentric canonical coordinates.\n");
+                        printf("Starting numerical integration with GR of the complete Hamiltonian with a SABAH1064 integrator.\n");
                         #else
                         fprintf(file, "Numerical integration of the complete Hamiltonian with a SABAH1064 integrator in heliocentric canonical coordinates.\n");
+                        printf("Starting numerical integration of the complete Hamiltonian with a SABAH1064 integrator.\n");
                         #endif
                         fprintf(file, "The integrator is exp(tau*L_K) = exp(c1*tau*L_A)*exp(d1*tau*L_B)* ... *exp(d1*tau*L_B)*exp(c1*tau*L_A) (Blanes et al., 2013).\n");
                         fprintf(file, "The Keplerian part A is integrated exactly using function kepsaut. The perturbative part B is not integrable but can be\n");
@@ -1989,6 +2190,18 @@ void SABAH1064(typ tau, typ T, int output_step, typ * X_old){
                   kepsaut(X_cart + Nd*i - Nd, mu, 2.*c1*tau);
             }
             
+            /******** Displaying progress ********/
+            progress = ((typ) iter) / ((typ) N_step);
+            if (progress - previous_progress > threshold){
+                  previous_progress = progress;
+                  if (N_step > 1073741824){
+                        printf("progress = %.1lf %%\n", 100.*progress);
+                  }
+                  else{
+                        printf("progress = %.0lf %%\n", 100.*progress);
+                  }
+            }
+            
             /******** To be removed potentially. Checking for close encounters. Does not handle large timesteps ********/
             #if close_enc_bool
             int j;
@@ -2032,9 +2245,81 @@ void SABAH1064(typ tau, typ T, int output_step, typ * X_old){
             }
             #endif
       }
+      
+      /******** Allowing simulation to be resumed ********/
+      typ planet_a[how_many_planet + 1];
+      typ planet_e[how_many_planet + 1];
+      typ planet_l[how_many_planet + 1];
+      typ planet_v[how_many_planet + 1];
+      #if _3D_bool
+      typ planet_I[how_many_planet + 1];
+      typ planet_O[how_many_planet + 1];
+      #endif
+      for (i = 1; i <= how_many_planet; i ++){ //Need to perform a step exp(-c1*tau*L_A) on the simulation
+            mu = G*(m0 + masses[i]);
+            kepsaut(X_cart + Nd*i - Nd, mu, -c1*tau);
+      }
+      for (i = 1; i <= how_many_planet; i ++){ //Cartesian to elliptic. Source of numerical errors because SABAn will convert back to cartesian when resuming.
+            beta = m0*masses[i]/(m0 + masses[i]);
+            mu   = G*(m0 + masses[i]);
+            cart2ell(X_cart + Nd*i - Nd, alkhqp, mu);
+            planet_a[i] = alkhqp[1];
+            planet_e[i] = sqrt(alkhqp[3]*alkhqp[3] + alkhqp[4]*alkhqp[4]);
+            planet_l[i] = alkhqp[2];
+            planet_v[i] = atan2(alkhqp[4], alkhqp[3]);
+            #if _3D_bool
+            planet_I[i] = 2.*asin(sqrt(alkhqp[5]*alkhqp[5] + alkhqp[6]*alkhqp[6]));
+            planet_O[i] = atan2(alkhqp[6], alkhqp[5]);
+            #endif
+      }
+      fprintf(resume, "In order to resume the simulation at time t = %.16lf, set the file parameters.h as:\n", tau * (typ) N_step);
+      #if (toInvar_bool && _3D_bool)
+      fprintf(resume, "\n#define toInvar_bool 0");
+      fprintf(resume, " //Determines if the system is rotated so that the orbital angular momentum points in the z-direction. Irrelevant if _3D_bool is 0. Planet's rotations are not rotated.\n");
+      #endif
+      fprintf(resume, "\n#define body_sma {");
+      for (i = 1; i < how_many_planet; i ++){fprintf(resume, "%.17lf, ", planet_a[i]);} fprintf(resume, "%.17lf", planet_a[how_many_planet]);
+      fprintf(resume, "} //Initial semi-major axes of the planets.\n");
+      fprintf(resume, "#define body_ecc {");
+      for (i = 1; i < how_many_planet; i ++){fprintf(resume, "%.21lf, ", planet_e[i]);} fprintf(resume, "%.21lf", planet_e[how_many_planet]);
+      fprintf(resume, "} //Initial eccentricities of the planets.\n");
+      fprintf(resume, "#define body_lambda {");
+      for (i = 1; i < how_many_planet; i ++){fprintf(resume, "%.17lf, ", planet_l[i]);} fprintf(resume, "%.17lf", planet_l[how_many_planet]);
+      fprintf(resume, "} //Initial mean longitudes of the planets.\n");
+      fprintf(resume, "#define body_varpi {");
+      for (i = 1; i < how_many_planet; i ++){fprintf(resume, "%.17lf, ", planet_v[i]);} fprintf(resume, "%.17lf", planet_v[how_many_planet]);
+      fprintf(resume, "} //Initial longitudes of the periapses of the planets.\n");
+      #if _3D_bool
+      fprintf(resume, "\n#define body_inc {");
+      for (i = 1; i < how_many_planet; i ++){fprintf(resume, "%.21lf, ", planet_I[i]);} fprintf(resume, "%.21lf", planet_I[how_many_planet]);
+      fprintf(resume, "} //Initial inclinations of the planets in radians.\n");
+      fprintf(resume, "#define body_Omeg {");
+      for (i = 1; i < how_many_planet; i ++){fprintf(resume, "%.17lf, ", planet_O[i]);} fprintf(resume, "%.17lf", planet_O[how_many_planet]);
+      fprintf(resume, "} //Initial longitudes of the ascending node of the planets in radians.\n");
+      #endif
+      #if tides_bool
+      #if _3D_bool
+      fprintf(resume, "\n#define body_Omegx {");
+      for (i = 1; i < how_many_planet; i ++){fprintf(resume, "%.17lf, ", Omx[i]);} fprintf(resume, "%.17lf", Omx[how_many_planet]);
+      fprintf(resume, "} //x-coordinate of the initial sideral rotation of the bodies, in radians/unit of time.\n");
+      fprintf(resume, "#define body_Omegy {");
+      for (i = 1; i < how_many_planet; i ++){fprintf(resume, "%.17lf, ", Omy[i]);} fprintf(resume, "%.17lf", Omy[how_many_planet]);
+      fprintf(resume, "} //y-coordinate of the initial sideral rotation of the bodies, in radians/unit of time.\n");
+      fprintf(resume, "#define body_Omegz {");
+      for (i = 1; i < how_many_planet; i ++){fprintf(resume, "%.17lf, ", Omz[i]);} fprintf(resume, "%.17lf", Omz[how_many_planet]);
+      fprintf(resume, "} //z-coordinate of the initial sideral rotation of the bodies, in radians/unit of time.\n");
+      #else
+      fprintf(resume, "\n#define body_Omega {");
+      for (i = 1; i < how_many_planet; i ++){fprintf(resume, "%.17lf, ", Omg[i]);} fprintf(resume, "%.17lf", Omg[how_many_planet]);
+      fprintf(resume, "} //Initial sideral rotation of the planets, in radians/unit of time.\n");
+      #endif
+      #endif
+      fprintf(resume, "\nBecause of numerical errors, the initial conditions of the restarted simulation differ from the final conditions\n");
+      fprintf(resume, "of the original simulation by 10^-16 to 10^-15. Due to the chaotic nature of N-body systems, the restarted simulation\n");
+      fprintf(resume, "could therefore differ significantly from what the original simulation would have looked like if it had been longer.");
 
       /******** Closing output file ********/
-      fclose(file);
+      fclose(file);  fclose(resume);
 }
 
 

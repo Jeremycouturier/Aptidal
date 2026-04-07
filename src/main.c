@@ -38,8 +38,10 @@ int main(){
       }
       
       X_old_init(X_old);
+      SABAn(.25390625, 4.e10, 262144, X_old, 10);
       
-      #if 1
+      
+      #if 0
       /******** Trying to make a stability map of the 1:2:3 resonance chain. Sigma - delta on Y-axis ********/
       typ Lbd1, Lbd2, Lbd3, lbd1, lbd2, lbd3, g1, g2, g3, D1, D2, D3, Phi, Gamma, Upsilon, Phi_lc, delta_Phi, nu3, nu, delta, n1_1, n2_1, n3_1, n1_2, n2_2, n3_2, B, P;
       typ freq[2][how_many_planet];

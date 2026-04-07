@@ -17,7 +17,9 @@ void ell2cart(typ a, typ e, typ i, typ E, typ varpi, typ Omega, typ mu, typ * ca
 void cart2ell(typ * cart, typ * alkhqp, typ mu);
 
 
+#if 0
 typ mean2true(typ M, typ mu, typ a, typ e);
+#endif
 
 
 typ mean2eccentric(typ l, typ k, typ h);
