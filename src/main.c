@@ -38,8 +38,20 @@ int main(){
       }
       
       X_old_init(X_old);
-      SABAn(.25390625, 4.e10, 262144, X_old, 10);
+      //EquilibriumFind(X_old, 1);
+      //AveragedSABAn(2., 50000., 1, X_old, 6);
+      //X_old_init(X_old);
+      //SABAn(.25390625, 1.e7, 512, X_old, 10);
+      //SABAH1064(.00715, 500000., 400, X_old);
+      //X_old_init(X_old);
+      //LibrationCenterNAFF(X_old, .0625, 64000., 3, 2, 60);
+      SABAn(.26, 11814714968., 262144, X_old, 10);
+      //EquilibriumFollow(X_old, -epsilon/40000., 20000, 1);
+      //SABAn(.25390625, 4.e10, 262144, X_old, 10);
       
+      //SABAn(.25390625, 50000., 8, X_old, 10);
+      //LibrationCenterFind(X_old, 2);
+      //SABAn(.0625, 20000., 1, X_old, 4);
       
       #if 0
       /******** Trying to make a stability map of the 1:2:3 resonance chain. Sigma - delta on Y-axis ********/
