@@ -120,7 +120,7 @@ void init(){
       transformation_display();
       Cppq_init();
       Hamiltonian_display();
-      X_old_init(X_old_t0);
+      X_init(X_old_t0);
       old2new(X_old_t0, X_new_t0, X_uv_t0);
 }
 

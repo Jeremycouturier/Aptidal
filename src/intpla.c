@@ -3216,7 +3216,7 @@ void LibrationCenterNAFF(typ * X_old, typ tau, typ T, int Hf, int N, int Hr){
       }
       new2old(X_old, X_new, X_uv);
       
-      Renormalization(X_old);
+      //Renormalization(X_old);
       printf("The new point is :\n");
       PointPrint(X_old, 1);
       get_averaged_n(n);

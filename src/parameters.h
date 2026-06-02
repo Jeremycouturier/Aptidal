@@ -4,7 +4,7 @@
 /*********************************************************************/
 /******** Defining the output path. Must end with / and exist ********/
 /*********************************************************************/
-#define pth "/home/atipique/Documents/Aptidal_simulation/3pla_resonance_exit/K1987/"
+#define pth "/home/atipique/Documents/Aptidal_simulation/Resampi/final/"
 
 
 
@@ -14,7 +14,7 @@
 /******** Two or more consecutive p_i can be equal (coorbital planets) and p_i = 0  ********/
 /******** indicates that planet n° i is not in resonance with other planets         ********/
 /*******************************************************************************************/
-#define resonance_chain {8, 12, 18, 27}
+#define resonance_chain {1, 2, 3}
 
 
 
@@ -27,7 +27,7 @@
 #define second_mass_bool 0   //Determines if the model is expanded to second order in mass. Terms at second order in mass are truncated to degree 0 in eccentricity.
 #define tides_bool 1         //Determines if there are tides raised by the star on the planets in the system. The tidal model of Couturier et al. 2021 is used
 #define GR_bool 0            //To be coded. Determines if the first PPN order of General Relativity is included in the Hamiltonian. Eq. (3.55) of https://jeremycouturier.com/img/PhD_manuscript.pdf
-#define _3D_bool 0           //For function UnaveragedSABAn only. Determines if the problem is 3D or coplanar
+#define _3D_bool 0           //Determines if the problem is 3D or coplanar
 #define canon_input_bool 1   //Determines if the heliocentric coordinates in input  are canonical (heliocentric position, barycentric speed) or not (heliocentric position, heliocentric speed)
 #define canon_output_bool 1  //Determines if the heliocentric coordinates in output are canonical (heliocentric position, barycentric speed) or not (heliocentric position, heliocentric speed)
                              //Both canon_input_bool and canon_output_bool must be left to 1 for now
@@ -43,34 +43,34 @@
 /******** planet and the orbital period of a massless particle with semi-major axis the unit of length. The canonical      ********/
 /******** heliocentric coordinates are used (heliocentric positions and barycentric velocities). See Laskar & Robutel 1995 ********/
 /**********************************************************************************************************************************/
-#define how_many_planet 4              //Number of planets in the system. Must match the length of the resonance chain. Minimum is 2
+#define how_many_planet 3              //Number of planets in the system. Must match the length of the resonance chain. Minimum is 2
 #define G 39.478417604357434475337964  //Gravitational constant. Should be left to 4*pi^2 (the unit of time is the orbital period of a massless particle with semi-major axis the unit of length)
 #define m0 1.                          //Mass of the star. Should be left to 1. (the unit of mass is the star mass)
 #if GR_bool
 #define c_light 1.e9                   //Speed of light in units of length per units of time. Only when GR_bool = 1
 #endif
-#define body_masses {1.103e-5,            1.195e-5,             2.422e-5,             1.737e-5}             //Masses                              of the planets in stellar masses
-#define body_sma    {1.,                  1.31063388956530,     1.71785897200592,     2.25140923008155}     //Initial and nominal semi-major axes of the planets.
-#define body_ecc    {.025969963962830640, .059382364145342155,  .037409363918984279,  .029034289643334182}  //Initial eccentricities              of the planets.
-#define body_lambda {2.65725525333552,    3.78233356367910,     3.48546755071036,     .14584719428602}      //Initial mean longitudes             of the planets.
-#define body_varpi {-0.25011308400757,   -3.39240540126691,    -.25098431811849,     -3.39237472136929}     //Initial longitudes of the periapses of the planets.
+#define body_masses  {.0000164,            .0000232,             .0000201}            //Masses                              of the planets.
+#define body_sma     {1.,                  1.60835948593536,     2.13597322238125}    //Initial and nominal semi-major axes of the planets.
+#define body_ecc     {.000868022064295540, .000820678023582992,  .000898296021366980} //Initial eccentricities              of the planets.
+#define body_lambda  {5.2,                 .86832899981387,      .48449090873962}     //Initial mean longitudes             of the planets.
+#define body_varpi  {-3.37508224025729,   -.44550685204011,      2.65813316793692}    //Initial longitudes of the periapses of the planets.
 
 #if _3D_bool
-#define body_inc    {}       //Initial inclinations of the planets in radians.
-#define body_Omeg   {}       //Initial longitudes of the ascending node of the planets in radians.
+#define body_inc     {}  //Initial inclinations of the planets in radians.
+#define body_Omeg    {}  //Initial longitudes of the ascending node of the planets in radians.
 #endif
 
 #if tides_bool
-#define body_radii  {.0016682,            .0018038,             .0036077,             .0026040}             //Radii of the planets, in units of length
-#define body_k2     {1.5,                 1.5,                  1.5,                  1.5}                  //Second Love number of the planets
-#define body_Dt     {.06578400722471152,  .06845556018452882,   .08839218851765285,   .17204735546952463}   //Tidal timelag of the bodies, in units of time. k2/Q = {6.2e-1, 4.3e-1, 3.7e-1, 4.8e-1}
-#define body_alpha  {.33,                 .33,                  .33,                  .33}                  //Dimensionless structure constant of the bodies. 2/5 for an homogeneous body.
+#define body_radii   {.002660027817,       .002902227178,        .0022817800236}      //Radii of the planets, in units of length
+#define body_k2      {1.5,                 1.5,                  1.5}                 //Second Love number of the planets
+#define body_Dt      {.0004880705841556409,.001558242964792014,  .0012917487503424963}//Tidal timelag of the planets, in units of time. k21/Q1 = 4.6e-3, k22/Q2 = 7.2e-3, k23/Q3 = 3.9e-3
+#define body_alpha   {.33,                 .33,                  .33}                 //Dimensionless momoent of inertia of the planets. 2/5 for an homogeneous body.
 #if _3D_bool
-#define body_Omegx  {}                     //x-coordinate of the initial sideral rotation of the bodies, in radians/unit of time
-#define body_Omegy  {}                     //y-coordinate of the initial sideral rotation of the bodies, in radians/unit of time
-#define body_Omegz  {}                     //z-coordinate of the initial sideral rotation of the bodies, in radians/unit of time
+#define body_Omegx   {}  //x-coordinate of the initial sideral rotation of the planets, in radians/unit of time
+#define body_Omegy   {}  //y-coordinate of the initial sideral rotation of the planets, in radians/unit of time
+#define body_Omegz   {}  //z-coordinate of the initial sideral rotation of the planets, in radians/unit of time
 #else
-#define body_Omega  {6.283219958851004,   4.187553542589783,    2.790640330614937,    1.8599530293662827}   //Initial sideral rotation of the bodies, in radians/unit of time
+#define body_Omega   {6.283236829087866,   3.080422017478199,    2.0127532064922145}  //Initial sideral rotation of the planets, in radians/unit of time
 #endif
 #endif
 

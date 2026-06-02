@@ -22,6 +22,7 @@ int main(){
             
       int i, j;
       typ n       [   how_many_planet + 1];
+      typ X       [Nd*how_many_planet + 1];
       typ X_old   [Nd*how_many_planet + 1];
       typ X_buff  [Nd*how_many_planet + 1];
       typ X_new   [Nd*how_many_planet + 1];
@@ -37,15 +38,27 @@ int main(){
             epsilon += masses[i]/m0;
       }
       
-      X_old_init(X_old);
-      //EquilibriumFind(X_old, 1);
+      X_init(X);
+      //EquilibriumFind(X, 1);
       //AveragedSABAn(2., 50000., 1, X_old, 6);
-      //X_old_init(X_old);
-      //SABAn(.25390625, 1.e7, 512, X_old, 10);
+      //X_init(X_old);
+      SABAn(.26, 2.e10, 362144, X, 10);
       //SABAH1064(.00715, 500000., 400, X_old);
-      //X_old_init(X_old);
-      //LibrationCenterNAFF(X_old, .0625, 64000., 3, 2, 60);
-      SABAn(.26, 11814714968., 262144, X_old, 10);
+      //X_init(X_old);
+      //LibrationCenterFind(X, 1);
+      /*LibrationCenterNAFF(X, .0625, 64000., 3, 2, 60);
+      SABAn(.2, 64000., 1, X, 9);
+      LibrationCenterNAFF(X, .0625, 64000., 3, 2, 60);
+      SABAn(.17, 64000., 1, X, 8);
+      LibrationCenterNAFF(X, .0625, 64000., 3, 2, 60);
+      SABAn(.14, 64000., 1, X, 7);
+      LibrationCenterNAFF(X, .0625, 64000., 3, 2, 60);
+      SABAn(.12, 64000., 1, X, 6);*/
+      //LibrationCenterNAFF(X, .0625, 64000., 3, 2, 60);
+      //Renormalization(X);
+      //PointPrint(X, -1);
+      //SABAn(.22, 64000., 1, X, 9);
+      //SABAn(.26, 11814714968., 262144, X_old, 10);
       //EquilibriumFollow(X_old, -epsilon/40000., 20000, 1);
       //SABAn(.25390625, 4.e10, 262144, X_old, 10);
       
@@ -406,7 +419,7 @@ int main(){
       //SABAH1064(.25, 45000., 2, X_old);
       //SABAH1064(.125, 1600000., 64, X_old);
       //SABAH84(.0625, 1600000., 128, X_old);
-      /*X_old_init(X_old);
+      /*X_init(X_old);
       for (int _ = 0; _ < 20; _ ++){
             LibrationCenterGradientDescent(X_old, 0.125, 40000., 0.00000018, 4, 1);
       }

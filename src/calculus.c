@@ -481,7 +481,7 @@ void toInvar(typ * X_cart){
 #endif
 
 
-void X_old_init(typ * X_old){
+void X_init(typ * X_old){
 
       /******** Initializes the array X_old of the old variables such that indexes ********/
       /******** 4i-3 to 4i contains lbd_i, -vrp_i, Lbd_i and D_i, respectively     ********/
@@ -969,7 +969,7 @@ void RK2(typ tau, typ T, int output_step){
       typ X_new   [4*how_many_planet + 1];
       typ X_uv    [4*how_many_planet + 1];
       typ X_K2    [4*how_many_planet + 1];
-      X_old_init(X_old);
+      X_init(X_old);
       
       /******** Opening output file ********/
       strcpy(file_path, pth);
@@ -1515,7 +1515,7 @@ void EquilibriumFindUntil(typ * X_old, int precision){
       
       int success = EquilibriumFind(X_old, precision);
       while(!success){
-            X_old_init(X_old);
+            X_init(X_old);
             for (i = 1; i <= how_many_planet; i ++){
                   X_old[4*i - 3]  = rdm(0., 2.*M_PI);
                   X_old[4*i - 2]  = rdm(0., 2.*M_PI);

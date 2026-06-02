@@ -35,7 +35,7 @@ void toInvar(typ * X_cart);
 #endif
 
 
-void X_old_init(typ * X_old);
+void X_init(typ * X_old);
 
 
 void nonDofReinit(typ * X_new, typ * X_uv);
