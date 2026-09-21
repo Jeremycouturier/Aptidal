@@ -1,3 +1,48 @@
+/*
+               AAA                PPPPPPPPPPPPPPPPP    TTTTTTTTTTTTTTTTTTTTTTT IIIIIIIIII DDDDDDDDDDDDD                   AAA                LLLLLLLLLLL             
+              A:::A               P::::::::::::::::P   T:::::::::::::::::::::T I::::::::I D::::::::::::DDD               A:::A               L:::::::::L             
+             A:::::A              P::::::PPPPPP:::::P  T:::::::::::::::::::::T I::::::::I D:::::::::::::::DD            A:::::A              L:::::::::L             
+            A:::::::A             PP:::::P     P:::::P T:::::TT:::::::TT:::::T II::::::II DDD:::::DDDDD:::::D          A:::::::A             LL:::::::LL             
+           A:::::::::A              P::::P     P:::::P TTTTTT  T:::::T  TTTTTT   I::::I     D:::::D    D:::::D        A:::::::::A              L:::::L               
+          A:::::A:::::A             P::::P     P:::::P         T:::::T           I::::I     D:::::D     D:::::D      A:::::A:::::A             L:::::L               
+         A:::::A A:::::A            P::::PPPPPP:::::P          T:::::T           I::::I     D:::::D     D:::::D     A:::::A A:::::A            L:::::L               
+        A:::::A   A:::::A           P:::::::::::::PP           T:::::T           I::::I     D:::::D     D:::::D    A:::::A   A:::::A           L:::::L               
+       A:::::A     A:::::A          P::::PPPPPPPPP             T:::::T           I::::I     D:::::D     D:::::D   A:::::A     A:::::A          L:::::L               
+      A:::::AAAAAAAAA:::::A         P::::P                     T:::::T           I::::I     D:::::D     D:::::D  A:::::AAAAAAAAA:::::A         L:::::L               
+     A:::::::::::::::::::::A        P::::P                     T:::::T           I::::I     D:::::D     D:::::D A:::::::::::::::::::::A        L:::::L               
+    A:::::AAAAAAAAAAAAA:::::A       P::::P                     T:::::T           I::::I     D:::::D    D:::::D A:::::AAAAAAAAAAAAA:::::A       L:::::L         LLLLLL
+   A:::::A             A:::::A    PP::::::PP                 TT:::::::TT       II::::::II DDD:::::DDDDD:::::D A:::::A             A:::::A    LL:::::::LLLLLLLLL:::::L
+  A:::::A               A:::::A   P::::::::P                 T:::::::::T       I::::::::I D:::::::::::::::DD A:::::A               A:::::A   L::::::::::::::::::::::L
+ A:::::A                 A:::::A  P::::::::P                 T:::::::::T       I::::::::I D::::::::::::DDD  A:::::A                 A:::::A  L::::::::::::::::::::::L
+AAAAAAA                   AAAAAAA PPPPPPPPPP                 TTTTTTTTTTT       IIIIIIIIII DDDDDDDDDDDDD    AAAAAAA                   AAAAAAA LLLLLLLLLLLLLLLLLLLLLLLL
+*/
+
+/**************************************************************************************/
+/**************************************************************************************/
+/**************************************************************************************/
+/******** @file    intpla.c                                                    ********/
+/******** @brief   Functions related to the complete Hamiltonian               ********/
+/******** @author  Jérémy COUTURIER <jeremycouturier.com>                      ********/
+/********                                                                      ********/
+/******** @section LICENSE                                                     ********/
+/******** Copyright (c) 2026 Jérémy COUTURIER                                  ********/
+/********                                                                      ********/
+/******** Aptidal is free software. You can redistribute it and/or modify      ********/
+/******** it under the terms of the GNU General Public License as published by ********/
+/******** the Free Software Foundation, either version 3 of the License, or    ********/
+/******** (at your option) any later version.                                  ********/
+/********                                                                      ********/
+/******** Aptidal is distributed in the hope that it will be useful,           ********/
+/******** but WITHOUT ANY WARRANTY; without even the implied warranty of       ********/
+/******** MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the         ********/
+/******** GNU General Public License for more details.                         ********/
+/********                                                                      ********/
+/******** You should have received a copy of the GNU General Public License    ********/
+/******** along with Aptidal. If not, see <http://www.gnu.org/licenses/>.      ********/
+/**************************************************************************************/
+/**************************************************************************************/
+/**************************************************************************************/
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <time.h>
@@ -156,7 +201,7 @@ void cart2ell(typ * cart, typ * alkhqp, typ mu){
             H2   =  c21 - FAC2*(Z*a11 + vZ*a21); //Should be equal to H1
             K2   =  c22 - FAC2*(Z*a12 + vZ*a22); //Should be equal to K1
             if (fabs(H1 - H2) + fabs(K1 - K2) > 1.e-6){
-                  printf("Warning : Bad computation of (k,h) in function cart2ell. (K1 - K2, H1 - H2) = (%.16lf, %.16lf)\n", K1 - K2, H1 - H2);
+                  printf("Warning : Bad computation of (k,h) in function cart2ell. (K1 - K2, H1 - H2) = (%.16g, %.16g)\n", K1 - K2, H1 - H2);
             }
             K    = .5*(K1 + K2);
             H    = .5*(H1 + H2);
@@ -191,10 +236,10 @@ void cart2ell(typ * cart, typ * alkhqp, typ mu){
 
 
 typ mean2eccentric(typ l, typ k, typ h){
-      /******** Solves the Kepler equation without a numerical integration. Much faster than the above function ********/
-      /******** Returns F = E + varpi                                                                           ********/
-      /******** (l, k, h) = (Mean longitude, e*cos(varpi), e*sin(varpi))                                        ********/
-      /******** Written by ASD Team LTE lab (former IMCCE)                                                      ********/
+      /******** Solves the Kepler equation without a numerical integration. ********/
+      /******** Returns F = E + varpi                                       ********/
+      /******** (l, k, h) = (Mean longitude, e*cos(varpi), e*sin(varpi))    ********/
+      /******** Written by ASD Team LTE lab (former IMCCE)                  ********/
 
       int i    = 0;
       int imax = 20;
@@ -472,7 +517,7 @@ void kepsaut(typ * cart, typ mu, typ dt){
       XV  = (X [0]*XD[0] + X [1]*XD[1] + X [2]*XD[2])/smu;
       a   = R/(2. - R*V2);
       #if GR_bool
-      dt *= 1. - 1.5*mu/(a*c_light*c_light); //See Saha&Tremaine 1994, Sect. 5
+      dt *= 1. - 1.5*mu/(a*c_light*c_light); //See Saha&Tremaine (1994), Sect. 5
       #endif
       sqa = sqrt(a);
       ce  = R*V2 - 1.;
@@ -480,8 +525,8 @@ void kepsaut(typ * cart, typ mu, typ dt){
       dm  = dt*smu/(sqa*a);
       newt(dm, ce, se, &delta, &c, &s, &e, &cm1, &smx, 0);
 
-      a1  = cm1/(2. - R*V2); 
-      a2  = dt + smx*sqa*a/smu; 
+      a1  = cm1/(2. - R*V2);
+      a2  = dt + smx*sqa*a/smu;
       a3  = -s/((2. - R*V2)*e*a*sqa)*smu;
       a4  = cm1/e;
       prods(a1, a3, X, a2, a4, XD, Xn, Xdn);
@@ -623,8 +668,12 @@ void exp_tau_LB(typ tau, typ * X_cart){
 #if tides_bool
 void exp_tau_LHt(typ * X_cart, typ tau, int planet){
 
-      /******** Modifies the speeds and spins due to tides ********/
-      /******** Tides are dissipative, a RK1 is enough     ********/
+      /******** Modifies the speeds and spins due to tides  ********/
+      /******** Tides are dissipative, a RK1 is enough      ********/
+      /******** Speeds in Couturier et al. (2026), Appendix ********/
+      /******** B.2.3 are heliocentric. Here, we use the    ********/
+      /******** barycentric speed with a factor m/beta,     ********/
+      /******** yielding an unimportant O(epsilon) error    ********/
 
       typ k2 = k2s[planet];
       typ Dt = Dts[planet];
@@ -794,7 +843,7 @@ void SABAn(typ tau, typ T, int output_step, typ * X_old, int n){
       else if (n_dec== 4){strcpy(taustr, "%.4lf");}  else if (n_dec== 5){strcpy(taustr, "%.5lf");}  else if (n_dec== 6){strcpy(taustr, "%.6lf");}  else if (n_dec== 7){strcpy(taustr, "%.7lf");}
       else if (n_dec== 8){strcpy(taustr, "%.8lf");}  else if (n_dec== 9){strcpy(taustr, "%.9lf");}  else if (n_dec==10){strcpy(taustr, "%.10lf");} else if (n_dec==11){strcpy(taustr, "%.11lf");}
       else if (n_dec==12){strcpy(taustr, "%.12lf");} else if (n_dec==13){strcpy(taustr, "%.13lf");} else if (n_dec==14){strcpy(taustr, "%.14lf");} else               {strcpy(taustr, "%.15lf");}
-      strcpy(taustr2, taustr); strcat(taustr2, " %.21lf");
+      strcpy(taustr2, taustr); strcat(taustr2, " %.16g");
       
       /******** Initializing coefficients (Laskar & Robutel, 2001, Table 1) ********/
       c1 = 0.;  c2 = 0.;  c3 = 0.;  c4 = 0.; c5 = 0.; c6 = 0.; d1 = 0.;  d2 = 0.;  d3 = 0.; d4 = 0.; d5 = 0.;
@@ -871,16 +920,16 @@ void SABAn(typ tau, typ T, int output_step, typ * X_old, int n){
                   else{
                         #if (tides_bool && GR_bool)
                         fprintf(file, "Numerical integration with tides and GR of the complete Hamiltonian with a SABA%d integrator in heliocentric canonical coordinates.\n", n);
-                        printf("Starting numerical integration with tides and GR of the complete Hamiltonian with a SABA%d integrator.\n", n);
+                        printf("\nStarting numerical integration with tides and GR of the complete Hamiltonian with a SABA%d integrator.\n", n);
                         #elif tides_bool
                         fprintf(file, "Numerical integration with tides of the complete Hamiltonian with a SABA%d integrator in heliocentric canonical coordinates.\n", n);
-                        printf("Starting numerical integration with tides of the complete Hamiltonian with a SABA%d integrator.\n", n);
+                        printf("\nStarting numerical integration with tides of the complete Hamiltonian with a SABA%d integrator.\n", n);
                         #elif GR_bool
                         fprintf(file, "Numerical integration with GR of the complete Hamiltonian with a SABA%d integrator in heliocentric canonical coordinates.\n", n);
-                        printf("Starting numerical integration with GR of the complete Hamiltonian with a SABA%d integrator.\n", n);
+                        printf("\nStarting numerical integration with GR of the complete Hamiltonian with a SABA%d integrator.\n", n);
                         #else
                         fprintf(file, "Numerical integration of the complete Hamiltonian with a SABA%d integrator in heliocentric canonical coordinates.\n", n);
-                        printf("Starting numerical integration of the complete Hamiltonian with a SABA%d integrator.\n", n);
+                        printf("\nStarting numerical integration of the complete Hamiltonian with a SABA%d integrator.\n", n);
                         #endif
                         if (n == 1){
                               fprintf(file, "The integrator is exp(tau*L_K) = exp(tau/2*L_A)*exp(tau*L_B)*exp(tau/2*L_A) (Laskar & Robutel, 2001).\n");
@@ -985,9 +1034,9 @@ void SABAn(typ tau, typ T, int output_step, typ * X_old, int n){
                         if (how_many_resonant == 0){
                               #if _3D_bool
                               I = 2.*asin(sqrt(alkhqp[5]*alkhqp[5] + alkhqp[6]*alkhqp[6]));
-                              fprintf(file, " %.16lf %.16lf %.16lf %.16lf %.16lf %.16lf", alkhqp[1], e, I, lbd, g, Om);
+                              fprintf(file, " %.16g %.16g %.16g %.16g %.16g %.16g", alkhqp[1], e, I, lbd, g, Om);
                               #else
-                              fprintf(file, " %.16lf %.16lf %.16lf %.16lf", alkhqp[1], e, lbd, g);
+                              fprintf(file, " %.16g %.16g %.16g %.16g", alkhqp[1], e, lbd, g);
                               #endif
                         }
                         else{
@@ -1007,9 +1056,9 @@ void SABAn(typ tau, typ T, int output_step, typ * X_old, int n){
                               e   = sqrt(1. - (1. - X_old[Nd*i]/X_old[Nd*i - 1])*(1. - X_old[Nd*i]/X_old[Nd*i - 1]));
                               a   = X_old[Nd*i - 1]*X_old[Nd*i - 1]*(m0 + masses[i])/(G*m0*m0*masses[i]*masses[i]);
                               #if _3D_bool
-                              fprintf(file, " %.16lf %.16lf %.16lf %.16lf %.16lf %.16lf", a, e, X_old[Nd*i - 5], X_new[Nd*i - 3], X_new[Nd*i - 2], X_old[Nd*i - 4]);
+                              fprintf(file, " %.16g %.16g %.16g %.16g %.16g %.16g", a, e, X_old[Nd*i - 5], X_new[Nd*i - 3], X_new[Nd*i - 2], X_old[Nd*i - 4]);
                               #else
-                              fprintf(file, " %.16lf %.16lf %.16lf %.16lf", a, e, X_new[Nd*i - 3], X_new[Nd*i - 2]);
+                              fprintf(file, " %.16g %.16g %.16g %.16g", a, e, X_new[Nd*i - 3], X_new[Nd*i - 2]);
                               #endif
                         }
                   }
@@ -1207,7 +1256,7 @@ void SABAn(typ tau, typ T, int output_step, typ * X_old, int n){
             }
             
             /******** Allowing simulation to be resumed easily from there every 2% progress ********/
-            if ((iter%(N_step/50) == 0 && iter) || iter == N_step - 1){
+            if ((iter%(max(N_step/50, 1)) == 0 && iter) || iter == N_step - 1){
                   for (i = 1; i <= Nd*how_many_planet; i ++){ //Filling the buffer with the current state of the simulation
                         X_buff[i] = X_cart[i];
                   }
@@ -1228,45 +1277,48 @@ void SABAn(typ tau, typ T, int output_step, typ * X_old, int n){
                         planet_O[i] = atan2(alkhqp[6], alkhqp[5]);
                         #endif
                   }
-                  fprintf(resume, "\nIn order to resume the simulation at time t = %.16lf, set the file parameters.h as:\n", tau * (typ) (iter + 1));
+                  fprintf(resume, "\nIn order to resume the simulation at time t = %.17g, set the file parameters.h as:\n", tau * (typ) (iter + 1));
                   #if (toInvar_bool && _3D_bool)
                   fprintf(resume, "\n#define toInvar_bool 0");
                   fprintf(resume, " //Determines if the system is rotated so that the orbital angular momentum points in the z-direction. Irrelevant if _3D_bool is 0. Planet's rotations are not rotated.\n");
                   #endif
+                  #if !canon_input_bool
+                  fprintf(resume, "\n#define canon_input_bool 1\n");
+                  #endif
                   fprintf(resume, "\n#define body_sma {");
-                  for (i = 1; i < how_many_planet; i ++){fprintf(resume, "%.17lf, ", planet_a[i]);} fprintf(resume, "%.17lf", planet_a[how_many_planet]);
+                  for (i = 1; i < how_many_planet; i ++){fprintf(resume, "%.17g, ", planet_a[i]);} fprintf(resume, "%.17g", planet_a[how_many_planet]);
                   fprintf(resume, "} //Initial semi-major axes of the planets.\n");
                   fprintf(resume, "#define body_ecc {");
-                  for (i = 1; i < how_many_planet; i ++){fprintf(resume, "%.21lf, ", planet_e[i]);} fprintf(resume, "%.21lf", planet_e[how_many_planet]);
+                  for (i = 1; i < how_many_planet; i ++){fprintf(resume, "%.17g, ", planet_e[i]);} fprintf(resume, "%.17g", planet_e[how_many_planet]);
                   fprintf(resume, "} //Initial eccentricities of the planets.\n");
                   fprintf(resume, "#define body_lambda {");
-                  for (i = 1; i < how_many_planet; i ++){fprintf(resume, "%.17lf, ", planet_l[i]);} fprintf(resume, "%.17lf", planet_l[how_many_planet]);
+                  for (i = 1; i < how_many_planet; i ++){fprintf(resume, "%.17g, ", planet_l[i]);} fprintf(resume, "%.17g", planet_l[how_many_planet]);
                   fprintf(resume, "} //Initial mean longitudes of the planets.\n");
                   fprintf(resume, "#define body_varpi {");
-                  for (i = 1; i < how_many_planet; i ++){fprintf(resume, "%.17lf, ", planet_v[i]);} fprintf(resume, "%.17lf", planet_v[how_many_planet]);
+                  for (i = 1; i < how_many_planet; i ++){fprintf(resume, "%.17g, ", planet_v[i]);} fprintf(resume, "%.17g", planet_v[how_many_planet]);
                   fprintf(resume, "} //Initial longitudes of the periapses of the planets.\n");
                   #if _3D_bool
                   fprintf(resume, "\n#define body_inc {");
-                  for (i = 1; i < how_many_planet; i ++){fprintf(resume, "%.21lf, ", planet_I[i]);} fprintf(resume, "%.21lf", planet_I[how_many_planet]);
+                  for (i = 1; i < how_many_planet; i ++){fprintf(resume, "%.17g, ", planet_I[i]);} fprintf(resume, "%.17g", planet_I[how_many_planet]);
                   fprintf(resume, "} //Initial inclinations of the planets in radians.\n");
                   fprintf(resume, "#define body_Omeg {");
-                  for (i = 1; i < how_many_planet; i ++){fprintf(resume, "%.17lf, ", planet_O[i]);} fprintf(resume, "%.17lf", planet_O[how_many_planet]);
+                  for (i = 1; i < how_many_planet; i ++){fprintf(resume, "%.17g, ", planet_O[i]);} fprintf(resume, "%.17g", planet_O[how_many_planet]);
                   fprintf(resume, "} //Initial longitudes of the ascending node of the planets in radians.\n");
                   #endif
                   #if tides_bool
                   #if _3D_bool
                   fprintf(resume, "\n#define body_Omegx {");
-                  for (i = 1; i < how_many_planet; i ++){fprintf(resume, "%.17lf, ", Omx[i]);} fprintf(resume, "%.17lf", Omx[how_many_planet]);
+                  for (i = 1; i < how_many_planet; i ++){fprintf(resume, "%.17g, ", Omx[i]);} fprintf(resume, "%.17g", Omx[how_many_planet]);
                   fprintf(resume, "} //x-coordinate of the initial sideral rotation of the bodies, in radians/unit of time.\n");
                   fprintf(resume, "#define body_Omegy {");
-                  for (i = 1; i < how_many_planet; i ++){fprintf(resume, "%.17lf, ", Omy[i]);} fprintf(resume, "%.17lf", Omy[how_many_planet]);
+                  for (i = 1; i < how_many_planet; i ++){fprintf(resume, "%.17g, ", Omy[i]);} fprintf(resume, "%.17g", Omy[how_many_planet]);
                   fprintf(resume, "} //y-coordinate of the initial sideral rotation of the bodies, in radians/unit of time.\n");
                   fprintf(resume, "#define body_Omegz {");
-                  for (i = 1; i < how_many_planet; i ++){fprintf(resume, "%.17lf, ", Omz[i]);} fprintf(resume, "%.17lf", Omz[how_many_planet]);
+                  for (i = 1; i < how_many_planet; i ++){fprintf(resume, "%.17g, ", Omz[i]);} fprintf(resume, "%.17g", Omz[how_many_planet]);
                   fprintf(resume, "} //z-coordinate of the initial sideral rotation of the bodies, in radians/unit of time.\n");
                   #else
                   fprintf(resume, "\n#define body_Omega {");
-                  for (i = 1; i < how_many_planet; i ++){fprintf(resume, "%.17lf, ", Omg[i]);} fprintf(resume, "%.17lf", Omg[how_many_planet]);
+                  for (i = 1; i < how_many_planet; i ++){fprintf(resume, "%.17g, ", Omg[i]);} fprintf(resume, "%.17g", Omg[how_many_planet]);
                   fprintf(resume, "} //Initial sideral rotation of the planets, in radians/unit of time.\n");
                   #endif
                   #endif
@@ -1421,7 +1473,7 @@ void SABAH1064(typ tau, typ T, int output_step, typ * X_old){
       else if (n_dec== 4){strcpy(taustr, "%.4lf");}  else if (n_dec== 5){strcpy(taustr, "%.5lf");}  else if (n_dec== 6){strcpy(taustr, "%.6lf");}  else if (n_dec== 7){strcpy(taustr, "%.7lf");}
       else if (n_dec== 8){strcpy(taustr, "%.8lf");}  else if (n_dec== 9){strcpy(taustr, "%.9lf");}  else if (n_dec==10){strcpy(taustr, "%.10lf");} else if (n_dec==11){strcpy(taustr, "%.11lf");}
       else if (n_dec==12){strcpy(taustr, "%.12lf");} else if (n_dec==13){strcpy(taustr, "%.13lf");} else if (n_dec==14){strcpy(taustr, "%.14lf");} else               {strcpy(taustr, "%.15lf");}
-      strcpy(taustr2, taustr); strcat(taustr2, " %.21lf");
+      strcpy(taustr2, taustr); strcat(taustr2, " %.16g");
       
       /******** Initializing coefficients (Blanes et al, 2013, Table 4) ********/
       c1 = .04731908697653382270; c2 = .26511052357487851595; c3 = -.00997652288381124084; c4 = -.05992919973494155126; c5 = .25747611206734045345;
@@ -1480,16 +1532,16 @@ void SABAH1064(typ tau, typ T, int output_step, typ * X_old){
                   else{
                         #if (tides_bool && GR_bool)
                         fprintf(file, "Numerical integration with tides and GR of the complete Hamiltonian with a SABAH1064 integrator in heliocentric canonical coordinates.\n");
-                        printf("Starting numerical integration with tides and GR of the complete Hamiltonian with a SABAH1064 integrator.\n");
+                        printf("\nStarting numerical integration with tides and GR of the complete Hamiltonian with a SABAH1064 integrator.\n");
                         #elif tides_bool
                         fprintf(file, "Numerical integration with tides of the complete Hamiltonian with a SABAH1064 integrator in heliocentric canonical coordinates.\n");
-                        printf("Starting numerical integration with tides of the complete Hamiltonian with a SABAH1064 integrator.\n");
+                        printf("\nStarting numerical integration with tides of the complete Hamiltonian with a SABAH1064 integrator.\n");
                         #elif GR_bool
                         fprintf(file, "Numerical integration with GR of the complete Hamiltonian with a SABAH1064 integrator in heliocentric canonical coordinates.\n");
-                        printf("Starting numerical integration with GR of the complete Hamiltonian with a SABAH1064 integrator.\n");
+                        printf("\nStarting numerical integration with GR of the complete Hamiltonian with a SABAH1064 integrator.\n");
                         #else
                         fprintf(file, "Numerical integration of the complete Hamiltonian with a SABAH1064 integrator in heliocentric canonical coordinates.\n");
-                        printf("Starting numerical integration of the complete Hamiltonian with a SABAH1064 integrator.\n");
+                        printf("\nStarting numerical integration of the complete Hamiltonian with a SABAH1064 integrator.\n");
                         #endif
                         fprintf(file, "The integrator is exp(tau*L_K) = exp(c1*tau*L_A)*exp(d1*tau*L_B)* ... *exp(d1*tau*L_B)*exp(c1*tau*L_A) (Blanes et al., 2013).\n");
                         fprintf(file, "The Keplerian part A is integrated exactly using function kepsaut. The perturbative part B is not integrable but can be\n");
@@ -1573,9 +1625,9 @@ void SABAH1064(typ tau, typ T, int output_step, typ * X_old){
                         if (how_many_resonant == 0){
                               #if _3D_bool
                               I = 2.*asin(sqrt(alkhqp[5]*alkhqp[5] + alkhqp[6]*alkhqp[6]));
-                              fprintf(file, " %.16lf %.16lf %.16lf %.16lf %.16lf %.16lf", alkhqp[1], e, I, lbd, g, Om);
+                              fprintf(file, " %.16g %.16g %.16g %.16g %.16g %.16g", alkhqp[1], e, I, lbd, g, Om);
                               #else
-                              fprintf(file, " %.16lf %.16lf %.16lf %.16lf", alkhqp[1], e, lbd, g);
+                              fprintf(file, " %.16g %.16g %.16g %.16g", alkhqp[1], e, lbd, g);
                               #endif
                         }
                         else{
@@ -1595,9 +1647,9 @@ void SABAH1064(typ tau, typ T, int output_step, typ * X_old){
                               e   = sqrt(1. - (1. - X_old[Nd*i]/X_old[Nd*i - 1])*(1. - X_old[Nd*i]/X_old[Nd*i - 1]));
                               a   = X_old[Nd*i - 1]*X_old[Nd*i - 1]*(m0 + masses[i])/(G*m0*m0*masses[i]*masses[i]);
                               #if _3D_bool
-                              fprintf(file, " %.16lf %.16lf %.16lf %.16lf %.16lf %.16lf", a, e, X_old[Nd*i - 5], X_new[Nd*i - 3], X_new[Nd*i - 2], X_old[Nd*i - 4]);
+                              fprintf(file, " %.16g %.16g %.16g %.16g %.16g %.16g", a, e, X_old[Nd*i - 5], X_new[Nd*i - 3], X_new[Nd*i - 2], X_old[Nd*i - 4]);
                               #else
-                              fprintf(file, " %.16lf %.16lf %.16lf %.16lf", a, e, X_new[Nd*i - 3], X_new[Nd*i - 2]);
+                              fprintf(file, " %.16g %.16g %.16g %.16g", a, e, X_new[Nd*i - 3], X_new[Nd*i - 2]);
                               #endif
                         }
                   }
@@ -1716,7 +1768,7 @@ void SABAH1064(typ tau, typ T, int output_step, typ * X_old){
             }
             
             /******** Allowing simulation to be resumed easily from there every 2% progress ********/
-            if ((iter%(N_step/50) == 0 && iter) || iter == N_step - 1){
+            if ((iter%(max(N_step/50, 1)) == 0 && iter) || iter == N_step - 1){
                   for (i = 1; i <= Nd*how_many_planet; i ++){ //Filling the buffer with the current state of the simulation
                         X_buff[i] = X_cart[i];
                   }
@@ -1737,45 +1789,48 @@ void SABAH1064(typ tau, typ T, int output_step, typ * X_old){
                         planet_O[i] = atan2(alkhqp[6], alkhqp[5]);
                         #endif
                   }
-                  fprintf(resume, "\nIn order to resume the simulation at time t = %.16lf, set the file parameters.h as:\n", tau * (typ) (iter + 1));
+                  fprintf(resume, "\nIn order to resume the simulation at time t = %.17g, set the file parameters.h as:\n", tau * (typ) (iter + 1));
                   #if (toInvar_bool && _3D_bool)
                   fprintf(resume, "\n#define toInvar_bool 0");
                   fprintf(resume, " //Determines if the system is rotated so that the orbital angular momentum points in the z-direction. Irrelevant if _3D_bool is 0. Planet's rotations are not rotated.\n");
                   #endif
+                  #if !canon_input_bool
+                  fprintf(resume, "\n#define canon_input_bool 1\n");
+                  #endif
                   fprintf(resume, "\n#define body_sma {");
-                  for (i = 1; i < how_many_planet; i ++){fprintf(resume, "%.17lf, ", planet_a[i]);} fprintf(resume, "%.17lf", planet_a[how_many_planet]);
+                  for (i = 1; i < how_many_planet; i ++){fprintf(resume, "%.17g, ", planet_a[i]);} fprintf(resume, "%.17g", planet_a[how_many_planet]);
                   fprintf(resume, "} //Initial semi-major axes of the planets.\n");
                   fprintf(resume, "#define body_ecc {");
-                  for (i = 1; i < how_many_planet; i ++){fprintf(resume, "%.21lf, ", planet_e[i]);} fprintf(resume, "%.21lf", planet_e[how_many_planet]);
+                  for (i = 1; i < how_many_planet; i ++){fprintf(resume, "%.17g, ", planet_e[i]);} fprintf(resume, "%.17g", planet_e[how_many_planet]);
                   fprintf(resume, "} //Initial eccentricities of the planets.\n");
                   fprintf(resume, "#define body_lambda {");
-                  for (i = 1; i < how_many_planet; i ++){fprintf(resume, "%.17lf, ", planet_l[i]);} fprintf(resume, "%.17lf", planet_l[how_many_planet]);
+                  for (i = 1; i < how_many_planet; i ++){fprintf(resume, "%.17g, ", planet_l[i]);} fprintf(resume, "%.17g", planet_l[how_many_planet]);
                   fprintf(resume, "} //Initial mean longitudes of the planets.\n");
                   fprintf(resume, "#define body_varpi {");
-                  for (i = 1; i < how_many_planet; i ++){fprintf(resume, "%.17lf, ", planet_v[i]);} fprintf(resume, "%.17lf", planet_v[how_many_planet]);
+                  for (i = 1; i < how_many_planet; i ++){fprintf(resume, "%.17g, ", planet_v[i]);} fprintf(resume, "%.17g", planet_v[how_many_planet]);
                   fprintf(resume, "} //Initial longitudes of the periapses of the planets.\n");
                   #if _3D_bool
                   fprintf(resume, "\n#define body_inc {");
-                  for (i = 1; i < how_many_planet; i ++){fprintf(resume, "%.21lf, ", planet_I[i]);} fprintf(resume, "%.21lf", planet_I[how_many_planet]);
+                  for (i = 1; i < how_many_planet; i ++){fprintf(resume, "%.17g, ", planet_I[i]);} fprintf(resume, "%.17g", planet_I[how_many_planet]);
                   fprintf(resume, "} //Initial inclinations of the planets in radians.\n");
                   fprintf(resume, "#define body_Omeg {");
-                  for (i = 1; i < how_many_planet; i ++){fprintf(resume, "%.17lf, ", planet_O[i]);} fprintf(resume, "%.17lf", planet_O[how_many_planet]);
+                  for (i = 1; i < how_many_planet; i ++){fprintf(resume, "%.17g, ", planet_O[i]);} fprintf(resume, "%.17g", planet_O[how_many_planet]);
                   fprintf(resume, "} //Initial longitudes of the ascending node of the planets in radians.\n");
                   #endif
                   #if tides_bool
                   #if _3D_bool
                   fprintf(resume, "\n#define body_Omegx {");
-                  for (i = 1; i < how_many_planet; i ++){fprintf(resume, "%.17lf, ", Omx[i]);} fprintf(resume, "%.17lf", Omx[how_many_planet]);
+                  for (i = 1; i < how_many_planet; i ++){fprintf(resume, "%.17g, ", Omx[i]);} fprintf(resume, "%.17g", Omx[how_many_planet]);
                   fprintf(resume, "} //x-coordinate of the initial sideral rotation of the bodies, in radians/unit of time.\n");
                   fprintf(resume, "#define body_Omegy {");
-                  for (i = 1; i < how_many_planet; i ++){fprintf(resume, "%.17lf, ", Omy[i]);} fprintf(resume, "%.17lf", Omy[how_many_planet]);
+                  for (i = 1; i < how_many_planet; i ++){fprintf(resume, "%.17g, ", Omy[i]);} fprintf(resume, "%.17g", Omy[how_many_planet]);
                   fprintf(resume, "} //y-coordinate of the initial sideral rotation of the bodies, in radians/unit of time.\n");
                   fprintf(resume, "#define body_Omegz {");
-                  for (i = 1; i < how_many_planet; i ++){fprintf(resume, "%.17lf, ", Omz[i]);} fprintf(resume, "%.17lf", Omz[how_many_planet]);
+                  for (i = 1; i < how_many_planet; i ++){fprintf(resume, "%.17g, ", Omz[i]);} fprintf(resume, "%.17g", Omz[how_many_planet]);
                   fprintf(resume, "} //z-coordinate of the initial sideral rotation of the bodies, in radians/unit of time.\n");
                   #else
                   fprintf(resume, "\n#define body_Omega {");
-                  for (i = 1; i < how_many_planet; i ++){fprintf(resume, "%.17lf, ", Omg[i]);} fprintf(resume, "%.17lf", Omg[how_many_planet]);
+                  for (i = 1; i < how_many_planet; i ++){fprintf(resume, "%.17g, ", Omg[i]);} fprintf(resume, "%.17g", Omg[how_many_planet]);
                   fprintf(resume, "} //Initial sideral rotation of the planets, in radians/unit of time.\n");
                   #endif
                   #endif
@@ -3119,12 +3174,12 @@ void LibrationCenterFind(typ * X_old, int precision){
             if (amplitude > AR[precision]){
                   PointPrint(X_old, j);
                   get_averaged_n(n);
-                  printf("nu_%d = dphi_%d/dt = %.14lf, nu_%d = dphi_%d/dt = %.14lf, nu_%d/nu_%d = %.14lf\n", fast, fast, nu_fast, slow, slow, nu_reso, fast, slow, nu_fast/nu_reso);
+                  printf("nu_%d = dphi_%d/dt = %.16g, nu_%d = dphi_%d/dt = %.16g, nu_%d/nu_%d = %.16g\n", fast, fast, nu_fast, slow, slow, nu_reso, fast, slow, nu_fast/nu_reso);
                   for (i = 1; i < how_many_planet; i ++){
-                        printf("n_%d/n_%d = %.8lf", i, i + 1, n[i]/n[i + 1]);
+                        printf("n_%d/n_%d = %.8g", i, i + 1, n[i]/n[i + 1]);
                         if (i < how_many_planet - 1){printf(", ");} else{printf("\n");}
                   }
-                  printf("Amplitude = %.20lf, required = %.13lf\n\n", amplitude, AR[precision]);
+                  printf("Amplitude = %.16g, required = %.13g\n\n", amplitude, AR[precision]);
             }
             j ++;
             if (amplitude > 0.9*oldAmplitude && amplitude < 1.4*oldAmplitude){
@@ -3152,12 +3207,12 @@ void LibrationCenterFind(typ * X_old, int precision){
       Renormalization(X_old);
       PointPrint(X_old, j - 1);
       get_averaged_n(n);
-      printf("nu_%d = dphi_%d/dt = %.14lf, nu_%d = dphi_%d/dt = %.14lf, nu_%d/nu_%d = %.14lf\n", fast, fast, nu_fast, slow, slow, nu_reso, fast, slow, nu_fast/nu_reso);
+      printf("nu_%d = dphi_%d/dt = %.16g, nu_%d = dphi_%d/dt = %.16g, nu_%d/nu_%d = %.16g\n", fast, fast, nu_fast, slow, slow, nu_reso, fast, slow, nu_fast/nu_reso);
       for (i = 1; i < how_many_planet; i ++){
-            printf("n_%d/n_%d = %.8lf", i, i + 1, n[i]/n[i + 1]);
+            printf("n_%d/n_%d = %.8g", i, i + 1, n[i]/n[i + 1]);
             if (i < how_many_planet - 1){printf(", ");} else{printf("\n");}
       }
-      printf("Amplitude = %.20lf, required = %.13lf\n\n", amplitude, AR[precision]);
+      printf("Amplitude = %.16g, required = %.13g\n\n", amplitude, AR[precision]);
       /******** To be removed ********/
       //SABAn(2.*tau, 50000., 4, X_old, 5);
       //new2old(X_old, X_new, X_uv);
@@ -3220,10 +3275,10 @@ void LibrationCenterNAFF(typ * X_old, typ tau, typ T, int Hf, int N, int Hr){
       printf("The new point is :\n");
       PointPrint(X_old, 1);
       get_averaged_n(n);
-      printf("nu_%d = dphi_%d/dt = %.14lf, nu_%d = dphi_%d/dt = %.14lf, nu_%d/nu_%d = %.14lf\n", fast, fast, nu_fast, slow, slow, nu_reso, fast, slow, nu_fast/nu_reso);
-      printf("Amplitude of terms of frequency nu_%d = %.14lf\n", slow, amplitude);
+      printf("nu_%d = dphi_%d/dt = %.16g, nu_%d = dphi_%d/dt = %.16g, nu_%d/nu_%d = %.16g\n", fast, fast, nu_fast, slow, slow, nu_reso, fast, slow, nu_fast/nu_reso);
+      printf("Amplitude of terms of frequency nu_%d = %.16g\n", slow, amplitude);
       for (i = 1; i < how_many_planet; i ++){
-            printf("n_%d/n_%d = %.8lf", i, i + 1, n[i]/n[i + 1]);
+            printf("n_%d/n_%d = %.8g", i, i + 1, n[i]/n[i + 1]);
             if (i < how_many_planet - 1){printf(", ");} else{printf("\n");}
       }
 }
@@ -3286,9 +3341,9 @@ void LibrationCenterFollow(typ * X_old, typ dG, int Npoints, int precision){
       
       /******** Writing to file and initializing sigOld ********/
       old2new(X_old, X_new, X_uv);
-      printf("Phi_%d = %.20lf, <Phi_%d> = %.20lf\n", slow, X_uv[4*slow - 1], slow, avgs[4*slow - 1]);
+      printf("Phi_%d = %.16g, <Phi_%d> = %.16g\n", slow, X_uv[4*slow - 1], slow, avgs[4*slow - 1]);
       new2old(X_old_av, X_new_av, avgs);
-      fprintf(file, "%.8lf %.8lf %.20lf %.20lf", nu_fast, nu_reso, X_uv[4*slow - 1], avgs[4*slow - 1]);
+      fprintf(file, "%.16g %.16g %.16g %.16g", nu_fast, nu_reso, X_uv[4*slow - 1], avgs[4*slow - 1]);
       for (i = 1; i <= how_many_planet; i ++){
             sigOld[i] = X_new[4*i - 2];
             sig       = X_new[4*i - 2];
@@ -3296,7 +3351,7 @@ void LibrationCenterFollow(typ * X_old, typ dG, int Npoints, int precision){
             a         = X_old[4*i - 1]*X_old[4*i - 1]*(m0 + masses[i])/(G*m0*m0*masses[i]*masses[i]);
             e_av      = sqrt(1. - (1. - X_old_av[4*i]/X_old_av[4*i - 1])*(1. - X_old_av[4*i]/X_old_av[4*i - 1]));
             a_av      = X_old_av[4*i - 1]*X_old_av[4*i - 1]*(m0 + masses[i])/(G*m0*m0*masses[i]*masses[i]);
-            fprintf(file, " %.14lf %.14lf %.14lf %.14lf %.14lf %.14lf %.14lf %.14lf", a, e, X_uv[4*i - 3], sig, a_av, e_av, avgs[4*i - 3], X_new_av[4*i - 2]);
+            fprintf(file, " %.16g %.16g %.16g %.16g %.16g %.16g %.16g %.16g", a, e, X_uv[4*i - 3], sig, a_av, e_av, avgs[4*i - 3], X_new_av[4*i - 2]);
       }
       fprintf(file, "\n");
       
@@ -3314,30 +3369,30 @@ void LibrationCenterFollow(typ * X_old, typ dG, int Npoints, int precision){
       for (j = 1; j < Npoints; j ++){
             LibrationCenterFind(X_old, precision);
             old2new(X_old, X_new, X_uv);
-            printf("Phi_%d = %.20lf, <Phi_%d> = %.20lf\n", slow, X_uv[4*slow - 1], slow, avgs[4*slow - 1]);
+            printf("Phi_%d = %.16g, <Phi_%d> = %.16g\n", slow, X_uv[4*slow - 1], slow, avgs[4*slow - 1]);
             new2old(X_old_av, X_new_av, avgs);
             /******** Increasing dG if travelling too slowly. Decreasing it if travelling too fast ********/
             newRatio = nu_fast/nu_reso;
             /*if      (fabs(oldRatio - newRatio) < 0.2 && dG_inc_count < 10){
                   dG *= 1.05;
-                  printf("dG = %.18lf\n", dG);
+                  printf("dG = %.16g\n", dG);
                   dG_inc_count ++;
             }
             else if (fabs(oldRatio - newRatio) > 2. && dG_dec_count < 10){
                   dG *= 0.95;
-                  printf("dG = %.18lf\n", dG);
+                  printf("dG = %.16g\n", dG);
                   dG_dec_count ++;
             }*/
             oldRatio = newRatio;
             /******** Writing to file ********/
-            fprintf(file, "%.8lf %.8lf %.20lf %.20lf", nu_fast, nu_reso, X_uv[4*slow - 1], avgs[4*slow - 1]);
+            fprintf(file, "%.16g %.16g %.16g %.16g", nu_fast, nu_reso, X_uv[4*slow - 1], avgs[4*slow - 1]);
             for (i = 1; i <= how_many_planet; i ++){
                   sig  = continuousAngle(X_new[4*i - 2], sigOld[i]);
                   e    = sqrt(1. - (1. - X_old[4*i]/X_old[4*i - 1])*(1. - X_old[4*i]/X_old[4*i - 1]));
                   a    = X_old[4*i - 1]*X_old[4*i - 1]*(m0 + masses[i])/(G*m0*m0*masses[i]*masses[i]);
                   e_av = sqrt(1. - (1. - X_old_av[4*i]/X_old_av[4*i - 1])*(1. - X_old_av[4*i]/X_old_av[4*i - 1]));
                   a_av = X_old_av[4*i - 1]*X_old_av[4*i - 1]*(m0 + masses[i])/(G*m0*m0*masses[i]*masses[i]);
-                  fprintf(file, " %.14lf %.14lf %.14lf %.14lf %.14lf %.14lf %.14lf %.14lf", a, e, X_uv[4*i - 3], sig, a_av, e_av, avgs[4*i - 3], X_new_av[4*i - 2]);
+                  fprintf(file, " %.16g %.16g %.16g %.16g %.16g %.16g %.16g %.16g", a, e, X_uv[4*i - 3], sig, a_av, e_av, avgs[4*i - 3], X_new_av[4*i - 2]);
                   sigOld[i] = sig;
             }
             fprintf(file, "\n");
@@ -3449,7 +3504,7 @@ void PeriodicOrbitFind(typ * X_old){
 }
 
 
-void LibrationCenterGradientDescent(typ * X_old, typ tau, typ T, typ LearningRate, int N, int sigma){
+void LibrationCenterGradientDescent(typ * X_old, typ tau, typ T, typ LearningRate, int N, int sigma){ //To be removed
 
       /******** Tries to find a libration center of the complete Hamiltonian by ********/
       /******** randomly changing the initial conditions and seeing if it makes ********/

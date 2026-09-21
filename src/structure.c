@@ -1,3 +1,48 @@
+/*
+               AAA                PPPPPPPPPPPPPPPPP    TTTTTTTTTTTTTTTTTTTTTTT IIIIIIIIII DDDDDDDDDDDDD                   AAA                LLLLLLLLLLL             
+              A:::A               P::::::::::::::::P   T:::::::::::::::::::::T I::::::::I D::::::::::::DDD               A:::A               L:::::::::L             
+             A:::::A              P::::::PPPPPP:::::P  T:::::::::::::::::::::T I::::::::I D:::::::::::::::DD            A:::::A              L:::::::::L             
+            A:::::::A             PP:::::P     P:::::P T:::::TT:::::::TT:::::T II::::::II DDD:::::DDDDD:::::D          A:::::::A             LL:::::::LL             
+           A:::::::::A              P::::P     P:::::P TTTTTT  T:::::T  TTTTTT   I::::I     D:::::D    D:::::D        A:::::::::A              L:::::L               
+          A:::::A:::::A             P::::P     P:::::P         T:::::T           I::::I     D:::::D     D:::::D      A:::::A:::::A             L:::::L               
+         A:::::A A:::::A            P::::PPPPPP:::::P          T:::::T           I::::I     D:::::D     D:::::D     A:::::A A:::::A            L:::::L               
+        A:::::A   A:::::A           P:::::::::::::PP           T:::::T           I::::I     D:::::D     D:::::D    A:::::A   A:::::A           L:::::L               
+       A:::::A     A:::::A          P::::PPPPPPPPP             T:::::T           I::::I     D:::::D     D:::::D   A:::::A     A:::::A          L:::::L               
+      A:::::AAAAAAAAA:::::A         P::::P                     T:::::T           I::::I     D:::::D     D:::::D  A:::::AAAAAAAAA:::::A         L:::::L               
+     A:::::::::::::::::::::A        P::::P                     T:::::T           I::::I     D:::::D     D:::::D A:::::::::::::::::::::A        L:::::L               
+    A:::::AAAAAAAAAAAAA:::::A       P::::P                     T:::::T           I::::I     D:::::D    D:::::D A:::::AAAAAAAAAAAAA:::::A       L:::::L         LLLLLL
+   A:::::A             A:::::A    PP::::::PP                 TT:::::::TT       II::::::II DDD:::::DDDDD:::::D A:::::A             A:::::A    LL:::::::LLLLLLLLL:::::L
+  A:::::A               A:::::A   P::::::::P                 T:::::::::T       I::::::::I D:::::::::::::::DD A:::::A               A:::::A   L::::::::::::::::::::::L
+ A:::::A                 A:::::A  P::::::::P                 T:::::::::T       I::::::::I D::::::::::::DDD  A:::::A                 A:::::A  L::::::::::::::::::::::L
+AAAAAAA                   AAAAAAA PPPPPPPPPP                 TTTTTTTTTTT       IIIIIIIIII DDDDDDDDDDDDD    AAAAAAA                   AAAAAAA LLLLLLLLLLLLLLLLLLLLLLLL
+*/
+
+/**************************************************************************************/
+/**************************************************************************************/
+/**************************************************************************************/
+/******** @file    structure.c                                                 ********/
+/******** @brief   Overall structure of the code                               ********/
+/******** @author  Jérémy COUTURIER <jeremycouturier.com>                      ********/
+/********                                                                      ********/
+/******** @section LICENSE                                                     ********/
+/******** Copyright (c) 2026 Jérémy COUTURIER                                  ********/
+/********                                                                      ********/
+/******** Aptidal is free software. You can redistribute it and/or modify      ********/
+/******** it under the terms of the GNU General Public License as published by ********/
+/******** the Free Software Foundation, either version 3 of the License, or    ********/
+/******** (at your option) any later version.                                  ********/
+/********                                                                      ********/
+/******** Aptidal is distributed in the hope that it will be useful,           ********/
+/******** but WITHOUT ANY WARRANTY; without even the implied warranty of       ********/
+/******** MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the         ********/
+/******** GNU General Public License for more details.                         ********/
+/********                                                                      ********/
+/******** You should have received a copy of the GNU General Public License    ********/
+/******** along with Aptidal. If not, see <http://www.gnu.org/licenses/>.      ********/
+/**************************************************************************************/
+/**************************************************************************************/
+/**************************************************************************************/
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <time.h>
@@ -98,8 +143,70 @@ typ qnmlr[32][5] = {
 
 void init(){
 
-      /******** Calls all the initialization-related functions ********/
+      /*******************************************/
+      /******** Displaying Aptidal's logo ********/
+      /*******************************************/     
+      printf("\n\n");
+      printf("---------------------------------------------------------------------------------------------------------------------------------------\n\n");
+      printf("                                                                  Welcome to\n\n");
+      printf("                                                                                                  dddddddd                             \n");
+      printf("               AAA                                            tttt             iiii               d::::::d                     lllllll \n");
+      printf("              A:::A                                        ttt:::t            i::::i              d::::::d                     l:::::l \n");
+      printf("             A:::::A                                       t:::::t             iiii               d::::::d                     l:::::l \n");
+      printf("            A:::::::A                                      t:::::t                                d:::::d                      l:::::l \n");
+      printf("           A:::::::::A           ppppp   ppppppppp    ttttttt:::::ttttttt     iiiiiii      ddddddddd:::::d    aaaaaaaaaaaaa     l::::l \n");
+      printf("          A:::::A:::::A          p::::ppp:::::::::p   t:::::::::::::::::t     i:::::i    dd::::::::::::::d    a::::::::::::a    l::::l \n");
+      printf("         A:::::A A:::::A         p:::::::::::::::::p  t:::::::::::::::::t      i::::i   d::::::::::::::::d    aaaaaaaaa:::::a   l::::l \n");
+      printf("        A:::::A   A:::::A        pp::::::ppppp::::::p tttttt:::::::tttttt      i::::i  d:::::::ddddd:::::d             a::::a   l::::l \n");
+      printf("       A:::::A     A:::::A        p:::::p     p:::::p       t:::::t            i::::i  d::::::d    d:::::d      aaaaaaa:::::a   l::::l \n");
+      printf("      A:::::AAAAAAAAA:::::A       p:::::p     p:::::p       t:::::t            i::::i  d:::::d     d:::::d    aa::::::::::::a   l::::l \n");
+      printf("     A:::::::::::::::::::::A      p:::::p     p:::::p       t:::::t            i::::i  d:::::d     d:::::d   a::::aaaa::::::a   l::::l \n");
+      printf("    A:::::AAAAAAAAAAAAA:::::A     p:::::p    p::::::p       t:::::t    tttttt  i::::i  d:::::d     d:::::d  a::::a    a:::::a   l::::l \n");
+      printf("   A:::::A             A:::::A    p:::::ppppp:::::::p       t::::::tttt:::::t i::::::i d::::::ddddd::::::dd a::::a    a:::::a  l::::::l\n");
+      printf("  A:::::A               A:::::A   p::::::::::::::::p        tt::::::::::::::t i::::::i  d:::::::::::::::::d a:::::aaaa::::::a  l::::::l\n");
+      printf(" A:::::A                 A:::::A  p::::::::::::::pp           tt:::::::::::tt i::::::i   d:::::::::ddd::::d  a::::::::::aa:::a l::::::l\n");
+      printf("AAAAAAA                   AAAAAAA p::::::pppppppp               ttttttttttt   iiiiiiii    ddddddddd   ddddd   aaaaaaaaaa  aaaa llllllll\n");
+      printf("                                  p:::::p                                                                                              \n");
+      printf("                                  p:::::p                                                                                              \n");
+      printf("                                 p:::::::p                                                                                             \n");
+      printf("                                 p:::::::p                                                                                             \n");
+      printf("                                 p:::::::p                                                                                             \n");
+      printf("                                 ppppppppp                                                                                             \n");
+      printf("\n");
       
+      
+      /******** Warning user about coordinate system choice ********/
+      printf("---------------------------------------------------------------------------------------------------------------------------------------\n\n");
+      #if canon_input_bool
+            #if ellip_input_bool
+            printf("\nYou specified the input coordinates to be elliptic canonical (Heliocentric position and barycentric speed).");
+            #else
+            printf("\nYou specified the input coordinates to be cartesian canonical (Heliocentric position and barycentric speed).");
+            #endif
+      #else
+            #if ellip_input_bool
+            printf("\nYou specified the input coordinates to be elliptic non-canonical (Heliocentric position and heliocentric speed).");
+            #else
+            printf("\nYou specified the input coordinates to be cartesian non-canonical (Heliocentric position and heliocentric speed).");
+            #endif
+      #endif
+      
+      #if canon_output_bool
+            #if ellip_output_bool
+            printf("\nYou specified the output coordinates to be elliptic canonical (Heliocentric position and barycentric speed).\n");
+            #else
+            printf("\nWarning: Cartesian output has not yet been implemented in Aptidal. Output will be in canonical elliptic elements.\n");
+            #endif
+      #else
+            #if ellip_output_bool
+            printf("\nYou specified the output coordinates to be elliptic non-canonical (Heliocentric position and heliocentric speed).\n");
+            #else
+            printf("\nWarning: Cartesian output has not yet been implemented in Aptidal. Output will be in non-canonical elliptic elements.\n");
+            #endif
+      #endif
+      
+      
+      /******** Calling initialization-related functions ********/
       time_t t;
       time(&t);
       srand((unsigned) t);
@@ -117,9 +224,7 @@ void init(){
       transpose_inv_init();
       verification();
       matrix_fill();
-      transformation_display();
       Cppq_init();
-      Hamiltonian_display();
       X_init(X_old_t0);
       old2new(X_old_t0, X_new_t0, X_uv_t0);
 }
@@ -708,7 +813,7 @@ typ * readFromFile(char * file_name, int * size){
 
       FILE * file = fopen(file_name, "r");
       if (file == NULL){
-            fprintf(stderr, "Error : Could not open file in function readFromFile_withoutConstraint. Did you specify the path 'pth' in the parameter file ?\n");
+            fprintf(stderr, "Error : Could not open file in function readFromFile. Did you specify the path 'pth' in the parameter file ?\n");
             abort();
       }
       typ i = 0.;
@@ -723,7 +828,7 @@ typ * readFromFile(char * file_name, int * size){
       *size = j;
       typ * buffer = (typ *)malloc(j*sizeof(typ)); //Allocating memory for the buffer
       if (buffer == NULL){
-            fprintf(stderr, "Could not allocate memory for the buffer in function readFromFile_withoutConstraint\n");
+            fprintf(stderr, "Could not allocate memory for the buffer in function readFromFile\n");
             abort();
       }
       
@@ -732,7 +837,7 @@ typ * readFromFile(char * file_name, int * size){
       j           = 0;
       while (returnValue == 1){ //Reading the file a second time to store its data
             if (j > *size){
-                  fprintf(stderr, "Error : The buffer is not big enough in function readFromFile_withoutConstraint.\n");
+                  fprintf(stderr, "Error : The buffer is not big enough in function readFromFile.\n");
                   abort();
             }
             returnValue = fscanf(file, "%lf", &i);

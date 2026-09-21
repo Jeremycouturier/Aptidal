@@ -1,3 +1,48 @@
+/*
+               AAA                PPPPPPPPPPPPPPPPP    TTTTTTTTTTTTTTTTTTTTTTT IIIIIIIIII DDDDDDDDDDDDD                   AAA                LLLLLLLLLLL             
+              A:::A               P::::::::::::::::P   T:::::::::::::::::::::T I::::::::I D::::::::::::DDD               A:::A               L:::::::::L             
+             A:::::A              P::::::PPPPPP:::::P  T:::::::::::::::::::::T I::::::::I D:::::::::::::::DD            A:::::A              L:::::::::L             
+            A:::::::A             PP:::::P     P:::::P T:::::TT:::::::TT:::::T II::::::II DDD:::::DDDDD:::::D          A:::::::A             LL:::::::LL             
+           A:::::::::A              P::::P     P:::::P TTTTTT  T:::::T  TTTTTT   I::::I     D:::::D    D:::::D        A:::::::::A              L:::::L               
+          A:::::A:::::A             P::::P     P:::::P         T:::::T           I::::I     D:::::D     D:::::D      A:::::A:::::A             L:::::L               
+         A:::::A A:::::A            P::::PPPPPP:::::P          T:::::T           I::::I     D:::::D     D:::::D     A:::::A A:::::A            L:::::L               
+        A:::::A   A:::::A           P:::::::::::::PP           T:::::T           I::::I     D:::::D     D:::::D    A:::::A   A:::::A           L:::::L               
+       A:::::A     A:::::A          P::::PPPPPPPPP             T:::::T           I::::I     D:::::D     D:::::D   A:::::A     A:::::A          L:::::L               
+      A:::::AAAAAAAAA:::::A         P::::P                     T:::::T           I::::I     D:::::D     D:::::D  A:::::AAAAAAAAA:::::A         L:::::L               
+     A:::::::::::::::::::::A        P::::P                     T:::::T           I::::I     D:::::D     D:::::D A:::::::::::::::::::::A        L:::::L               
+    A:::::AAAAAAAAAAAAA:::::A       P::::P                     T:::::T           I::::I     D:::::D    D:::::D A:::::AAAAAAAAAAAAA:::::A       L:::::L         LLLLLL
+   A:::::A             A:::::A    PP::::::PP                 TT:::::::TT       II::::::II DDD:::::DDDDD:::::D A:::::A             A:::::A    LL:::::::LLLLLLLLL:::::L
+  A:::::A               A:::::A   P::::::::P                 T:::::::::T       I::::::::I D:::::::::::::::DD A:::::A               A:::::A   L::::::::::::::::::::::L
+ A:::::A                 A:::::A  P::::::::P                 T:::::::::T       I::::::::I D::::::::::::DDD  A:::::A                 A:::::A  L::::::::::::::::::::::L
+AAAAAAA                   AAAAAAA PPPPPPPPPP                 TTTTTTTTTTT       IIIIIIIIII DDDDDDDDDDDDD    AAAAAAA                   AAAAAAA LLLLLLLLLLLLLLLLLLLLLLLL
+*/
+
+/**************************************************************************************/
+/**************************************************************************************/
+/**************************************************************************************/
+/******** @file    calculus.c                                                  ********/
+/******** @brief   Functions related to calculus and the averaged model        ********/
+/******** @author  Jérémy COUTURIER <jeremycouturier.com>                      ********/
+/********                                                                      ********/
+/******** @section LICENSE                                                     ********/
+/******** Copyright (c) 2026 Jérémy COUTURIER                                  ********/
+/********                                                                      ********/
+/******** Aptidal is free software. You can redistribute it and/or modify      ********/
+/******** it under the terms of the GNU General Public License as published by ********/
+/******** the Free Software Foundation, either version 3 of the License, or    ********/
+/******** (at your option) any later version.                                  ********/
+/********                                                                      ********/
+/******** Aptidal is distributed in the hope that it will be useful,           ********/
+/******** but WITHOUT ANY WARRANTY; without even the implied warranty of       ********/
+/******** MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the         ********/
+/******** GNU General Public License for more details.                         ********/
+/********                                                                      ********/
+/******** You should have received a copy of the GNU General Public License    ********/
+/******** along with Aptidal. If not, see <http://www.gnu.org/licenses/>.      ********/
+/**************************************************************************************/
+/**************************************************************************************/
+/**************************************************************************************/
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <time.h>
@@ -187,32 +232,6 @@ void dHdold(typ * dH, typ * X_old, int KP){
                   }
             }
       }
-      
-      #if second_mass_bool
-      /******** Second order in mass. Temporary. For chain 469 only. To be removed ********/
-      if (KP == 1 || KP == 2){
-            typ a3    = sma[3];
-            typ m1    = masses[1];
-            typ m2    = masses[2];
-            typ m3    = masses[3];
-            typ mu_3  = G*(m0 + m3);
-            typ n3    = sqrt(mu_3/(a3*a3*a3));
-            typ lbd_1 = X_old[4*1 - 3];
-            typ lbd_2 = X_old[4*2 - 3];
-            typ lbd_3 = X_old[4*3 - 3];
-            typ Lbd_1 = Lbd_0[1];       // Using nominal value since the perturbation is expanded at order 0 in semi-major axes
-            typ Lbd_2 = Lbd_0[2];
-            typ Lbd_3 = Lbd_0[3];
-            factor    = m1*m2/(m0*m0)*n3*Lbd_3;
-            typ Xi1   = 8.142424101089068;
-            typ Xi2   = -.8864891136509759; // H2 = m1*m2/m0^2*n3*Lbd3*(Xi1 cos(phi) + Xi2 cos(2*phi))
-            typ phi   = 2.*lbd_1 - 5.*lbd_2 + 3.*lbd_3;
-            typ dH2dphi = -factor*(Xi1*sin(phi) + 2.*Xi2*sin(2.*phi));
-            *(dH + 4*1 - 3) += 2.*dH2dphi;
-            *(dH + 4*2 - 3) -= 5.*dH2dphi;
-            *(dH + 4*3 - 3) += 3.*dH2dphi;
-      }
-      #endif
 }
 
 
@@ -260,7 +279,7 @@ void dHdnew(typ * dH_polar, typ * dH_rect, typ * dH_old, typ * X_new, typ * X_uv
       for (k = 1; k <= how_many_nondof; k ++){
             i = nondof[k];
             if (fabs(dH_rect[4*i - 3]) > 1.e-11){ //If dH/dphi_i != 0 where (phi_i; Phi_i) is not a degree of freedom
-                  fprintf(stderr, "\nError: dH/d_phi_%d is not 0 despite (phi_%d; Phi_%d) not being a degree of freedom. dH/d_phi_%d = %.13lf.\n", i, i, i, i, dH_rect[4*i - 3]);
+                  fprintf(stderr, "\nError: dH/d_phi_%d is not 0 despite (phi_%d; Phi_%d) not being a degree of freedom. dH/d_phi_%d = %.16g.\n", i, i, i, i, dH_rect[4*i - 3]);
                   abort();
             }
       }
@@ -290,7 +309,7 @@ void old2new(typ * X_old, typ * X_new, typ * X_uv){
                   D               += Transpose_inv [k + N][i]*X_old[Nd*i - 1] + Transpose_inv [k + N][i + N]*X_old[Nd*i];
             }
             if (fabs(D - X_old[Nd*k]) > 1.e-10){
-                  fprintf(stderr, "\nError: D_new = %.12lf significantly differs from D_old = %.12lf in function old2new.\n", D, X_old[Nd*k]);
+                  fprintf(stderr, "\nError: D_new = %.16g significantly differs from D_old = %.16g in function old2new.\n", D, X_old[Nd*k]);
                   abort();
             }
             X_new[Nd*k] = X_old[Nd*k]; //The D coordinate is unchanged
@@ -349,7 +368,7 @@ void new2old(typ * X_old, typ * X_new, typ * X_uv){
                   D               += Transformation[i][k + N]*X_new[Nd*i - 1] + Transformation[i + N][k + N]*X_new[Nd*i];
             }
             if (fabs(D - X_new[Nd*k]) > 1.e-10){
-                  fprintf(stderr, "\nError: D_old = %.12lf significantly differs from D_new = %.12lf in function new2old.\n", D, X_new[Nd*k]);
+                  fprintf(stderr, "\nError: D_old = %.16g significantly differs from D_new = %.16g in function new2old.\n", D, X_new[Nd*k]);
                   abort();
             }
             X_old[Nd*k] = X_new[Nd*k]; //The D coordinate is unchanged
@@ -365,15 +384,24 @@ void canonical2nonCanonical(typ * X_cart){
 
       /******** Converts the canonical heliocentric cartesian coordinates X_cart ********/
       /******** into non-canonical heliocentric coordinates                      ********/
+      /******** The barycentric speeds have a factor m/beta that needs removing  ********/
       
       int j;
       typ momentum_x = 0.;
       typ momentum_y = 0.;
-      typ v0_x, v0_y;
+      typ v0_x, v0_y, betaj;
       #if _3D_bool
       typ v0_z;
       typ momentum_z = 0.;
       #endif
+      for (j = 1; j <= how_many_planet; j ++){ //Removing the factor m/beta
+            betaj = m0*masses[j]/(m0+masses[j]);
+            X_cart[Nd*j - 1 - _3D_bool] *= betaj/masses[j];
+            X_cart[Nd*j     - _3D_bool] *= betaj/masses[j];
+            #if _3D_bool
+            X_cart[Nd*j] *= betaj/masses[j];
+            #endif
+      }
       for (j = 1; j <= how_many_planet; j ++){
             momentum_x += masses[j]*X_cart[Nd*j - 1 - _3D_bool];
             momentum_y += masses[j]*X_cart[Nd*j     - _3D_bool];
@@ -385,7 +413,7 @@ void canonical2nonCanonical(typ * X_cart){
       v0_y = -momentum_y/m0;
       #if _3D_bool
       v0_z = -momentum_z/m0;
-      #endif     
+      #endif
       for (j = 1; j <= how_many_planet; j ++){
             X_cart[Nd*j - 1 - _3D_bool] -= v0_x;
             X_cart[Nd*j     - _3D_bool] -= v0_y;
@@ -400,16 +428,17 @@ void nonCanonical2canonical(typ * X_cart){
 
       /******** Converts the non-canonical heliocentric cartesian coordinates ********/
       /******** X_cart into canonical heliocentric coordinates                ********/
+      /******** A factor m/beta needs to be added to the barycentric speeds   ********/
       
       int j;
       typ momentum_x = 0.;
       typ momentum_y = 0.;
-      typ v0_x, v0_y, mass;
+      typ v0_x, v0_y, mass, betaj;
       #if _3D_bool
       typ v0_z;
       typ momentum_z = 0.;
       #endif
-      mass = m0;
+      mass = 0.;
       for (j = 1; j <= how_many_planet; j ++){
             mass += masses[j];
             momentum_x += masses[j]*X_cart[Nd*j - 1 - _3D_bool];
@@ -418,16 +447,21 @@ void nonCanonical2canonical(typ * X_cart){
             momentum_z += masses[j]*X_cart[Nd*j];
             #endif
       }
+      mass += m0;
       v0_x = -momentum_x/mass;
       v0_y = -momentum_y/mass;
       #if _3D_bool
       v0_z = -momentum_z/mass;
-      #endif     
+      #endif
       for (j = 1; j <= how_many_planet; j ++){
             X_cart[Nd*j - 1 - _3D_bool] += v0_x;
             X_cart[Nd*j     - _3D_bool] += v0_y;
+            betaj = m0*masses[j]/(m0+masses[j]);
+            X_cart[Nd*j - 1 - _3D_bool] *= masses[j]/betaj;
+            X_cart[Nd*j     - _3D_bool] *= masses[j]/betaj;
             #if _3D_bool
             X_cart[Nd*j] += v0_z;
+            X_cart[Nd*j] *= masses[j]/betaj;
             #endif
       }
 }
@@ -480,11 +514,12 @@ void toInvar(typ * X_cart){
 }
 #endif
 
+#if ellip_input_bool
+void X_init(typ * X){
 
-void X_init(typ * X_old){
-
-      /******** Initializes the array X_old of the old variables such that indexes ********/
-      /******** 4i-3 to 4i contains lbd_i, -vrp_i, Lbd_i and D_i, respectively     ********/
+      /******** Initializes the array X of the old variables such that indexes ********/
+      /******** 4i-3 to 4i contains lbd_i, -vrp_i, Lbd_i and D_i, respectively ********/
+      /******** The input coordinates in parameters.h are elliptic             ********/
 
       int i;
       typ m, beta, mu, Lbd;
@@ -495,13 +530,13 @@ void X_init(typ * X_old){
             mu   = G*(m0 + m);
             Lbd  = beta*sqrt(mu*sma[i]);
             #if _3D_bool
-            X_old[Nd*i - 5] = inc[i];
-            X_old[Nd*i - 4] = Om[i];
+            X[Nd*i - 5] = inc[i];
+            X[Nd*i - 4] = Om[i];
             #endif
-            X_old[Nd*i - 3] = lbd[i];
-            X_old[Nd*i - 2] = -vrp[i];
-            X_old[Nd*i - 1] = Lbd;
-            X_old[Nd*i]     = max(Lbd*(1. - sqrt(1. - ecc[i]*ecc[i])), 1.e-17);
+            X[Nd*i - 3] = lbd[i];
+            X[Nd*i - 2] = -vrp[i];
+            X[Nd*i - 1] = Lbd;
+            X[Nd*i]     = max(Lbd*(1. - sqrt(1. - ecc[i]*ecc[i])), 1.e-17);
       }
       
       #if !canon_input_bool
@@ -510,13 +545,13 @@ void X_init(typ * X_old){
       typ vp, M, E, a, e;
       for (i = 1; i <= how_many_planet; i ++){ //Converting from elliptic to cartesian
             mu = G*(m0 + masses[i]);
-            a = X_old[Nd*i - 1]*X_old[Nd*i - 1]*(m0 + masses[i])/(G*m0*m0*masses[i]*masses[i]);
-            e = sqrt(1. - (1. - X_old[Nd*i]/X_old[Nd*i - 1])*(1. - X_old[Nd*i]/X_old[Nd*i - 1]));
-            vp = -X_old[Nd*i - 2];
-            M =  X_old[Nd*i - 3] - vp;
-            E = mean2eccentric(M + vp, e*cos(vp), e*sin(vp)) - vp;
+            a  = X[Nd*i - 1]*X[Nd*i - 1]*(m0 + masses[i])/(G*m0*m0*masses[i]*masses[i]);
+            e  = sqrt(1. - (1. - X[Nd*i]/X[Nd*i - 1])*(1. - X[Nd*i]/X[Nd*i - 1]));
+            vp = -X[Nd*i - 2];
+            M  =  X[Nd*i - 3] - vp;
+            E  = mean2eccentric(M + vp, e*cos(vp), e*sin(vp)) - vp;
             #if _3D_bool
-            ell2cart(a, e, X_old[Nd*i - 5], E, vp, X_old[Nd*i - 4], mu, X_cart + Nd*i - Nd);
+            ell2cart(a, e, X[Nd*i - 5], E, vp, X[Nd*i - 4], mu, X_cart + Nd*i - Nd);
             #else
             ell2cart(a, e, 0., E, vp, 0., mu, X_cart + Nd*i - Nd);
             #endif
@@ -525,22 +560,77 @@ void X_init(typ * X_old){
       for (i = 1; i <= how_many_planet; i ++){ //Converting from cartesian to elliptic
             mu = G*(m0 + masses[i]);
             cart2ell(X_cart + Nd*i - Nd, alkhqp, mu);
-            a = alkhqp[1];
+            a  = alkhqp[1];
             vp = atan2(alkhqp[4],alkhqp[3]);
-            e = sqrt(alkhqp[3]*alkhqp[3] + alkhqp[4]*alkhqp[4]);
+            e  = sqrt(alkhqp[3]*alkhqp[3] + alkhqp[4]*alkhqp[4]);
             beta = m0*masses[i]/(m0 + masses[i]);
             Lbd  = beta*sqrt(mu*a);
             #if _3D_bool
-            X_old[Nd*i - 5] = 2.*asin(sqrt(alkhqp[5]*alkhqp[5] + alkhqp[6]*alkhqp[6]));
-            X_old[Nd*i - 4] = atan2(alkhqp[6],alkhqp[5]);
+            X[Nd*i - 5] = 2.*asin(sqrt(alkhqp[5]*alkhqp[5] + alkhqp[6]*alkhqp[6]));
+            X[Nd*i - 4] = atan2(alkhqp[6],alkhqp[5]);
             #endif
-            X_old[Nd*i - 3] = alkhqp[2];
-            X_old[Nd*i - 2] = -vp;
-            X_old[Nd*i - 1] = Lbd;
-            X_old[Nd*i]     = max(Lbd*(1. - sqrt(1. - e*e)), 1.e-17);
+            X[Nd*i - 3] = alkhqp[2];
+            X[Nd*i - 2] = -vp;
+            X[Nd*i - 1] = Lbd;
+            X[Nd*i]     = max(Lbd*(1. - sqrt(1. - e*e)), 1.e-17);
       }
       #endif
 }
+#else
+void X_init(typ * X){
+
+      /******** Initializes the array X of the old variables such that indexes ********/
+      /******** 4i-3 to 4i contains lbd_i, -vrp_i, Lbd_i and D_i, respectively ********/
+      /******** The input coordinates in parameters.h are cartesian            ********/
+
+      int i;
+      typ X_cart[Nd*how_many_planet + 1];
+      typ alkhqp[7];
+      typ mu, beta, Lbd, vp, M, E, a, e;
+      
+      for (i = 1; i <= how_many_planet; i ++){ //Storing the cartesian coordinates in X_cart
+            X_cart[Nd*i - 3 - 2*_3D_bool] = lbd[i]; //x
+            X_cart[Nd*i - 2 - 2*_3D_bool] = vrp[i]; //y
+            X_cart[Nd*i - 1 -   _3D_bool] = sma[i]; //vx
+            X_cart[Nd*i -       _3D_bool] = ecc[i]; //vy
+            #if _3D_bool
+            X_cart[Nd*i - 3] = Om [i]; //z
+            X_cart[Nd*i]     = inc[i]; //vz
+            #endif
+      }
+      
+      #if canon_input_bool //Need to add m/beta factor
+      for (i = 1; i <= how_many_planet; i ++){
+            beta = masses[i]*m0/(masses[i] + m0);
+            X_cart[Nd*i - 1 -   _3D_bool] *= masses[i]/beta;
+            X_cart[Nd*i -       _3D_bool] *= masses[i]/beta;
+            #if _3D_bool
+            X_cart[Nd*i] *= masses[i]/beta;
+            #endif
+      }
+      #else
+      nonCanonical2canonical(X_cart); //Converting from non-canonical to canonical
+      #endif
+      
+      for (i = 1; i <= how_many_planet; i ++){ //Converting from cartesian to elliptic
+            mu = G*(m0 + masses[i]);
+            cart2ell(X_cart + Nd*i - Nd, alkhqp, mu);
+            a  = alkhqp[1];
+            vp = atan2(alkhqp[4],alkhqp[3]);
+            e  = sqrt(alkhqp[3]*alkhqp[3] + alkhqp[4]*alkhqp[4]);
+            beta = m0*masses[i]/(m0 + masses[i]);
+            Lbd  = beta*sqrt(mu*a);
+            #if _3D_bool
+            X[Nd*i - 5] = 2.*asin(sqrt(alkhqp[5]*alkhqp[5] + alkhqp[6]*alkhqp[6]));
+            X[Nd*i - 4] = atan2(alkhqp[6],alkhqp[5]);
+            #endif
+            X[Nd*i - 3] = alkhqp[2];
+            X[Nd*i - 2] = -vp;
+            X[Nd*i - 1] = Lbd;
+            X[Nd*i]     = max(Lbd*(1. - sqrt(1. - e*e)), 1.e-17);
+      }
+}
+#endif
 
 
 void nonDofReinit(typ * X_new, typ * X_uv){
@@ -606,6 +696,15 @@ void AveragedSABAn(typ tau, typ T, int output_step, typ * X_old, int n){
       
       #if _3D_bool
       fprintf(stderr, "\nError: _3D_bool must be 0 when calling function AveragedSABAn.\n");  abort();
+      #endif
+      #if tides_bool
+      printf("\nWarning: Tides have not yet been implemented for the averaged Hamiltonian. Will behave as if tides_bool was 0.\n");
+      #endif
+      #if GR_bool
+      printf("\nWarning: General relativity has not yet been implemented for the averaged Hamiltonian. Will behave as if GR_bool was 0.\n");
+      #endif
+      #if !canon_output_bool
+      printf("\nWarning: Function AveragedSABAn does not yet allow non-canonical output. Will output in canonical heliocentric coordinates.\n");
       #endif
       
       char file_path[800];
@@ -704,12 +803,12 @@ void AveragedSABAn(typ tau, typ T, int output_step, typ * X_old, int n){
                         fprintf(file, "\n");
                   }
                   H = AveragedHamiltonian(old_buff);
-                  fprintf(file, "%.9lf %.18lf", tau*(typ) iter, H);
+                  fprintf(file, "%.8g %.16g", tau*(typ) iter, H);
                   for (i = 1; i <= how_many_planet; i ++){
                         sig = continuousAngle(X_new[4*i - 2], sigOld[i]);
                         e   = sqrt(1. - (1. - old_buff[4*i]/old_buff[4*i - 1])*(1. - old_buff[4*i]/old_buff[4*i - 1]));
                         a   = old_buff[4*i - 1]*old_buff[4*i - 1]*(m0 + masses[i])/(G*m0*m0*masses[i]*masses[i]);
-                        fprintf(file, " %.14lf %.14lf %.14lf %.14lf", a, e, X_uv[4*i - 3], sig);
+                        fprintf(file, " %.16g %.16g %.16g %.16g", a, e, X_uv[4*i - 3], sig);
                         sigOld[i] = sig;
                   }
                   fprintf(file, "\n");
@@ -1004,12 +1103,12 @@ void RK2(typ tau, typ T, int output_step){
                         fprintf(file, "\n");
                   }
                   H = AveragedHamiltonian(X_old);
-                  fprintf(file, "%.12lf %.12lf", tau*(typ) iter, H);
+                  fprintf(file, "%.8g %.16g", tau*(typ) iter, H);
                   for (i = 1; i <= how_many_planet; i ++){
                         sig         = atan2(X_uv[4*i - 2], X_uv[4*i]);
                         parenthesis = 1. - 0.5*Lbd_0[i]/X_old[4*i - 1]*(X_uv[4*i - 2]*X_uv[4*i - 2] + X_uv[4*i]*X_uv[4*i]);
                         e           = sqrt(1. - parenthesis*parenthesis);
-                        fprintf(file, " %.12lf %.12lf %.12lf %.12lf %.12lf %.12lf", X_uv[4*i - 3], X_uv[4*i - 2], X_uv[4*i - 1], X_uv[4*i], e, sig);
+                        fprintf(file, " %.16g %.16g %.16g %.16g %.16g %.16g", X_uv[4*i - 3], X_uv[4*i - 2], X_uv[4*i - 1], X_uv[4*i], e, sig);
                   }
                   fprintf(file, "\n");
             }
@@ -1189,9 +1288,9 @@ void PointPrint(typ * X_old, int iter){
       }
       printf("lbd_%d) = (", N);
       for (i = 1; i <= N - 1; i ++){
-            printf("%.14f, ", fmod(X_buf[4*i - 3], 2.*M_PI));
+            printf("%.16g, ", fmod(X_buf[4*i - 3], 2.*M_PI));
       }
-      printf("%.14lf)\n                 ", fmod(X_buf[4*N - 3], 2.*M_PI));
+      printf("%.16g)\n                 ", fmod(X_buf[4*N - 3], 2.*M_PI));
       for (i = 0; i < spaces; i ++){printf(" ");}
       
       /******** Printing the vrp_i ********/
@@ -1201,9 +1300,9 @@ void PointPrint(typ * X_old, int iter){
       }
       printf("vrp_%d) = (", N);
       for (i = 1; i <= N - 1; i ++){
-            printf("%.14lf, ", fmod(-X_buf[4*i - 2], 2.*M_PI));
+            printf("%.16g, ", fmod(-X_buf[4*i - 2], 2.*M_PI));
       }
-      printf("%.14lf)\n                 ", fmod(-X_buf[4*N - 2], 2.*M_PI));
+      printf("%.16g)\n                 ", fmod(-X_buf[4*N - 2], 2.*M_PI));
       for (i = 0; i < spaces; i ++){printf(" ");}
       
       /******** Printing the a_i ********/
@@ -1214,10 +1313,10 @@ void PointPrint(typ * X_old, int iter){
       printf("a_%d) ", N); for (i = 1; i <= N; i ++){printf("  ");} printf("= (");
       for (i = 1; i <= N - 1; i ++){
             a = X_buf[4*i - 1]*X_buf[4*i - 1]*(m0 + masses[i])/(G*m0*m0*masses[i]*masses[i]);
-            printf("%.14lf, ", a);
+            printf("%.16g, ", a);
       }
       a = X_buf[4*N - 1]*X_buf[4*N - 1]*(m0 + masses[N])/(G*m0*m0*masses[N]*masses[N]);
-      printf("%.14lf)\n                 ", a);
+      printf("%.16g)\n                 ", a);
       for (i = 0; i < spaces; i ++){printf(" ");}
       
       /******** Printing the e_i ********/
@@ -1229,11 +1328,11 @@ void PointPrint(typ * X_old, int iter){
       for (i = 1; i <= N - 1; i ++){
             parenthesis = 1. - X_buf[4*i]/X_buf[4*i - 1];
             e           = sqrt(1. - parenthesis*parenthesis);
-            printf("%.18lf, ", e);
+            printf("%.16g, ", e);
       }
       parenthesis = 1. - X_buf[4*N]/X_buf[4*N - 1];
       e           = sqrt(1. - parenthesis*parenthesis);
-      printf("%.18lf)\n\n", e);
+      printf("%.16g)\n\n", e);
 }
 
 
@@ -1367,7 +1466,7 @@ int EquilibriumFind(typ * X_old, int precision){
                   prec += fabs(xvXu[4*i - 3] - X_uv[4*i - 3]) + fabs(xvXu[4*i - 2] - X_uv[4*i - 2]) + fabs(xvXu[4*i - 1] - X_uv[4*i - 1]) + fabs(xvXu[4*i] - X_uv[4*i]);
             }
             prec /= (typ) how_many_planet;
-            printf("precision = %.13lf\n", prec);
+            printf("precision = %.16g\n", prec);
             for (i = 1; i <= how_many_planet; i ++){
                   X_uv[4*i - 3] = xvXu[4*i - 3];
                   X_uv[4*i - 2] = xvXu[4*i - 2];
@@ -1449,14 +1548,14 @@ void EquilibriumFollow(typ * X_old, typ dG, int Npoints, int precision){
       success = EquilibriumFind(X_old, precision);
       /******** Writing to file and initializing sigOld ********/
       old2new(X_old, X_new, X_uv);
-      printf("Phi_%d = %.20lf\n", slow, X_uv[4*slow - 1]);
-      fprintf(file, "%.20lf", X_uv[4*slow - 1]);
+      printf("Phi_%d = %.16g\n", slow, X_uv[4*slow - 1]);
+      fprintf(file, "%.16g", X_uv[4*slow - 1]);
       for (i = 1; i <= how_many_planet; i ++){
             sigOld[i] = X_new[4*i - 2];
             sig       = X_new[4*i - 2];
             e         = sqrt(1. - (1. - X_old[4*i]/X_old[4*i - 1])*(1. - X_old[4*i]/X_old[4*i - 1]));
             a         = X_old[4*i - 1]*X_old[4*i - 1]*(m0 + masses[i])/(G*m0*m0*masses[i]*masses[i]);
-            fprintf(file, " %.14lf %.14lf %.14lf %.14lf", a, e, X_uv[4*i - 3], sig);
+            fprintf(file, " %.16g %.16g %.16g %.16g", a, e, X_uv[4*i - 3], sig);
       }
       fprintf(file, "\n");
       
@@ -1473,14 +1572,14 @@ void EquilibriumFollow(typ * X_old, typ dG, int Npoints, int precision){
       for (j = 1; j < Npoints; j ++){
             success = EquilibriumFind(X_old, precision);
             old2new(X_old, X_new, X_uv);
-            printf("Phi_%d = %.20lf\n", slow, X_uv[4*slow - 1]);
+            printf("Phi_%d = %.16g\n", slow, X_uv[4*slow - 1]);
             /******** Writing to file ********/
-            fprintf(file, "%.20lf", X_uv[4*slow - 1]);
+            fprintf(file, "%.16g", X_uv[4*slow - 1]);
             for (i = 1; i <= how_many_planet; i ++){
                   sig  = continuousAngle(X_new[4*i - 2], sigOld[i]);
                   e    = sqrt(1. - (1. - X_old[4*i]/X_old[4*i - 1])*(1. - X_old[4*i]/X_old[4*i - 1]));
                   a    = X_old[4*i - 1]*X_old[4*i - 1]*(m0 + masses[i])/(G*m0*m0*masses[i]*masses[i]);
-                  fprintf(file, " %.14lf %.14lf %.14lf %.14lf", a, e, X_uv[4*i - 3], sig);
+                  fprintf(file, " %.16g %.16g %.16g %.16g", a, e, X_uv[4*i - 3], sig);
                   sigOld[i] = sig;
             }
             fprintf(file, "\n");
