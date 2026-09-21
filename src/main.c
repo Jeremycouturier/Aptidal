@@ -50,7 +50,7 @@ AAAAAAA                   AAAAAAA PPPPPPPPPP                 TTTTTTTTTTT       I
 #include <errno.h>
 #include <unistd.h>
 #include <stdint.h>
-#include <omp.h>    //To be removed
+//#include <omp.h>    //To be removed
 #include "parameters.h"
 #include "structure.h"
 #include "coefficients.h"
