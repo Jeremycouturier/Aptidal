@@ -50,7 +50,7 @@ AAAAAAA                   AAAAAAA PPPPPPPPPP                 TTTTTTTTTTT       I
 /*********************************************************************/
 /******** Defining the output path. Must end with / and exist ********/
 /*********************************************************************/
-#define pth "/path/towards/output/location/with/slash/at/the/end/"
+#define pth "./"
 
 
 
@@ -70,7 +70,7 @@ AAAAAAA                   AAAAAAA PPPPPPPPPP                 TTTTTTTTTTT       I
 /****************************************/
 
 /******** Boolean relative to numerical simulations ********/
-#define tides_bool 1         //Determines if there are tides raised by the star on the planets in the system. See Couturier et al. (2026), Appendix B.2.3.
+#define tides_bool 0         //Determines if there are tides raised by the star on the planets in the system. See Couturier et al. (2026), Appendix B.2.3.
 #define GR_bool 0            //Determines if the first PPN order of General Relativity is included. See Saha&Tremaine (1994), Sect. 5. Implemented but not yet verified. Could contain errors.
 #define _3D_bool 0           //Determines if the problem is 3D or coplanar. 3D is only possible with the complete Hamiltonian
 #define toInvar_bool 0       //Determines if the system is rotated so that the total angular momentum points in the z-direction. Irrelevant if _3D_bool is 0. Planet's rotations are not rotated.

@@ -62,6 +62,7 @@ AAAAAAA                   AAAAAAA PPPPPPPPPP                 TTTTTTTTTTT       I
 typ nu_fast = 0.;
 typ nu_reso = 0.;
 typ avgs[1 + 4*how_many_planet];
+typ D = 2.; //To be replaced by actual value
 
 
 void ell2cart(typ a, typ e, typ i, typ E, typ varpi, typ Omega, typ mu, typ * cart){
@@ -2578,7 +2579,7 @@ typ UnaveragedSABAn_NAFF(typ tau, typ T, int Hanning_order, typ * X_uv, typ * X_
       
       /******** Choosing an integration time that is a multiple of the short period ********/
       tau    /= 2.;
-      Tfast   = 2.*M_PI/nu_fast;
+      Tfast   = D*2.*M_PI/nu_fast;
       T       = Tfast*ceil(T/Tfast);
       N_step  = (long int) ceil(T/tau);
       N_step += N_step % 2 == 0 ? 0 : 1;
@@ -2737,7 +2738,7 @@ typ UnaveragedSABAn_NAFF(typ tau, typ T, int Hanning_order, typ * X_uv, typ * X_
                   H2 = Cp*fast_pow(1. + cos(M_PI*t2/T), Hanning_order);
                   /******** Getting the amplitude of the fast terms ********/
                   for (j = 0; j <= how_many_harmonics; j ++){
-                        nu = nu_fast * (typ) j;
+                        nu = nu_fast / D * (typ) j;
                         for (i = 1; i <= N; i ++){
                               As[j*(1 + 4*N) + 4*i - 3] += tau*(H0*X_uv_0[4*i - 3]*cos(nu*t0) + 4.*H1*X_uv_1[4*i - 3]*cos(nu*t1) + H2*X_uv_2[4*i - 3]*cos(nu*t2))/(6.*T);
                               As[j*(1 + 4*N) + 4*i - 2] += tau*(H0*X_uv_0[4*i - 2]*cos(nu*t0) + 4.*H1*X_uv_1[4*i - 2]*cos(nu*t1) + H2*X_uv_2[4*i - 2]*cos(nu*t2))/(6.*T);
@@ -2783,184 +2784,6 @@ typ UnaveragedSABAn_NAFF(typ tau, typ T, int Hanning_order, typ * X_uv, typ * X_
       }
       toBeReturnedNum = sqrt(toBeReturnedNum);
       return toBeReturnedNum;
-}
-
-
-int UnaveragedSABAn_amplitude(typ tau, typ T, typ * X_new_min, typ * X_new_max, typ * X_old, int n){
-
-      /******** Computes and stores the min and max reached during the ********/
-      /******** integration of the unaveraged Hamiltonian              ********/
-      /******** Returns the number of librating angles                 ********/
-
-      #if _3D_bool
-      fprintf(stderr, "\nError: _3D_bool must be 0 when calling function UnaveragedSABAn_amplitude.\n");  abort();
-      #endif
-
-      int i, j;
-      long int N_step, iter;
-      int N = how_many_planet;
-      typ X_cart[4*N + 1];
-      typ X_buff[4*N + 1];
-      typ X_new [4*N + 1];
-      typ X_uv  [4*N + 1];
-      typ lbdOld[  N + 1];
-      typ   gOld[  N + 1];
-      typ a, e, vp, M, mu, E, beta, lbd, g, toBeReturnedNum, toBeReturnedNom;
-      typ c1, c2, c3, c4, d1, d2, d3;
-      typ alkhqp[7];
-      
-      tau    /= 2.;
-      N_step  = (long int) ceil(T/tau);
-      N_step += N_step % 2 == 0 ? 0 : 1;
-      tau     = T/(typ) N_step;
-      
-      /******** Initializing constants ********/
-      c1 = 0.;  c2 = 0.;  c3 = 0.;  c4 = 0.;  d1 = 0.;  d2 = 0.;  d3 = 0.;
-      if      (n == 1){c1 = 0.5;                   d1 = 1.;}
-      else if (n == 2){c1 = 0.5 - sqrt(3.)/6.;     d1 = 0.5;                   c2 = sqrt(3.)/3.;}
-      else if (n == 3){c1 = 0.5 - sqrt(15.)/10.;   d1 = 5./18.;                c2 = sqrt(15.)/10.;         d2 = 4./9.;}
-      else if (n == 4){c1 = 0.0694318442029737124; d1 = 0.1739274225687269287; c2 = 0.2605776340045981552; d2 = 0.3260725774312730713; c3 = 0.3399810435848562648;}
-      else if (n == 5){c1 = 0.0469100770306680036; d1 = 0.1184634425280945438; c2 = 0.1838552679164904509; d2 = 0.2393143352496832340; c3 = 0.2692346550528415455; d3 = 64./225.;}
-      else if (n == 6){c1 = 0.0337652428984239861; d1 = 0.0856622461895851725; c2 = 0.1356300638684437571; d2 = 0.1803807865240693038; c3 = 0.2112951001915338025;
-                       d3 = 0.2339569672863455237; c4 = 0.2386191860831969086;}
-      else{fprintf(stderr, "\nError: n must be between 1 and 6 in function UnaveragedSABAn_NAFF.\n");  abort();}
-      
-      /******** Initializing the cartesian coordinates ********/
-      for (i = 1; i <= how_many_planet; i ++){
-            mu = G*(m0 + masses[i]);
-            a  = X_old[4*i - 1]*X_old[4*i - 1]*(m0 + masses[i])/(G*m0*m0*masses[i]*masses[i]);
-            e  = sqrt(1. - (1. - X_old[4*i]/X_old[4*i - 1])*(1. - X_old[4*i]/X_old[4*i - 1]));
-            vp = -X_old[4*i - 2];
-            M  =  X_old[4*i - 3] - vp;
-            E  = mean2eccentric(M + vp, e*cos(vp), e*sin(vp)) - vp;
-            ell2cart(a, e, 0., E, vp, 0., mu, X_cart + 4*i - 4);
-            lbdOld[i] = X_old[4*i - 3];  gOld[i] = X_old[4*i - 2];
-      }
-      
-      /******** Initializing min and max ********/
-      old2new(X_old, X_new, X_uv);
-      for (i = 1; i <= 4*how_many_planet; i ++){
-            X_new_min[i] = X_new[i];
-            X_new_max[i] = X_new[i];
-      }
-
-      /******** Integrating ********/
-      for (iter = -N_step + 1; iter <= N_step; iter ++){
-            
-            /******** For the first iteration only ********/
-            if (iter == -N_step + 1){
-                  /******** Step exp(c1*tau*L_A) ********/
-                  for (i = 1; i <= how_many_planet; i ++){
-                        mu = G*(m0 + masses[i]);
-                        kepsaut(X_cart + 4*i - 4, mu, c1*tau);
-                  }
-            }
-            
-            /******** Step exp(d1*tau*L_B) ********/
-            exp_tau_LB(d1*tau, X_cart);
-            
-            if (n >= 2){
-                  /******** Step exp(c2*tau*L_A) ********/
-                  for (i = 1; i <= how_many_planet; i ++){
-                        mu = G*(m0 + masses[i]);
-                        kepsaut(X_cart + 4*i - 4, mu, c2*tau);
-                  }
-
-                  if (n >= 3){
-                        /******** Step exp(d2*tau*L_B) ********/
-                        exp_tau_LB(d2*tau, X_cart);
-
-                        if (n >= 4){
-                              /******** Step exp(c3*tau*L_A) ********/
-                              for (i = 1; i <= how_many_planet; i ++){
-                                    mu = G*(m0 + masses[i]);
-                                    kepsaut(X_cart + 4*i - 4, mu, c3*tau);
-                              }
-
-                              if (n >= 5){
-                                    /******** Step exp(d3*tau*L_B) ********/
-                                    exp_tau_LB(d3*tau, X_cart);
-                                    
-                                    if (n >= 6){
-                                          /******** Step exp(c4*tau*L_A) ********/
-                                          for (i = 1; i <= how_many_planet; i ++){
-                                                mu = G*(m0 + masses[i]);
-                                                kepsaut(X_cart + 4*i - 4, mu, c4*tau);
-                                          }
-                                          
-                                          /******** Step exp(d3*tau*L_B) ********/
-                                          exp_tau_LB(d3*tau, X_cart);
-                                    }
-                                    
-                                    /******** Step exp(c3*tau*L_A) ********/
-                                    for (i = 1; i <= how_many_planet; i ++){
-                                          mu = G*(m0 + masses[i]);
-                                          kepsaut(X_cart + 4*i - 4, mu, c3*tau);
-                                    }
-                              }
-                              /******** Step exp(d2*tau*L_B) ********/
-                              exp_tau_LB(d2*tau, X_cart);
-                        }
-                        
-                        /******** Step exp(c2*tau*L_A) ********/
-                        for (i = 1; i <= how_many_planet; i ++){
-                              mu = G*(m0 + masses[i]);
-                              kepsaut(X_cart + 4*i - 4, mu, c2*tau);
-                        }
-                  }
-                  
-                  /******** Step exp(d1*tau*L_B) ********/
-                  exp_tau_LB(d1*tau, X_cart);
-            }
-            
-            /******** Step exp(2*c1*tau*L_A) ********/
-            for (i = 1; i <= how_many_planet; i ++){
-                  mu = G*(m0 + masses[i]);
-                  kepsaut(X_cart + 4*i - 4, mu, 2.*c1*tau);
-            }
-            
-            /******** Computing the amplitudes ********/
-            for (i = 1; i <= N; i ++){
-                  X_buff[4*i - 3] = X_cart[4*i - 3];  X_buff[4*i - 2] = X_cart[4*i - 2];  X_buff[4*i - 1] = X_cart[4*i - 1];  X_buff[4*i] = X_cart[4*i];
-            }
-            for (i = 1; i <= N; i ++){
-                  mu = G*(m0 + masses[i]);
-                  kepsaut(X_buff + 4*i - 4, mu, -c1*tau);
-            }
-            for (i = 1; i <= N; i ++){ // (x, y; vx, vy) -> (lbd_j, -vrp_j; Lbd_j, D_j)
-                  beta = m0*masses[i]/(m0 + masses[i]);
-                  mu   = G*(m0 + masses[i]);
-                  cart2ell(X_buff + 4*i - 4, alkhqp, mu);
-                  e    = sqrt(alkhqp[3]*alkhqp[3] + alkhqp[4]*alkhqp[4]);
-                  lbd  = continuousAngle(alkhqp[2],                  lbdOld[i]);
-                  g    = continuousAngle(-atan2(alkhqp[4], alkhqp[3]), gOld[i]);
-                  X_old[4*i - 3] = lbd;
-                  X_old[4*i - 2] = g;
-                  X_old[4*i - 1] = beta*sqrt(mu*alkhqp[1]);
-                  X_old[4*i]     = X_old[4*i - 1]*(1. - sqrt(1. - e*e));
-                  lbdOld[i]      = lbd;  gOld[i] = g;
-            }
-            old2new(X_old, X_new, X_uv); // (lbd_j, -vrp_j; Lbd_j, D_j) -> (phi_j, sig_j, Phi_j, D_j) -> (phi_j, v_j, Phi_j, u_j)
-            for (i = 1; i <= 4*how_many_planet; i ++){
-                  if (X_new[i] < X_new_min[i]){
-                        X_new_min[i] = X_new[i];
-                  }
-                  else if (X_new[i] > X_new_max[i]){
-                        X_new_max[i] = X_new[i];
-                  }
-            }
-      }
-      /******** Counting the number of librating angles ********/
-      j = 0;
-      for (i = 1; i <= how_many_planet; i ++){
-            if (X_new_max[4*i - 3] - X_new_min[4*i - 3] < 2.*M_PI){ //phi_i
-                  j ++;
-            }
-            else if (X_new_max[4*i - 2] - X_new_min[4*i - 2] < 2.*M_PI){ //sig_i
-                  j ++;
-            }
-      }
-      return j;
 }
 
 
@@ -3083,7 +2906,6 @@ void LibrationCenterFind(typ * X_old, int precision){
       typ xvXu  [4*how_many_planet + 1];
       typ n     [  how_many_planet + 1];
       typ tau = .0625;
-      typ t   = 1.;
       
       typ dt[3] = {2., 1., 1.};             //Timestep in units of tau
       //typ T [3] = {3000., 4500., 6500.};   //Integration time
@@ -3154,16 +2976,10 @@ void LibrationCenterFind(typ * X_old, int precision){
             amplitude = UnaveragedSABAn_NAFF(tau*dt[precision], T[precision], Hf[precision], xvXu, X_old, Sn[precision], Hr[precision] + 10*(how_many_planet - 2));
             ConstantParameter(X_new, xvXu);
             for (i = 1; i <= how_many_planet; i ++){
-                  /*
                   X_uv[4*i - 3] = xvXu[4*i - 3];
                   X_uv[4*i - 2] = xvXu[4*i - 2];
                   X_uv[4*i - 1] = xvXu[4*i - 1];
                   X_uv[4*i]     = xvXu[4*i];
-                  */
-                  X_uv[4*i - 3] = t*xvXu[4*i - 3] + (1. - t)*X_uv[4*i - 3];
-                  X_uv[4*i - 2] = t*xvXu[4*i - 2] + (1. - t)*X_uv[4*i - 2];
-                  X_uv[4*i - 1] = t*xvXu[4*i - 1] + (1. - t)*X_uv[4*i - 1];
-                  X_uv[4*i]     = t*xvXu[4*i]     + (1. - t)*X_uv[4*i];
             }
             new2old(X_old, X_new, X_uv);
             
@@ -3238,7 +3054,6 @@ void LibrationCenterNAFF(typ * X_old, typ tau, typ T, int Hf, int N, int Hr){
       typ X_uv [4*how_many_planet + 1];
       typ xvXu [4*how_many_planet + 1];
       typ n    [  how_many_planet + 1];
-      typ t = 1.;
       
       if (Hf > 5 || Hf < 1){
             fprintf(stderr, "\nError: The order of the Hanning filter must be between 1 and 5 in function LibrationCenterNAFF.\n");
@@ -3258,16 +3073,10 @@ void LibrationCenterNAFF(typ * X_old, typ tau, typ T, int Hf, int N, int Hr){
       amplitude = UnaveragedSABAn_NAFF(tau, T, Hf, xvXu, X_old, N, Hr);      
       ConstantParameter(X_new, xvXu);
       for (i = 1; i <= how_many_planet; i ++){
-            /*
             X_uv[4*i - 3] = xvXu[4*i - 3];
             X_uv[4*i - 2] = xvXu[4*i - 2];
             X_uv[4*i - 1] = xvXu[4*i - 1];
             X_uv[4*i]     = xvXu[4*i];
-            */
-            X_uv[4*i - 3] = t*xvXu[4*i - 3] + (1. - t)*X_uv[4*i - 3];
-            X_uv[4*i - 2] = t*xvXu[4*i - 2] + (1. - t)*X_uv[4*i - 2];
-            X_uv[4*i - 1] = t*xvXu[4*i - 1] + (1. - t)*X_uv[4*i - 1];
-            X_uv[4*i]     = t*xvXu[4*i]     + (1. - t)*X_uv[4*i];
       }
       new2old(X_old, X_new, X_uv);
       
@@ -3275,7 +3084,8 @@ void LibrationCenterNAFF(typ * X_old, typ tau, typ T, int Hf, int N, int Hr){
       printf("The new point is :\n");
       PointPrint(X_old, 1);
       get_averaged_n(n);
-      printf("nu_%d = dphi_%d/dt = %.16g, nu_%d = dphi_%d/dt = %.16g, nu_%d/nu_%d = %.16g\n", fast, fast, nu_fast, slow, slow, nu_reso, fast, slow, nu_fast/nu_reso);
+      //printf("nu_%d = dphi_%d/dt = %.16g, nu_%d = dphi_%d/dt = %.16g, nu_%d/nu_%d = %.16g\n", fast, fast, nu_fast, slow, slow, nu_reso, fast, slow, nu_fast/nu_reso);
+      printf("nu_%d = dphi_%d/dt = %.16g, nu_%d = dphi_%d/dt = %.16g, nu_fast = nu_%d/%d = %.16g, nu_fast/nu_%d = %.16g\n", fast, fast, nu_fast, slow, slow, nu_reso, fast, (int) D, nu_fast/D, slow, nu_fast/D/nu_reso);
       printf("Amplitude of terms of frequency nu_%d = %.16g\n", slow, amplitude);
       for (i = 1; i < how_many_planet; i ++){
             printf("n_%d/n_%d = %.8g", i, i + 1, n[i]/n[i + 1]);
@@ -3501,146 +3311,6 @@ void PeriodicOrbitFind(typ * X_old){
       T  = 0.5*(fabs(T1) + fabs(T2));
       dt = T/(256.*round(T));
       SABAn(dt, 3.2*T, 1, X_old, 4);
-}
-
-
-void LibrationCenterGradientDescent(typ * X_old, typ tau, typ T, typ LearningRate, int N, int sigma){ //To be removed
-
-      /******** Tries to find a libration center of the complete Hamiltonian by ********/
-      /******** randomly changing the initial conditions and seeing if it makes ********/
-      /******** the angles of the problem librate less or more                  ********/
-
-      int i, j, how_many_librating;
-      int fast = subchain[how_many_resonant - 1];
-      int slow = subchain[how_many_resonant];
-      typ X_buff[Nd*how_many_planet + 1];
-      typ X_new [Nd*how_many_planet + 1];
-      typ X_uv  [Nd*how_many_planet + 1];
-      typ gradient[Nd*how_many_planet + 1];
-      typ X_new_min[Nd*how_many_planet + 1];
-      typ X_new_max[Nd*how_many_planet + 1];
-      typ amplitudes    [how_many_planet*sigma + how_many_resonant - 1]; // Libration amplitudes of Laplace angles
-      typ new_amplitudes[how_many_planet*sigma + how_many_resonant - 1];
-      typ sum_amplitudes     = 0.;
-      typ new_sum_amplitudes = 0.;
-      typ eps_phi = 0.07e-2;
-      typ eps_uv  = 0.25e-7;
-      typ eps_Phi;
-      
-      for (i = 1; i <= Nd*how_many_planet; i ++){
-            X_buff[i] = X_old[i];
-      }
-      
-      how_many_librating = UnaveragedSABAn_amplitude(tau, T, X_new_min, X_new_max, X_buff, N);
-      PointPrint(X_old, 0);
-      printf("Amplitudes before gradient descent : ");
-      for (i = 1; i <= how_many_resonant - 2; i ++){ //Storing amplitude of Laplace angles
-            amplitudes[i] = X_new_max[Nd*subchain[i] - 3] - X_new_min[Nd*subchain[i] - 3];
-            printf("phi_%d = %.2lf°\n                                     ", i, amplitudes[i]*180./M_PI);
-            sum_amplitudes += amplitudes[i];
-      }
-      for (i = 1; i <= how_many_planet*sigma; i ++){ //Storing amplitude of sigma angles
-            amplitudes[i + how_many_resonant - 2] = X_new_max[Nd*subchain[i] - 2] - X_new_min[Nd*subchain[i] - 2];
-            printf("sig_%d = %.2lf°\n                                     ", i, amplitudes[i + how_many_resonant - 2]*180./M_PI);
-            //sum_amplitudes += amplitudes[i];
-      }
-      printf("\n");
-
-      /******** Computing gradient of function R^{4*n-2} -> R returning the sum of the libration amplitudes of Laplace angles ********/
-      for (i = 1; i <= how_many_planet; i ++){
-            if (i != slow){
-                  /******** Gradient with respect to phi_i ********/
-                  old2new(X_old, X_new, X_uv);
-                  X_uv[Nd*i - 3] += eps_phi;
-                  new2old(X_buff, X_new, X_uv);
-                  how_many_librating = UnaveragedSABAn_amplitude(tau, T, X_new_min, X_new_max, X_buff, N);
-                  new_sum_amplitudes = 0.;
-                  for (j = 1; j <= how_many_resonant - 2; j ++){ //Storing amplitude of Laplace angles
-                        new_amplitudes[j]   = X_new_max[Nd*subchain[j] - 3] - X_new_min[Nd*subchain[j] - 3];
-                        new_sum_amplitudes += new_amplitudes[j];
-                  }
-                  /*for (j = 1; j <= how_many_planet*sigma; j ++){
-                        new_amplitudes[j + how_many_resonant - 2] = X_new_max[Nd*subchain[j] - 2] - X_new_min[Nd*subchain[j] - 2];
-                        new_sum_amplitudes += new_amplitudes[j + how_many_resonant - 2];
-                  }*/
-                  gradient[Nd*i - 3] = (new_sum_amplitudes - sum_amplitudes)/eps_phi;
-                  printf("gradient[%d] = %.13lf\n", Nd*i - 3, gradient[Nd*i - 3]);
-                  /******** Gradient with respect to Phi_i ********/
-                  /*old2new(X_old, X_new, X_uv);
-                  //eps_Phi = fabs(X_uv[Nd*i - 1])/131072.;
-                  eps_Phi = 1.e-11;
-                  X_uv[Nd*i - 1] += eps_Phi;
-                  new2old(X_buff, X_new, X_uv);
-                  how_many_librating = UnaveragedSABAn_amplitude(tau, T, X_new_min, X_new_max, X_buff, N);
-                  new_sum_amplitudes = 0.;
-                  for (j = 1; j <= how_many_resonant - 2; j ++){ //Storing amplitude of Laplace angles
-                        new_amplitudes[j]   = X_new_max[Nd*subchain[j] - 3] - X_new_min[Nd*subchain[j] - 3];
-                        new_sum_amplitudes += new_amplitudes[j];
-                  }
-                  gradient[Nd*i - 1] = (new_sum_amplitudes - sum_amplitudes)/eps_Phi;
-                  printf("gradient[%d] = %.13lf\n", Nd*i - 1, gradient[Nd*i - 1]);*/
-                  gradient[Nd*i - 1] = 0.;
-            }
-            else{
-                  gradient[Nd*i - 3] = 0.;
-                  gradient[Nd*i - 1] = 0.;
-                  printf("gradient[%d] = %.13lf\n", Nd*i - 3, gradient[Nd*i - 3]);
-                  printf("gradient[%d] = %.13lf\n", Nd*i - 1, gradient[Nd*i - 1]);
-            }
-            /******** Gradient with respect to v_i ********/
-            old2new(X_old, X_new, X_uv);
-            X_uv[Nd*i - 2] += eps_uv;
-            new2old(X_buff, X_new, X_uv);
-            how_many_librating = UnaveragedSABAn_amplitude(tau, T, X_new_min, X_new_max, X_buff, N);
-            new_sum_amplitudes = 0.;
-            for (j = 1; j <= how_many_resonant - 2; j ++){ //Storing amplitude of Laplace angles
-                  new_amplitudes[j]   = X_new_max[Nd*subchain[j] - 3] - X_new_min[Nd*subchain[j] - 3];
-                  new_sum_amplitudes += new_amplitudes[j];
-            }
-            /*for (j = 1; j <= how_many_planet*sigma; j ++){
-                  new_amplitudes[j + how_many_resonant - 2] = X_new_max[Nd*subchain[j] - 2] - X_new_min[Nd*subchain[j] - 2];
-                  new_sum_amplitudes += new_amplitudes[j + how_many_resonant - 2];
-            }*/
-            gradient[Nd*i - 2] = (new_sum_amplitudes - sum_amplitudes)/eps_uv;
-            printf("gradient[%d] = %.13lf\n", Nd*i - 2, gradient[Nd*i - 2]);
-            /******** Gradient with respect to u_i ********/
-            old2new(X_old, X_new, X_uv);
-            X_uv[Nd*i] += eps_uv;
-            new2old(X_buff, X_new, X_uv);
-            how_many_librating = UnaveragedSABAn_amplitude(tau, T, X_new_min, X_new_max, X_buff, N);
-            new_sum_amplitudes = 0.;
-            for (j = 1; j <= how_many_resonant - 2; j ++){ //Storing amplitude of Laplace angles
-                  new_amplitudes[j]   = X_new_max[Nd*subchain[j] - 3] - X_new_min[Nd*subchain[j] - 3];
-                  new_sum_amplitudes += new_amplitudes[j];
-            }
-            /*for (j = 1; j <= how_many_planet*sigma; j ++){
-                  new_amplitudes[j + how_many_resonant - 2] = X_new_max[Nd*subchain[j] - 2] - X_new_min[Nd*subchain[j] - 2];
-                  new_sum_amplitudes += new_amplitudes[j + how_many_resonant - 2];
-            }*/
-            gradient[Nd*i] = (new_sum_amplitudes - sum_amplitudes)/eps_uv;
-            printf("gradient[%d] = %.13lf\n", Nd*i, gradient[Nd*i]);
-      }
-      
-      /******** Descending the gradient ********/
-      old2new(X_old, X_new, X_uv);
-      for (i = 1; i <= how_many_planet; i ++){
-            X_uv[Nd*i - 3] -= LearningRate*gradient[Nd*i - 3];
-            X_uv[Nd*i - 2] -= LearningRate*gradient[Nd*i - 2];
-            //X_uv[Nd*i - 1] -= LearningRate*gradient[Nd*i - 1];
-            X_uv[Nd*i]     -= LearningRate*gradient[Nd*i];
-      }
-      new2old(X_old, X_new, X_uv);
-      
-      /*PointPrint(X_old, 1);
-      how_many_librating = UnaveragedSABAn_amplitude(tau, T, X_new_min, X_new_max, X_old, N);
-      printf("Amplitudes after gradient descent  : ");
-      for (i = 1; i <= how_many_resonant - 2; i ++){ //Storing amplitude of Laplace angles
-            amplitudes[i] = X_new_max[Nd*subchain[i] - 3] - X_new_min[Nd*subchain[i] - 3];
-            printf("phi_%d = %.2lf°\n                                     ", i, amplitudes[i]*180./M_PI);
-            sum_amplitudes += amplitudes[i];
-      }
-      printf("\n");
-      new2old(X_old, X_new, X_uv);*/
 }
 
 

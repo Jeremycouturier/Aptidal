@@ -536,7 +536,7 @@ void X_init(typ * X){
             X[Nd*i - 3] = lbd[i];
             X[Nd*i - 2] = -vrp[i];
             X[Nd*i - 1] = Lbd;
-            X[Nd*i]     = max(Lbd*(1. - sqrt(1. - ecc[i]*ecc[i])), 1.e-17);
+            X[Nd*i]     = max(Lbd*(1. - sqrt(1. - ecc[i]*ecc[i])), 1.e-32);
       }
       
       #if !canon_input_bool
