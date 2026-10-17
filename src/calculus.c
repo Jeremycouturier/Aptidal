@@ -59,9 +59,9 @@ AAAAAAA                   AAAAAAA PPPPPPPPPP                 TTTTTTTTTTT       I
 #include "intpla.h"
 
 
-typ X_old_t0[4*how_many_planet + 1];
-typ X_new_t0[4*how_many_planet + 1];
-typ X_uv_t0 [4*how_many_planet + 1];
+typ X_old_t0[Nd*how_many_planet + 1];
+typ X_new_t0[Nd*how_many_planet + 1];
+typ X_uv_t0 [Nd*how_many_planet + 1];
 
 
 typ fast_pow(typ x, int power){
@@ -134,7 +134,7 @@ void dHdold(typ * dH, typ * X_old, int KP){
                         Cppqk = Cppq[i][j];
                   
                         /******** Getting the old coordinates ********/
-                        aJ     = sma[j];
+                        aJ     = a_nom[j];
                         mI     = masses[i];
                         mJ     = masses[j];
                         factor = G*mI*mJ/aJ;
@@ -467,10 +467,51 @@ void nonCanonical2canonical(typ * X_cart){
 }
 
 
+#if !canon_output_bool
+void ellip_can2noncan(typ * X_old, typ * X_buf){
+
+      /******** Converts the canonical elliptic coordinates X_old ********/
+      /******** into non-canonical elliptic coordinates. Writes   ********/
+      /******** the conversion in X_buf. X_old is untouched.      ********/
+      
+      int i;
+      typ a, e, parenthesis;
+      typ X_cart[4*how_many_planet + 1];
+      typ alkhqp[7];
+      typ mu, vp, M, E, beta, Lbd;
+      for (i = 1; i <= how_many_planet; i ++){ //Converting from elliptic to cartesian
+            mu = G*(m0 + masses[i]);
+            a = X_old[4*i - 1]*X_old[4*i - 1]*(m0 + masses[i])/(G*m0*m0*masses[i]*masses[i]);
+            parenthesis = 1. - X_old[4*i]/X_old[4*i - 1];
+            e = sqrt(1. - parenthesis*parenthesis);
+            vp = -X_old[4*i - 2];
+            M =  X_old[4*i - 3] - vp;
+            E = mean2eccentric(M + vp, e*cos(vp), e*sin(vp)) - vp;
+            ell2cart(a, e, 0., E, vp, 0., mu, X_cart + 4*i - 4);
+      }
+      canonical2nonCanonical(X_cart); //Converting from canonical to non-canonical
+      for (i = 1; i <= how_many_planet; i ++){ //Converting from cartesian to elliptic
+            mu = G*(m0 + masses[i]);
+            cart2ell(X_cart + 4*i - 4, alkhqp, mu);
+            a = alkhqp[1];
+            vp = atan2(alkhqp[4],alkhqp[3]);
+            e = sqrt(alkhqp[3]*alkhqp[3] + alkhqp[4]*alkhqp[4]);
+            beta = m0*masses[i]/(m0 + masses[i]);
+            Lbd  = beta*sqrt(mu*a);
+            X_buf[4*i - 3] = continuousAngle(alkhqp[2], X_old[4*i - 3]);
+            X_buf[4*i - 2] = continuousAngle(-vp,       X_old[4*i - 2]);
+            X_buf[4*i - 1] = Lbd;
+            X_buf[4*i]     = max(Lbd*(1. - sqrt(1. - e*e)), 1.e-34);
+      }
+}
+#endif
+
+
 #if (toInvar_bool && _3D_bool)
 void toInvar(typ * X_cart){
 
-      /******** Rotates the system so that the total angular momentum points in the z-direction ********/
+      /******** Rotates the system so that the total angular momentum points in the z-direction      ********/
+      /******** Planetary rotation given in parameters.h are not rotated with the rest of the system ********/
 
       int i;
       typ gx, gy, gz;
@@ -536,7 +577,7 @@ void X_init(typ * X){
             X[Nd*i - 3] = lbd[i];
             X[Nd*i - 2] = -vrp[i];
             X[Nd*i - 1] = Lbd;
-            X[Nd*i]     = max(Lbd*(1. - sqrt(1. - ecc[i]*ecc[i])), 1.e-32);
+            X[Nd*i]     = max(Lbd*(1. - sqrt(1. - ecc[i]*ecc[i])), 1.e-34);
       }
       
       #if !canon_input_bool
@@ -572,7 +613,7 @@ void X_init(typ * X){
             X[Nd*i - 3] = alkhqp[2];
             X[Nd*i - 2] = -vp;
             X[Nd*i - 1] = Lbd;
-            X[Nd*i]     = max(Lbd*(1. - sqrt(1. - e*e)), 1.e-17);
+            X[Nd*i]     = max(Lbd*(1. - sqrt(1. - e*e)), 1.e-34);
       }
       #endif
 }
@@ -627,7 +668,7 @@ void X_init(typ * X){
             X[Nd*i - 3] = alkhqp[2];
             X[Nd*i - 2] = -vp;
             X[Nd*i - 1] = Lbd;
-            X[Nd*i]     = max(Lbd*(1. - sqrt(1. - e*e)), 1.e-17);
+            X[Nd*i]     = max(Lbd*(1. - sqrt(1. - e*e)), 1.e-34);
       }
 }
 #endif
@@ -677,10 +718,10 @@ void exp_tau_LB_Ralston(typ tau, typ * X_old){
       dHdold(dH_old, X_old, 1);
       dHdnew(dH_polar, K2, dH_old, X_new, X_K2);      //K2 is k2 of Ralston method
       for (i = 1; i <= how_many_planet; i ++){        //Completing Ralston method
-            X_uv[4*i - 3] += 0.25*tau*(dH_rect[4*i - 1] + 3.*K2[4*i - 1]);
-            X_uv[4*i - 2] += 0.25*tau*(dH_rect[4*i]     + 3.*K2[4*i])     /Lbd_0[i];
-            X_uv[4*i - 1] -= 0.25*tau*(dH_rect[4*i - 3] + 3.*K2[4*i - 3]);
-            X_uv[4*i]     -= 0.25*tau*(dH_rect[4*i - 2] + 3.*K2[4*i - 2]) /Lbd_0[i];
+            X_uv[4*i - 3] += .25*tau*(dH_rect[4*i - 1] + 3.*K2[4*i - 1]);
+            X_uv[4*i - 2] += .25*tau*(dH_rect[4*i]     + 3.*K2[4*i])     /Lbd_0[i];
+            X_uv[4*i - 1] -= .25*tau*(dH_rect[4*i - 3] + 3.*K2[4*i - 3]);
+            X_uv[4*i]     -= .25*tau*(dH_rect[4*i - 2] + 3.*K2[4*i - 2]) /Lbd_0[i];
       }
       new2old(X_old, X_new, X_uv); //(phi, v; Phi, u) -> (phi, sig; Phi, D) -> (lbd, -vrp; Lbd, D)
 }
@@ -693,6 +734,7 @@ void AveragedSABAn(typ tau, typ T, int output_step, typ * X_old, int n){
       /******** every output_step timestep to pth/AveragedSABAn_chain.txt ********/
       /******** The Keplerian part A is integrated exactly, but the       ********/
       /******** perturbation B is integrated with a Ralston method        ********/
+      /******** X_old is written to the final state upon exit             ********/
       
       #if _3D_bool
       fprintf(stderr, "\nError: _3D_bool must be 0 when calling function AveragedSABAn.\n");  abort();
@@ -702,9 +744,6 @@ void AveragedSABAn(typ tau, typ T, int output_step, typ * X_old, int n){
       #endif
       #if GR_bool
       printf("\nWarning: General relativity has not yet been implemented for the averaged Hamiltonian. Will behave as if GR_bool was 0.\n");
-      #endif
-      #if !canon_output_bool
-      printf("\nWarning: Function AveragedSABAn does not yet allow non-canonical output. Will output in canonical heliocentric coordinates.\n");
       #endif
       
       char file_path[800];
@@ -738,6 +777,13 @@ void AveragedSABAn(typ tau, typ T, int output_step, typ * X_old, int n){
       }
       
       /******** Initializing sigOld ********/
+      #if !canon_output_bool
+      ellip_can2noncan(X_old, old_buff);
+      #else
+      for (i = 1; i <= 4*how_many_planet; i ++){
+            old_buff[i] = X_old[i];
+      }
+      #endif
       old2new(old_buff, X_new, X_uv);
       for (i = 1; i <= how_many_planet; i ++){
             sigOld[i] = X_new[4*i - 2];
@@ -775,7 +821,6 @@ void AveragedSABAn(typ tau, typ T, int output_step, typ * X_old, int n){
                               old_buff[4*i - 3] -= c1*tau*dH_old[4*i - 1]; //lbd_i = lbd_i - c1*tau*dH_K/dLbd_i
                         }
                   }
-                  old2new(old_buff, X_new, X_uv);
                   /******** Outputting ********/
                   if (!iter){
                         fprintf(file, "Numerical integration of the Hamiltonian with a SABA%d integrator in the coordinates (phi, v; Phi, u) defined as: \n", n);
@@ -797,12 +842,20 @@ void AveragedSABAn(typ tau, typ T, int output_step, typ * X_old, int n){
                               fprintf(file, "where epsilon = (m_1 + ... + m_%d)/m_0. This term remains regardless of the order of the integrator.\n", how_many_planet);
                         }
                         fprintf(file, "\n");
+                        #if canon_output_bool
                         fprintf(file, "The output coordinates are canonical heliocentric\n");
+                        #else
+                        fprintf(file, "The output coordinates are non-canonical heliocentric\n");
+                        #endif
                         fprintf(file, "This file has %d columns that are (for 1 <= j <= %d):\n", 2 + 4*how_many_planet, how_many_planet);
                         fprintf(file, "Time, Hamiltonian, a_j, e_j, phi_j, sig_j.\n");
                         fprintf(file, "\n");
                   }
                   H = AveragedHamiltonian(old_buff);
+                  #if !canon_output_bool
+                  ellip_can2noncan(old_buff, old_buff);
+                  #endif
+                  old2new(old_buff, X_new, X_uv);
                   fprintf(file, "%.8g %.16g", tau*(typ) iter, H);
                   for (i = 1; i <= how_many_planet; i ++){
                         sig = continuousAngle(X_new[4*i - 2], sigOld[i]);
@@ -885,6 +938,11 @@ void AveragedSABAn(typ tau, typ T, int output_step, typ * X_old, int n){
             for (i = 1; i <= how_many_planet; i ++){
                   X_old[4*i - 3] += 2.*c1*tau*dH_old[4*i - 1];
             }
+      }
+      
+      /******** Step exp(-c1*tau*L_A) on the final state before exit ********/
+      for (i = 1; i <= how_many_planet && N_step > 0; i ++){
+            X_old[4*i - 3] -= c1*tau*dH_old[4*i - 1];
       }
 
       /******** Closing output file ********/
@@ -1075,7 +1133,7 @@ void RK2(typ tau, typ T, int output_step){
       strcat(file_path, "RK2.txt");
       file = fopen(file_path, "w");
       if (file == NULL){
-            fprintf(stderr, "\nError : Cannot create or open file SABA1.txt in function RK2.\n");
+            fprintf(stderr, "\nError : Cannot create or open file RK2.txt in function RK2.\n");
             abort();
       }
       
@@ -1170,7 +1228,7 @@ typ AveragedHamiltonian(typ * X_old){
             /******** Perturbative part ********/
             for (j = i + 1; j <= how_many_planet; j ++){
                   Cppqk        = Cppq[i][j];
-                  aJ           = sma[j];
+                  aJ           = a_nom[j];
                   mI           = masses[i];
                   mJ           = masses[j];
                   factor       = G*mI*mJ/aJ;
@@ -1226,11 +1284,11 @@ typ AveragedHamiltonian(typ * X_old){
 
 void PointPrint(typ * X_old, int iter){
 
-      /******** Verifies the conservation of the first integrals and displays the point in terminal ********/
+      /******** Prints the point in terminal ********/
 
       int N = how_many_planet;
       int i, k;
-      int spaces = (int) floor(log10((typ) iter));
+      int spaces = iter == 0 ? 0 : (int) floor(log10((typ) iter));
       typ a, e, parenthesis;
       typ X_new[4*how_many_planet + 1];
       typ X_uv [4*how_many_planet + 1];
@@ -1250,33 +1308,7 @@ void PointPrint(typ * X_old, int iter){
             X_buf[i] = X_old[i];
       }
       #else
-      typ X_cart[4*how_many_planet + 1];
-      typ alkhqp[7];
-      typ mu, vp, M, E, beta, Lbd;
-      for (i = 1; i <= N; i ++){ //Converting from elliptic to cartesian
-            mu = G*(m0 + masses[i]);
-            a = X_old[4*i - 1]*X_old[4*i - 1]*(m0 + masses[i])/(G*m0*m0*masses[i]*masses[i]);
-            parenthesis = 1. - X_old[4*i]/X_old[4*i - 1];
-            e = sqrt(1. - parenthesis*parenthesis);
-            vp = -X_old[4*i - 2];
-            M =  X_old[4*i - 3] - vp;
-            E = mean2eccentric(M + vp, e*cos(vp), e*sin(vp)) - vp;
-            ell2cart(a, e, 0., E, vp, 0., mu, X_cart + 4*i - 4);
-      }
-      canonical2nonCanonical(X_cart); //Converting from canonical to non-canonical
-      for (i = 1; i <= N; i ++){ //Converting from cartesian to elliptic
-            mu = G*(m0 + masses[i]);
-            cart2ell(X_cart + 4*i - 4, alkhqp, mu);
-            a = alkhqp[1];
-            vp = atan2(alkhqp[4],alkhqp[3]);
-            e = sqrt(alkhqp[3]*alkhqp[3] + alkhqp[4]*alkhqp[4]);
-            beta = m0*masses[i]/(m0 + masses[i]);
-            Lbd  = beta*sqrt(mu*a);
-            X_buf[4*i - 3] = alkhqp[2];
-            X_buf[4*i - 2] = -vp;
-            X_buf[4*i - 1] = Lbd;
-            X_buf[4*i]     = max(Lbd*(1. - sqrt(1. - e*e)), 1.e-17);
-      }
+      ellip_can2noncan(X_old, X_buf);
       #endif
       
       printf("Iteration n° %d : ", iter);
@@ -1456,6 +1488,7 @@ int EquilibriumFind(typ * X_old, int precision){
       printf("-------------------------------------------------------------------------------------------\n\n");
       printf("Starting the search for a fixed point.\n\n");
       PointPrint(X_old, 0);
+      old2new(X_old, X_new, X_uv);
       
       /******** I first try to converge with a low precision using a small integration time and a large timestep ********/
       while(prec > AR[precision] && n_iter <= 32){
@@ -1492,6 +1525,7 @@ int EquilibriumFind(typ * X_old, int precision){
 }
 
 
+#if 0
 void EquilibriumFollow(typ * X_old, typ dG, int Npoints, int precision){
 
       /******** Finds a fixed point and follows its family by updating the total     ********/
@@ -1601,7 +1635,7 @@ void EquilibriumFollow(typ * X_old, typ dG, int Npoints, int precision){
 
 void EquilibriumFindUntil(typ * X_old, int precision){
 
-      /******** Tries to find a fixed point. If it fails, picks angles at random and retries ********/
+      /******** Tries to find a fixed point. If it fails, picks angles at random and retries ********/ //To be modified : Failure is often caused by too large or too small eccentricities
       
       #if _3D_bool
       fprintf(stderr, "\nError: _3D_bool must be 0 when calling function EquilibriumFindUntil.\n");  abort();
@@ -1627,3 +1661,4 @@ void EquilibriumFindUntil(typ * X_old, int precision){
             success = EquilibriumFind(X_old, precision);
       }
 }
+#endif

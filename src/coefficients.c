@@ -115,8 +115,8 @@ void Cppq_init(){
       /******** Initializing it with the relevant coefficients ********/
       for (i = 1; i <= how_many_planet; i ++){
             for (j = i + 1; j <= how_many_planet; j ++){
-                  ai  = sma[i];
-                  aj  = sma[j];
+                  ai  = a_nom[i];
+                  aj  = a_nom[j];
                   alp = ai/aj;
                   pi  = p_i[i];
                   pj  = p_i[j];

@@ -111,14 +111,16 @@ void get_n(typ * X_cart, typ * n);
 void ConstantParameter(typ * X_new, typ * X_uv);
 
 
-void LibrationCenterFind(typ * X_old, int precision);
+void LibrationCenterFind(typ * X_old, typ tau, typ T, int Hf, int N, int Hr, typ epsilon);
 
 
 void LibrationCenterNAFF(typ * X_old, typ tau, typ T, int Hf, int N, int Hr);
 
 
-void LibrationCenterFollow(typ * X_old, typ dG, int Npoints, int precision);
+void LibrationCenterFollow(typ * X_old, typ tau, typ T, int Hf, int N, int Hr, typ epsilon, typ dG, int N_step);
 
 
+#if 0
 void PeriodicOrbitFind(typ * X_old);
+#endif
 #endif

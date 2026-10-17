@@ -50,16 +50,15 @@ AAAAAAA                   AAAAAAA PPPPPPPPPP                 TTTTTTTTTTT       I
 /*********************************************************************/
 /******** Defining the output path. Must end with / and exist ********/
 /*********************************************************************/
-#define pth "./"
+#define pth "./"             //Anything that needs to be written will be written here. Make sure that path exists and ends with a slash
 
 
 
 /********************************************************************************************/
 /******** Defining the resonance chain p_1 : p_2 : ... : p_n. The p_i are integers   ********/
-/******** given in increasing order whose ratio indicate the orbital periods ratios  ********/
+/******** given in increasing order whose ratio indicate the orbital periods ratios. ********/
 /******** Two consecutive p_i can be equal (coorbital planets) and p_i = 0 indicates ********/
-/******** that planet n° i is not in resonance with other planets. When working with ********/
-/******** the complete Hamiltonian, this only affects the output coordinates.        ********/
+/******** that planet n° i is not in resonance with other planets (secular planet).  ********/
 /********************************************************************************************/
 #define resonance_chain {8, 12, 18, 27}
 

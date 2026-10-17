@@ -64,6 +64,7 @@ typ sma     [how_many_planet + 1];
 typ ecc     [how_many_planet + 1];
 typ lbd     [how_many_planet + 1];
 typ vrp     [how_many_planet + 1];
+typ a_nom   [how_many_planet + 1];
 #if _3D_bool
 typ inc     [how_many_planet + 1];
 typ Om      [how_many_planet + 1];
@@ -97,6 +98,7 @@ int * subchain;
 int * chain_missed;
 int how_many_resonant;
 int how_many_missed;
+int how_many_non_secular;
 
 
 
@@ -261,6 +263,9 @@ void initialization(){
       typ buffer_Omg   [how_many_planet] = body_Omega;
       #endif
       #endif
+      #if !ellip_input_bool
+      typ X_tmp[Nd*how_many_planet + 1];
+      #endif
       for (i = 1; i < how_many_planet + 1; i ++){
             p_i[i] = buffer_chain[i - 1];
             sma[i] = buffer_sma  [i - 1];
@@ -288,8 +293,20 @@ void initialization(){
       for (i = 1; i < how_many_planet + 1; i ++){
             masses[i] = buffer_mass[i - 1];
       }
+      
+      #if ellip_input_bool
+      for (i = 1; i <= how_many_planet; i ++){
+            a_nom[i] = sma[i];
+      }
+      #else
+      X_init(X_tmp); //Cartesian -> canonical elliptic. Only uses masses and the arrays read above
+      for (i = 1; i <= how_many_planet; i ++){
+            a_nom[i] = X_tmp[Nd*i - 1]*X_tmp[Nd*i - 1]*(m0 + masses[i])/(G*m0*m0*masses[i]*masses[i]);
+      }
+      #endif
+      
       for (i = 1; i < how_many_planet + 1; i ++){
-            Lbd_0[i] = masses[i]*sqrt(G*m0*sma[i]);
+            Lbd_0[i] = masses[i]*sqrt(G*m0*a_nom[i]);
       }
       
       for (i = 1; i < how_many_planet + 1; i ++){
@@ -312,6 +329,57 @@ void initialization(){
                   k ++;
             }
       }
+      
+      /******** Filling unused index zero of subchain with angle whose amplitude is relevant to track when converging towards libration centers ********/
+      if (how_many_resonant > 2){
+            *subchain = Nd*subchain[1] - 3;
+      }
+      else{
+            *subchain = 0;
+            for (k = 1; k <= how_many_missed && subchain[0] == 0; k ++){ //The leading co-orbitals are the non-secular planets of chain_missed
+                  if (p_i[chain_missed[k]] != 0){
+                        subchain[0] = Nd*chain_missed[k] - 3;
+                  }
+            }
+            for (i = 1; i <= how_many_planet && subchain[0] == 0; i ++){ //Innermost sigma angle of a non-secular planet
+                  if (p_i[i] != 0){
+                        subchain[0] = Nd*i - 2;
+                  }
+            }
+            if (!*subchain){ //All planets are secular
+                  subchain[0] = Nd - 2;
+            }
+      }
+      
+      /******** Taking care of nondof ********/
+      how_many_dof    = 0;
+      how_many_nondof = 0;
+      for (i = 1; i < how_many_planet + 1; i ++){
+            if (how_many_resonant >= 2){
+                  if (i != subchain[how_many_resonant - 1] && i != subchain[how_many_resonant] && p_i[i] != 0){
+                        how_many_dof ++;
+                        dof[how_many_dof] = i;
+                  }
+                  else{
+                        how_many_nondof ++;
+                        nondof[how_many_nondof] = i;
+                  }
+            }
+            else if (how_many_resonant == 1){
+                  if (i != subchain[how_many_resonant] && p_i[i] != 0){
+                        how_many_dof ++;
+                        dof[how_many_dof] = i;
+                  }
+                  else{
+                        how_many_nondof ++;
+                        nondof[how_many_nondof] = i;
+                  }
+            }
+            else if (how_many_resonant == 0){
+                  how_many_nondof ++;
+                  nondof[how_many_nondof] = i;
+            }
+      }
 }
 
 
@@ -328,7 +396,7 @@ void chain_validity(){
       }
       
       /******** The chain cannot have only one resonant planet or negative nominal periods ********/
-      int how_many_non_secular = 0;
+      how_many_non_secular = 0;
       for (i = 1; i <= how_many_planet; i ++){
             if (p_i[i] < 0){
                   fprintf(stderr, "\nError: An invalid resonance chain was given. The nominal orbital periods cannot be negative.\n");
@@ -372,6 +440,26 @@ void chain_validity(){
             else {
                   secular_in_between = 0;
                   latest_orbital_period = p_i[i];
+            }
+      }
+      
+      /******** Verifying that the gcd of the resonance chain is 1 ********/
+      int _gcd = 0;
+      for (i = 1; i < how_many_planet + 1; i ++){
+            if (p_i[i] != 0){
+                  _gcd = gcd(_gcd, p_i[i]);
+            }
+      }
+      if (_gcd > 1){
+            fprintf(stderr, "\nError: The integers of the resonance chain given in parameters.h must be coprime.\n");
+            abort();
+      }
+      
+      /******** Verifying that how_many_planet is not bigger than the arrays in parameters.h ********/
+      for (i = 1; i < how_many_planet + 1; i ++){
+            if (masses[i] <= 0. || a_nom[i] <= 0.){
+                  fprintf(stderr, "\nError: Masses and semi-major axes in parameters.h must be > 0. Maybe you did not update how_many_planet?\n");
+                  abort();
             }
       }
 }

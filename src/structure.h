@@ -80,6 +80,7 @@ extern typ sma   [how_many_planet + 1];      //Semi-major axes                  
 extern typ ecc   [how_many_planet + 1];      //Eccentricities                    of the planets
 extern typ lbd   [how_many_planet + 1];      //Mean longitudes                   of the planets
 extern typ vrp   [how_many_planet + 1];      //Longitudes of the periapses       of the planets
+extern typ a_nom [how_many_planet + 1];      //Nominal semi-major axes           of the planets
 #if _3D_bool
 extern typ inc   [how_many_planet + 1];      //inclinations                      of the planets
 extern typ Om    [how_many_planet + 1];      //Longitudes of the ascending nodes of the planets
@@ -114,6 +115,7 @@ extern struct rational rat_k_star_i[how_many_planet];
 extern struct rational rat_q_i     [how_many_planet];
 extern int how_many_resonant;                 //number of planets in the system that are resonant     and are not the first member of a co-orbital pair
 extern int how_many_missed;                   //number of planets in the system that are not resonant or that are the first member of a co-orbital pair
+extern int how_many_non_secular;              //number of planets in the system that are resonant
 extern int * subchain;
 extern int * chain_missed;
 extern typ qnmlr[32][5];                        

@@ -49,9 +49,9 @@ AAAAAAA                   AAAAAAA PPPPPPPPPP                 TTTTTTTTTTT       I
 #include "parameters.h"
 #include "structure.h"
 
-extern typ X_old_t0[4*how_many_planet + 1]; 
-extern typ X_new_t0[4*how_many_planet + 1];
-extern typ X_uv_t0 [4*how_many_planet + 1];
+extern typ X_old_t0[Nd*how_many_planet + 1]; 
+extern typ X_new_t0[Nd*how_many_planet + 1];
+extern typ X_uv_t0 [Nd*how_many_planet + 1];
 
 
 typ fast_pow(typ x, int power);
@@ -73,6 +73,11 @@ void canonical2nonCanonical(typ * X_cart);
 
 
 void nonCanonical2canonical(typ * X_cart);
+
+
+#if !canon_output_bool
+void ellip_can2noncan(typ * X_old, typ * X_buf);
+#endif
 
 
 #if (toInvar_bool && _3D_bool)
@@ -107,8 +112,10 @@ void PointPrint(typ * X_old, int iter);
 int EquilibriumFind(typ * X_old, int precision);
 
 
+#if 0
 void EquilibriumFollow(typ * X_old, typ dG, int Npoints, int precision);
 
 
 void EquilibriumFindUntil(typ * X_old, int precision);
+#endif
 #endif
