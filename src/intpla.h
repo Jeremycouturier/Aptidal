@@ -53,6 +53,7 @@ extern typ nu_fast; //The fast frequency
 extern typ nu_reso; //The frequency of the periapses
 extern typ avgs[1 + 4*how_many_planet]; //Index 4*i - 3 (resp. -2, -1, -0) contains the average of phi_i (resp. v_i, Phi_i, u_i)
 extern typ D; //Quantity such that the fundamental frequency of the fast angle is nu_fast/D
+extern typ amp; //Amplitude on new points of LibrationCenterFollow
 
 
 void ell2cart(typ a, typ e, typ i, typ E, typ varpi, typ Omega, typ mu, typ * cart);
@@ -117,7 +118,7 @@ void LibrationCenterFind(typ * X_old, typ tau, typ T, int Hf, int N, int Hr, typ
 void LibrationCenterNAFF(typ * X_old, typ tau, typ T, int Hf, int N, int Hr);
 
 
-void LibrationCenterFollow(typ * X_old, typ tau, typ T, int Hf, int N, int Hr, typ epsilon, typ dG, int N_step);
+void LibrationCenterFollow(typ * X_old, typ tau, typ T, int Hf, int N, int Hr, typ epsilon, int I, int J, typ dnInJ, typ nInJ_ex);
 
 
 #if 0

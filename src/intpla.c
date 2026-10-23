@@ -63,6 +63,7 @@ typ nu_fast = 0.;
 typ nu_reso = 0.;
 typ avgs[1 + 4*how_many_planet];
 typ D = 1.; //To be replaced by actual value
+typ amp;
 
 
 void ell2cart(typ a, typ e, typ i, typ E, typ varpi, typ Omega, typ mu, typ * cart){
@@ -2995,10 +2996,11 @@ void LibrationCenterFind(typ * X_old, typ tau, typ T, int Hf, int N, int Hr, typ
       /******** safely circulate. Convergence can also be prevented if T, Hr, or epsilon********/
       /******** are too small, or if tau is too large. tau > 0.1 is discouraged.        ********/
 
-      int i, iter;
+      int i, iter, k;
       int fast = subchain[how_many_resonant - 1];
       int slow = subchain[how_many_resonant];
       typ amplitude = 1.e300;
+      typ old_amplitude = 1.e300;
       typ X_new [4*how_many_planet + 1];
       typ X_uv  [4*how_many_planet + 1];
       typ X_buff[4*how_many_planet + 1];
@@ -3026,12 +3028,22 @@ void LibrationCenterFind(typ * X_old, typ tau, typ T, int Hf, int N, int Hr, typ
       printf("-------------------------------------------------------------------------------------------\n\n");
       printf("Going towards a libration center from this point :\n");
       PointPrint(X_old, 0);
-      iter = 0;
+      iter = 0;  k = 0;
       
       while(180.*amplitude/M_PI > epsilon){
             /******** Going towards a libration center ********/
             old2new(X_old, X_new, X_uv);
             amplitude = UnaveragedSABAn_NAFF(tau, T, Hf, xvXu, X_old, N, Hr);
+            if (!iter){ //Setting the amplitude of the first point. Used by LibrationCenterFollow
+                  amp = amplitude;
+            }
+            if (old_amplitude/amplitude < 2. && old_amplitude > amplitude && k < 8){ //Slow convergence. Is often due to too little harmonics, or a window being too small.
+                  T  *= sqrt(2.);
+                  Hr += 10;
+                  k ++;
+                  printf("\nSlow convergence detected. Switching to T = %.16g and %d harmonics.\n", T, Hr);
+            }
+            old_amplitude = amplitude;
             ConstantParameter(X_new, xvXu);
             for (i = 1; i <= how_many_planet; i ++){
                   X_uv[4*i - 3] = xvXu[4*i - 3];
@@ -3051,6 +3063,16 @@ void LibrationCenterFind(typ * X_old, typ tau, typ T, int Hf, int N, int Hr, typ
             for (i = 1; i < how_many_planet; i ++){
                   printf("n_%d/n_%d = %.8g", i, i + 1, n[i]/n[i + 1]);
                   if (i < how_many_planet - 1){printf(", ");} else{printf("\n");}
+            }
+            if (iter > 15){
+                  if (180.*amplitude/M_PI < 64.*epsilon){
+                        fprintf(stderr, "\nWarning: Cannot converge further in function LibrationCenterFind. Stopping here and returning.\n");
+                        amplitude = 1.e-300;
+                  }
+                  else{
+                        fprintf(stderr, "\nError: Cannot converge to a libration center in function LibrationCenterFind. Aborting.\n");
+                        abort();
+                  }
             }
       }
       for (i = 1; i <= Nd*how_many_planet; i ++){
@@ -3118,18 +3140,21 @@ void LibrationCenterNAFF(typ * X_old, typ tau, typ T, int Hf, int N, int Hr){
 }
 
 
-void LibrationCenterFollow(typ * X_old, typ tau, typ T, int Hf, int N, int Hr, typ epsilon, typ dG, int N_step){
+void LibrationCenterFollow(typ * X_old, typ tau, typ T, int Hf, int N, int Hr, typ epsilon, int I, int J, typ dnInJ, typ nInJ_ex){
 
       /******** Iterates LibrationCenterFind with varying total angular momentum  ********/
-      /******** to find the entire family of libration centers. dG is the step of ********/
-      /******** total angular momentum. N_step is the number of steps. Other      ********/
+      /******** to find the entire family of libration centers. dnInJ is the step ********/
+      /******** d(nI/nJ) between the points of the family. The total angular G    ********/
+      /******** is incremented by dG between each point to achieve that. Other    ********/
       /******** arguments are as in function LibrationCenterFind. The family is   ********/
-      /******** written to file at the path specified in parameters.h             ********/
+      /******** written to file at the path specified in parameters.h. Keeps      ********/
+      /******** going until nInJ reaches nInJ_ex.                                 ********/
 
       int i, j;
       int fast = subchain[how_many_resonant - 1];
       int slow = subchain[how_many_resonant];
-      typ a, e, sig, e_av, a_av, sig_av;
+      typ a, e, sig, e_av, a_av, sig_av, dG, dG_old;
+      typ nInJ, nInJ_old, n[how_many_planet + 1];
       char file_path[800];
       char nn[10];
       FILE * file;
@@ -3141,6 +3166,7 @@ void LibrationCenterFollow(typ * X_old, typ tau, typ T, int Hf, int N, int Hr, t
       typ X_buf    [4*how_many_planet + 1];
       typ sigOld   [  how_many_planet + 1];
       typ sigOld_av[  how_many_planet + 1];
+      int continu = 1;
 
       /******** Opening output file ********/
       strcpy(file_path, pth);
@@ -3176,7 +3202,9 @@ void LibrationCenterFollow(typ * X_old, typ tau, typ T, int Hf, int N, int Hr, t
       fprintf(file, "\n");
       
       /******** Following the family of libration centers ********/
-      for (j = 0; j <= N_step; j ++){
+      j = 0;
+      while (continu){
+            printf("\nIteration n° %d\n", j);
             LibrationCenterFind(X_old, tau, T, Hf, N, Hr, epsilon);
             new2old(X_old_av, X_new_av, avgs);
             #if canon_output_bool
@@ -3189,7 +3217,7 @@ void LibrationCenterFollow(typ * X_old, typ tau, typ T, int Hf, int N, int Hr, t
             #endif
             old2new(X_old_av, X_new_av, X_uv_av);
             old2new(X_buf, X_new, X_uv);
-            printf("Phi_%d = %.16g, <Phi_%d> = %.16g\n", slow, X_uv[4*slow - 1], slow, X_uv_av[4*slow - 1]);
+            //printf("Phi_%d = %.16g, <Phi_%d> = %.16g\n", slow, X_uv[4*slow - 1], slow, X_uv_av[4*slow - 1]);
             
             
             /******** Writing to file ********/
@@ -3217,14 +3245,35 @@ void LibrationCenterFollow(typ * X_old, typ tau, typ T, int Hf, int N, int Hr, t
             #if !canon_output_bool
             old2new(X_old, X_new, X_uv);
             #endif
-            if (j - N_step){
+            /******** Choosing dG so that nI/nJ changes by dnInJ ********/
+            get_averaged_n(n);
+            nInJ = n[I]/n[J];
+            if (dnInJ > 0. && nInJ > nInJ_ex || dnInJ < 0. && nInJ < nInJ_ex){ //Checking stopping condition
+                  continu = 0;
+            }
+            if (!j){ //Rough first estimate from d(nI/nJ)/(nI/nJ) ~ 3*dLbd_J/Lbd_J with dLbd_J ~ dG. Improved by first-order Taylor expansion on further steps
+                  dG  = dnInJ*X_old[4*J - 1]/(3.*nInJ);
+            }
+            else{
+                  dG_old = dG;
+                  dG    *= dnInJ/(nInJ - nInJ_old);
+                  if (amp*fabs(dG/dG_old) > M_PI/4.){
+                        if (dG*dG_old > 0.){
+                              dG = dG_old*(M_PI/4.)/amp;
+                        }
+                        else {
+                              dG = -dG_old*(M_PI/4.)/amp;
+                        }
+                  }
+            }
+            nInJ_old = nInJ;
+            if (continu){
                   X_uv    [4*slow - 1] += dG;
                   X_uv_t0 [4*slow - 1]  = X_uv [4*slow - 1];
                   new2old(X_old, X_new, X_uv);
                   X_new_t0[4*slow - 1]  = X_new[4*slow - 1];
             }
-            /******** Displaying progress ********/
-            printf("progress = %d/%d\n", j , N_step);
+            j ++;
       }
 
       /******** Closing output file ********/
