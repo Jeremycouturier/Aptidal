@@ -2996,7 +2996,7 @@ void LibrationCenterFind(typ * X_old, typ tau, typ T, int Hf, int N, int Hr, typ
       /******** safely circulate. Convergence can also be prevented if T, Hr, or epsilon********/
       /******** are too small, or if tau is too large. tau > 0.1 is discouraged.        ********/
 
-      int i, iter, k;
+      int i, iter, k_slow, k_div, ignore;
       int fast = subchain[how_many_resonant - 1];
       int slow = subchain[how_many_resonant];
       typ amplitude = 1.e300;
@@ -3028,57 +3028,80 @@ void LibrationCenterFind(typ * X_old, typ tau, typ T, int Hf, int N, int Hr, typ
       printf("-------------------------------------------------------------------------------------------\n\n");
       printf("Going towards a libration center from this point :\n");
       PointPrint(X_old, 0);
-      iter = 0;  k = 0;
+      iter = 0;  k_slow = 0;  k_div = 0;
       
       while(180.*amplitude/M_PI > epsilon){
+            ignore = 0;
+            T  = min(1000000., T);
+            Hr = min(300, Hr);
             /******** Going towards a libration center ********/
             old2new(X_old, X_new, X_uv);
             amplitude = UnaveragedSABAn_NAFF(tau, T, Hf, xvXu, X_old, N, Hr);
             if (!iter){ //Setting the amplitude of the first point. Used by LibrationCenterFollow
                   amp = amplitude;
             }
-            if (old_amplitude/amplitude < 2. && old_amplitude > amplitude && k < 8){ //Slow convergence. Is often due to too little harmonics, or a window being too small.
+            if (old_amplitude < 2.*amplitude && old_amplitude >= amplitude && k_slow < 8){ //Slow convergence. Is often due to too little harmonics, or a window being too small.
                   T  *= sqrt(2.);
                   Hr += 10;
-                  k ++;
+                  k_slow ++;
                   printf("\nSlow convergence detected. Switching to T = %.16g and %d harmonics.\n", T, Hr);
             }
-            old_amplitude = amplitude;
-            ConstantParameter(X_new, xvXu);
-            for (i = 1; i <= how_many_planet; i ++){
-                  X_uv[4*i - 3] = xvXu[4*i - 3];
-                  X_uv[4*i - 2] = xvXu[4*i - 2];
-                  X_uv[4*i - 1] = xvXu[4*i - 1];
-                  X_uv[4*i]     = xvXu[4*i];
-            }
-            new2old(X_old, X_new, X_uv);
-            
-            printf("nu_%d = dphi_%d/dt = %.16g, nu_%d = dphi_%d/dt = %.16g, nu_fast = nu_%d/%d = %.16g, nu_fast/nu_%d = %.16g\n",
-            fast, fast, nu_fast, slow, slow, nu_reso, fast, (int) D, nu_fast/D, slow, nu_fast/D/nu_reso);
-            printf("Amplitude due to slow terms in relevant angle = %.16g°\n", 180.*amplitude/M_PI);
-            iter ++;
-            printf("\nThe new point is :\n");
-            PointPrint(X_old, iter);
-            get_averaged_n(n);
-            for (i = 1; i < how_many_planet; i ++){
-                  printf("n_%d/n_%d = %.8g", i, i + 1, n[i]/n[i + 1]);
-                  if (i < how_many_planet - 1){printf(", ");} else{printf("\n");}
-            }
-            if (iter > 15){
-                  if (180.*amplitude/M_PI < 64.*epsilon){
-                        fprintf(stderr, "\nWarning: Cannot converge further in function LibrationCenterFind. Stopping here and returning.\n");
-                        amplitude = 1.e-300;
+            if (old_amplitude < amplitude && k_div < 4){ //Divergence detected. Increasing T and Hr and ignoring last point.
+                  T  *= 2.;
+                  Hr += 20;
+                  ignore = 1;
+                  k_div ++;
+                  for (i = 1; i <= 4*how_many_planet; i ++){
+                        X_old[i] = X_buff[i]; //Undoing last iteration.
                   }
-                  else{
-                        fprintf(stderr, "\nError: Cannot converge to a libration center in function LibrationCenterFind. Aborting.\n");
-                        abort();
+                  old_amplitude = 1.e300;
+                  printf("\nDivergence detected. Switching to T = %.16g and %d harmonics and undoing last iteration.\n", T, Hr);
+            }
+            if (amplitude > 2.*M_PI && (subchain[0] + 2) % Nd != 0){ //Circulation
+                  fprintf(stderr, "\nError: The relevant angle is circulating. Aborting.\n");
+                  abort();
+            }
+            if (!ignore){
+                  for (i = 1; i <= 4*how_many_planet; i ++){
+                        X_buff[i] = X_old[i]; //Used to undo an iteration in case of divergence.
+                  }
+                  old_amplitude = amplitude;
+                  ConstantParameter(X_new, xvXu);
+                  for (i = 1; i <= how_many_planet; i ++){
+                        X_uv[4*i - 3] = xvXu[4*i - 3];
+                        X_uv[4*i - 2] = xvXu[4*i - 2];
+                        X_uv[4*i - 1] = xvXu[4*i - 1];
+                        X_uv[4*i]     = xvXu[4*i];
+                  }
+                  new2old(X_old, X_new, X_uv);
+                  
+                  printf("nu_%d = dphi_%d/dt = %.16g, nu_%d = dphi_%d/dt = %.16g, nu_fast = nu_%d/%d = %.16g, nu_fast/nu_%d = %.16g\n",
+                  fast, fast, nu_fast, slow, slow, nu_reso, fast, (int) D, nu_fast/D, slow, nu_fast/D/nu_reso);
+                  printf("Amplitude due to slow terms in relevant angle = %.16g°\n", 180.*amplitude/M_PI);
+                  iter ++;
+                  printf("\nThe new point is :\n");
+                  PointPrint(X_old, iter);
+                  get_averaged_n(n);
+                  for (i = 1; i < how_many_planet; i ++){
+                        printf("n_%d/n_%d = %.8g", i, i + 1, n[i]/n[i + 1]);
+                        if (i < how_many_planet - 1){printf(", ");} else{printf("\n");}
+                  }
+                  if (iter > 23){
+                        if (180.*amplitude/M_PI < 64.*epsilon){
+                              fprintf(stderr, "\nWarning: Cannot converge further in function LibrationCenterFind. Stopping here and returning.\n");
+                              amplitude = 1.e-300;
+                        }
+                        else{
+                              fprintf(stderr, "\nError: Cannot converge to a libration center in function LibrationCenterFind. Aborting.\n");
+                              abort();
+                        }
                   }
             }
       }
       for (i = 1; i <= Nd*how_many_planet; i ++){
             X_buff[i] = X_old[i];
       }
-      amplitude = UnaveragedSABAn_NAFF(tau, T, Hf, xvXu, X_buff, N, 0); //No harmonics needed. Merely to known the amplitude after the last iteration
+      amplitude = UnaveragedSABAn_NAFF(tau, T, Hf, xvXu, X_buff, N, 0); //No harmonics needed. Merely to know the amplitude after the last iteration
       printf("nu_%d = dphi_%d/dt = %.16g, nu_%d = dphi_%d/dt = %.16g, nu_fast = nu_%d/%d = %.16g, nu_fast/nu_%d = %.16g\n",
       fast, fast, nu_fast, slow, slow, nu_reso, fast, (int) D, nu_fast/D, slow, nu_fast/D/nu_reso);
       printf("Final amplitude due to slow terms in relevant angle = %.16g°\n", 180.*amplitude/M_PI);
@@ -3205,6 +3228,9 @@ void LibrationCenterFollow(typ * X_old, typ tau, typ T, int Hf, int N, int Hr, t
       j = 0;
       while (continu){
             printf("\nIteration n° %d\n", j);
+            if (nu_reso != 0. && nu_fast != 0.){
+                  T = max(T, fabs(20.*M_PI/nu_reso));
+            }
             LibrationCenterFind(X_old, tau, T, Hf, N, Hr, epsilon);
             new2old(X_old_av, X_new_av, avgs);
             #if canon_output_bool
@@ -3257,12 +3283,12 @@ void LibrationCenterFollow(typ * X_old, typ tau, typ T, int Hf, int N, int Hr, t
             else{
                   dG_old = dG;
                   dG    *= dnInJ/(nInJ - nInJ_old);
-                  if (amp*fabs(dG/dG_old) > M_PI/4.){
+                  if (amp*fabs(dG/dG_old) > M_PI/6.){
                         if (dG*dG_old > 0.){
-                              dG = dG_old*(M_PI/4.)/amp;
+                              dG = dG_old*(M_PI/6.)/amp;
                         }
                         else {
-                              dG = -dG_old*(M_PI/4.)/amp;
+                              dG = -dG_old*(M_PI/6.)/amp;
                         }
                   }
             }
