@@ -278,7 +278,7 @@ void dHdnew(typ * dH_polar, typ * dH_rect, typ * dH_old, typ * X_new, typ * X_uv
       /******** Verifying that the gradient of non-degrees of freedom is close to 0. To be removed when the code is robust ********/
       for (k = 1; k <= how_many_nondof; k ++){
             i = nondof[k];
-            if (fabs(dH_rect[4*i - 3]) > 1.e-11){ //If dH/dphi_i != 0 where (phi_i; Phi_i) is not a degree of freedom
+            if (fabs(dH_rect[4*i - 3]) > 1.e-8*G*m0*masses[1]/a_nom[1]){ //If dH/dphi_i != 0 where (phi_i; Phi_i) is not a degree of freedom
                   fprintf(stderr, "\nError: dH/d_phi_%d is not 0 despite (phi_%d; Phi_%d) not being a degree of freedom. dH/d_phi_%d = %.16g.\n", i, i, i, i, dH_rect[4*i - 3]);
                   abort();
             }
@@ -308,7 +308,7 @@ void old2new(typ * X_old, typ * X_new, typ * X_uv){
                   X_new[Nd*k - 1] += Transpose_inv [k]    [i]*X_old[Nd*i - 1] + Transpose_inv [k]    [i + N]*X_old[Nd*i];
                   D               += Transpose_inv [k + N][i]*X_old[Nd*i - 1] + Transpose_inv [k + N][i + N]*X_old[Nd*i];
             }
-            if (fabs(D - X_old[Nd*k]) > 1.e-10){
+            if (fabs(D - X_old[Nd*k]) > 1.e-12*X_old[Nd*k - 1]){
                   fprintf(stderr, "\nError: D_new = %.16g significantly differs from D_old = %.16g in function old2new.\n", D, X_old[Nd*k]);
                   abort();
             }
@@ -367,7 +367,7 @@ void new2old(typ * X_old, typ * X_new, typ * X_uv){
                   X_old[Nd*k - 1] += Transformation[i][k]    *X_new[Nd*i - 1] + Transformation[i + N][k]    *X_new[Nd*i];
                   D               += Transformation[i][k + N]*X_new[Nd*i - 1] + Transformation[i + N][k + N]*X_new[Nd*i];
             }
-            if (fabs(D - X_new[Nd*k]) > 1.e-10){
+            if (fabs(D - X_new[Nd*k]) > 1.e-12*X_old[Nd*k - 1]){
                   fprintf(stderr, "\nError: D_old = %.16g significantly differs from D_new = %.16g in function new2old.\n", D, X_new[Nd*k]);
                   abort();
             }
@@ -501,7 +501,7 @@ void ellip_can2noncan(typ * X_old, typ * X_buf){
             X_buf[4*i - 3] = continuousAngle(alkhqp[2], X_old[4*i - 3]);
             X_buf[4*i - 2] = continuousAngle(-vp,       X_old[4*i - 2]);
             X_buf[4*i - 1] = Lbd;
-            X_buf[4*i]     = max(Lbd*(1. - sqrt(1. - e*e)), 1.e-34);
+            X_buf[4*i]     = max(Lbd*(1. - sqrt(1. - e*e)), 1.e-34*Lbd);
       }
 }
 #endif
@@ -577,7 +577,7 @@ void X_init(typ * X){
             X[Nd*i - 3] = lbd[i];
             X[Nd*i - 2] = -vrp[i];
             X[Nd*i - 1] = Lbd;
-            X[Nd*i]     = max(Lbd*(1. - sqrt(1. - ecc[i]*ecc[i])), 1.e-34);
+            X[Nd*i]     = max(Lbd*(1. - sqrt(1. - ecc[i]*ecc[i])), 1.e-34*Lbd);
       }
       
       #if !canon_input_bool
@@ -613,7 +613,7 @@ void X_init(typ * X){
             X[Nd*i - 3] = alkhqp[2];
             X[Nd*i - 2] = -vp;
             X[Nd*i - 1] = Lbd;
-            X[Nd*i]     = max(Lbd*(1. - sqrt(1. - e*e)), 1.e-34);
+            X[Nd*i]     = max(Lbd*(1. - sqrt(1. - e*e)), 1.e-34*Lbd);
       }
       #endif
 }
@@ -668,7 +668,7 @@ void X_init(typ * X){
             X[Nd*i - 3] = alkhqp[2];
             X[Nd*i - 2] = -vp;
             X[Nd*i - 1] = Lbd;
-            X[Nd*i]     = max(Lbd*(1. - sqrt(1. - e*e)), 1.e-34);
+            X[Nd*i]     = max(Lbd*(1. - sqrt(1. - e*e)), 1.e-34*Lbd);
       }
 }
 #endif
@@ -1478,9 +1478,10 @@ int EquilibriumFind(typ * X_old, int precision){
       typ X_new[4*how_many_planet + 1];
       typ X_uv [4*how_many_planet + 1];
       typ xvXu [4*how_many_planet + 1];
-      typ tau = 0.5;
+      typ T_in = sqrt(4.*M_PI*M_PI/(G*m0)*a_nom[1]*a_nom[1]*a_nom[1]);
+      typ tau = 0.5*T_in;
       typ dt[3] = {2., 1., 1.};            //Timestep in units of tau
-      typ T [3] = {16000., 32000., 64000.};//Integration time
+      typ T [3] = {16000.*T_in, 32000.*T_in, 64000.*T_in};//Integration time
       int Hf[3] = {2, 5, 5};               //order of Hanning filter
       int Sn[3] = {1, 1, 2};               //Order of the SABA integrator
       typ AR[3] = {1.e-4, 1.e-7, 1.e-8};   //Required value for the precision
@@ -1496,7 +1497,7 @@ int EquilibriumFind(typ * X_old, int precision){
             nonDofReinit(X_new, xvXu);
             prec = 0.;
             for (i = 1; i <= how_many_planet; i ++){
-                  prec += fabs(xvXu[4*i - 3] - X_uv[4*i - 3]) + fabs(xvXu[4*i - 2] - X_uv[4*i - 2]) + fabs(xvXu[4*i - 1] - X_uv[4*i - 1]) + fabs(xvXu[4*i] - X_uv[4*i]);
+                  prec += fabs(xvXu[4*i - 3] - X_uv[4*i - 3]) + fabs(xvXu[4*i - 2] - X_uv[4*i - 2]) + fabs(xvXu[4*i - 1]/Lbd_0[i] - X_uv[4*i - 1]/Lbd_0[i]) + fabs(xvXu[4*i] - X_uv[4*i]);
             }
             prec /= (typ) how_many_planet;
             printf("precision = %.16g\n", prec);

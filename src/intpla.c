@@ -791,7 +791,8 @@ void SABAn(typ tau, typ T, int output_step, typ * X_old, int n){
       typ c1, c2, c3, c4, c5, c6, d1, d2, d3, d4, d5;
       typ progress, previous_progress, threshold;
       typ alkhqp[7];
-      int continuous = tau*((typ) output_step) <= .49 ? 1 : 0;
+      typ T_in = sqrt(4.*M_PI*M_PI/(G*m0)*a_nom[1]*a_nom[1]*a_nom[1]);
+      int continuous = tau*((typ) output_step) <= .49*T_in ? 1 : 0;
       #if !tides_bool && !GR_bool
       typ H0;
       #endif
@@ -1424,7 +1425,8 @@ void SABAH1064(typ tau, typ T, int output_step, typ * X_old){
       typ c1, c2, c3, c4, c5, d1, d2, d3, d4, d5;
       typ progress, previous_progress, threshold;
       typ alkhqp[7];
-      int continuous = tau*((typ) output_step) <= .49 ? 1 : 0;
+      typ T_in = sqrt(4.*M_PI*M_PI/(G*m0)*a_nom[1]*a_nom[1]*a_nom[1]);
+      int continuous = tau*((typ) output_step) <= .49*T_in ? 1 : 0;
       #if !tides_bool && !GR_bool
       typ H0;
       #endif
@@ -2212,7 +2214,7 @@ void FundamentalFrequency(typ tau, typ T, typ * X_old, int n, int n_freq, typ fr
                   /******** Newton-Raphson on d/dnj |<f(t), e^i*nj*t>|^2 where f(t) = exp(i*lbd_j(t)) ********/
                   if (Hanning_order){
                         delta = 1.; p = 0; nu = omega;
-                        while (delta > 1.e-9){
+                        while (delta > 1.e-11*fabs(omega)){
                               Re = 0.;  Im = 0.;  Ret = 0.;  Imt = 0.;  Rett = 0.;  Imtt = 0.;
                               /******** Computing relevant integrals with a Simpson method. A factor tau/(6*T) is ignored ********/
                               for (iter = -N_step + 2; iter <= N_step; iter += 2){
@@ -2239,7 +2241,7 @@ void FundamentalFrequency(typ tau, typ T, typ * X_old, int n, int n_freq, typ fr
                               nu   -= num/denom;
                               delta = fabs(num/denom);
                               p ++;
-                              if (p > 50 && delta > 1.e-9){
+                              if (p > 50 && delta > 1.e-11*fabs(omega)){
                                     fprintf(stderr, "\nWarning: Newton-Raphson method does not converge in function FundamentalFrequency. Frequency obtained by linear fit will not be refined.\n");
                                     delta = 1.e-50;
                                     nu    = omega;
@@ -3006,6 +3008,7 @@ void LibrationCenterFind(typ * X_old, typ tau, typ T, int Hf, int N, int Hr, typ
       typ X_buff[4*how_many_planet + 1];
       typ xvXu  [4*how_many_planet + 1];
       typ n     [  how_many_planet + 1];
+      typ T_in = sqrt(4.*M_PI*M_PI/(G*m0)*a_nom[1]*a_nom[1]*a_nom[1]);
       
       if (Hf > 5 || Hf < 1){
             fprintf(stderr, "\nError: The order of the Hanning filter must be between 1 and 5 in function LibrationCenterFind.\n");
@@ -3018,10 +3021,10 @@ void LibrationCenterFind(typ * X_old, typ tau, typ T, int Hf, int N, int Hr, typ
       if (N == 1){
             fprintf(stderr, "\nWarning: Using a SABA1 is discouraged in function LibrationCenterFind.\n");
       }
-      if (N > 4 && tau < .1){
-            fprintf(stderr, "\nWarning: In function LibrationCenterFind, using a high order SABA integrator with a small timestep is not necessary when tau < 0.1.\n");
+      if (N > 4 && tau < .1*T_in){
+            fprintf(stderr, "\nWarning: In function LibrationCenterFind, using a high order SABA integrator with a small timestep is not necessary when tau < 0.1 inner periods.\n");
       }
-      if (N > 4 && tau >= .1){
+      if (N > 4 && tau >= .1*T_in){
             fprintf(stderr, "\nWarning: In function LibrationCenterFind, a large timestep can lead to poor integral computations due to a too rough discretization.\n");
       }
       
@@ -3032,7 +3035,7 @@ void LibrationCenterFind(typ * X_old, typ tau, typ T, int Hf, int N, int Hr, typ
       
       while(180.*amplitude/M_PI > epsilon){
             ignore = 0;
-            T  = min(1000000., T);
+            T  = min(1000000.*T_in, T); //Capping T to about 10^6 inner periods
             Hr = min(300, Hr);
             /******** Going towards a libration center ********/
             old2new(X_old, X_new, X_uv);
